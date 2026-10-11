@@ -232,7 +232,7 @@ function finishMission(success){
  else {missionStatus.textContent='时间到！别放弃，重新开始再试一次。';showMissionToast('时间到！挑战失败')}
  missionProgress.textContent=`进度 ${success?activeMission.points.length:checkpointIndex}/${activeMission.points.length}`;missionReward.textContent=`金币 ${coins}`;missionStart.textContent='再次挑战';activeMission=null;
 }
-document.querySelectorAll('[data-mission]').forEach(b=>b.addEventListener('click',()=>{if(missionRunning){missionRunning=false;clearMissionMarkers()}selectedMission=Number(b.dataset.mission);refreshMissionPanel()}));
+document.querySelectorAll('[data-mission]').forEach(b=>b.addEventListener('click',()=>{if(missionRunning){missionRunning=false;activeMission=null;clearMissionMarkers();navArrow.style.display='none'}selectedMission=Number(b.dataset.mission);refreshMissionPanel()}));
 missionStart.addEventListener('click',startMission);
 refreshMissionPanel();
 const garage=document.getElementById('garage');
