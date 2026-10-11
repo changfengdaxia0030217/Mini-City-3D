@@ -157,9 +157,9 @@ for(const axis of ['x','z'])for(let p=-100;p<=100;p+=20)for(const side of [-1,1]
 // car group: local forward is negative Z
 const car=new THREE.Group();scene.add(car);
 const carPaint=mat(0xf5a623,.45), glass=mat(0x8ed4e8,.35), tireMat=mat(0x202731);
-box(2.15,.65,4.1,carPaint,0,.75,0,car);
-box(1.55,.72,1.95,glass,0,1.38,-.35,car);
-box(1.65,.12,1.05,carPaint,0,1.78,-.32,car);
+const carBody=box(2.15,.65,4.1,carPaint,0,.75,0,car);
+const carCabin=box(1.55,.72,1.95,glass,0,1.38,-.35,car);
+const carRoof=box(1.65,.12,1.05,carPaint,0,1.78,-.32,car);
 box(.72,.15,.08,mat(0xffffff),-.65,.85,-2.07,car);box(.72,.15,.08,mat(0xffffff),.65,.85,-2.07,car);
 box(.65,.18,.08,mat(0xe85a4f),-.65,.82,2.07,car);box(.65,.18,.08,mat(0xe85a4f),.65,.82,2.07,car);
 const wheels=[];
@@ -207,7 +207,12 @@ let unlockedCars=Array.isArray(savedProgress.unlockedCars)?[0,...savedProgress.u
 let selectedVehicle=unlockedCars.includes(savedProgress.selectedVehicle)?savedProgress.selectedVehicle:0;
 const vehicleColors=[0xf5a623,0xf04d4d,0x35b9ff];
 function saveProgress(){try{localStorage.setItem('miniCitySave',JSON.stringify({coins,unlockedCars,selectedVehicle}))}catch(e){}}
-function applyVehicle(){carPaint.color.setHex(vehicleColors[selectedVehicle]||vehicleColors[0]);sportKit.visible=selectedVehicle===1;neonKit.visible=selectedVehicle===2;document.querySelectorAll('[data-car]').forEach(b=>{const id=Number(b.dataset.car),owned=unlockedCars.includes(id);b.classList.toggle('active-car',id===selectedVehicle);b.querySelector('b').textContent=id===selectedVehicle?'正在驾驶':owned?'已拥有':`解锁 ${id===1?250:500} 金币`;});document.getElementById('garage-balance').textContent=`金币：${coins} · 当前：${vehicleStats[selectedVehicle].name} · 极速 ${Math.round(vehicleStats[selectedVehicle].maxSpeed*3.6)} km/h`;missionReward.textContent=`金币 ${coins}`; }
+function applyVehicle(){carPaint.color.setHex(vehicleColors[selectedVehicle]||vehicleColors[0]);sportKit.visible=selectedVehicle===1;neonKit.visible=selectedVehicle===2;
+ carBody.scale.set(selectedVehicle===1?1.04:selectedVehicle===2?1.02:1,selectedVehicle===1?.9:selectedVehicle===2?.94:1,selectedVehicle===1?1.06:selectedVehicle===2?1.03:1);
+ carCabin.scale.set(selectedVehicle===1?.9:selectedVehicle===2?1.08:1,selectedVehicle===1?.78:selectedVehicle===2?.92:1,selectedVehicle===1?.92:selectedVehicle===2?1.04:1);
+ carCabin.position.y=selectedVehicle===1?1.3:selectedVehicle===2?1.34:1.38;
+ carRoof.scale.set(selectedVehicle===1?.88:selectedVehicle===2?1.08:1,1,selectedVehicle===1?.82:selectedVehicle===2?1.08:1);
+ carRoof.position.y=selectedVehicle===1?1.65:selectedVehicle===2?1.73:1.78;document.querySelectorAll('[data-car]').forEach(b=>{const id=Number(b.dataset.car),owned=unlockedCars.includes(id);b.classList.toggle('active-car',id===selectedVehicle);b.querySelector('b').textContent=id===selectedVehicle?'正在驾驶':owned?'已拥有':`解锁 ${id===1?250:500} 金币`;});document.getElementById('garage-balance').textContent=`金币：${coins} · 当前：${vehicleStats[selectedVehicle].name} · 极速 ${Math.round(vehicleStats[selectedVehicle].maxSpeed*3.6)} km/h`;missionReward.textContent=`金币 ${coins}`; }
 let selectedMission=0, activeMission=null, checkpointIndex=0, missionTimeLeft=0, missionRunning=false;
 const missionMeshes=[];
 const missionStatus=document.getElementById('mission-status');
