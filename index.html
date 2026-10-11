@@ -156,7 +156,7 @@ for(const axis of ['x','z'])for(let p=-100;p<=100;p+=20)for(const side of [-1,1]
 
 // car group: local forward is negative Z
 const car=new THREE.Group();scene.add(car);
-const carPaint=mat(0xf5a623,.45), glass=mat(0x8ed4e8,.35), tireMat=mat(0x202731);
+const carPaint=mat(0xf5a623,.45), glass=mat(0x8ed4e8,.35), tireMat=mat(0xff202f,.28);
 const carBody=box(2.15,.65,4.1,carPaint,0,.75,0,car);
 const carCabin=box(1.55,.72,1.95,glass,0,1.38,-.35,car);
 const carRoof=box(1.65,.12,1.05,carPaint,0,1.78,-.32,car);
