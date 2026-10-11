@@ -158,8 +158,9 @@ function update(dt){
  if(handbrake)speed*=Math.pow(.91,dt*60);
  speed=THREE.MathUtils.clamp(speed,-8,34);
  const steerInput=(left?1:0)-(right?1:0);
- steering=THREE.MathUtils.damp(steering,steerInput,.16,dt);
- if(Math.abs(speed)>.4)car.rotation.y+=steering*1.55*dt*Math.sign(speed)*Math.min(1,Math.abs(speed)/5);
+ steering=THREE.MathUtils.damp(steering,steerInput,10,dt);
+ // More responsive steering, with useful turning at low city-driving speeds.
+ if(Math.abs(speed)>.25)car.rotation.y+=steering*1.8*dt*Math.sign(speed)*Math.min(1,Math.abs(speed)/3.2);
  const oldX=car.position.x,oldZ=car.position.z;
  car.position.x-=Math.sin(car.rotation.y)*speed*dt;
  car.position.z-=Math.cos(car.rotation.y)*speed*dt;
