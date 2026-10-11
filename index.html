@@ -227,7 +227,7 @@ function startMission(){
  selectedMission=Number(selectedMission);activeMission=missionConfigs[selectedMission];checkpointIndex=0;missionTimeLeft=activeMission.time;missionRunning=true;resetCar();buildMissionMarkers();refreshMissionPanel();showMissionToast(`开始挑战：${activeMission.name}`);
 }
 function finishMission(success){
- missionRunning=false;clearMissionMarkers();
+ missionRunning=false;clearMissionMarkers();navArrow.style.display='none';
  if(success){coins+=activeMission.reward;saveProgress();applyVehicle();missionStatus.textContent=`挑战成功！获得 ${activeMission.reward} 金币。\n可以选择其他难度继续挑战。`;showMissionToast(`🏆 挑战成功！ +${activeMission.reward} 金币`)}
  else {missionStatus.textContent='时间到！别放弃，重新开始再试一次。';showMissionToast('时间到！挑战失败')}
  missionProgress.textContent=`进度 ${success?activeMission.points.length:checkpointIndex}/${activeMission.points.length}`;missionReward.textContent=`金币 ${coins}`;missionStart.textContent='再次挑战';activeMission=null;
@@ -279,6 +279,9 @@ function update(dt){
   if(collides(car.position.x,car.position.z)){car.position.x=oldX;car.position.z=oldZ;speed*=-.22;lateralSpeed*=-.25}
  car.position.x=THREE.MathUtils.clamp(car.position.x,-119,119);car.position.z=THREE.MathUtils.clamp(car.position.z,-119,119);
  if(missionRunning&&activeMission){
+  const navTarget=activeMission.points[checkpointIndex];
+  const navAngle=Math.atan2(navTarget.x-car.position.x,-(navTarget.z-car.position.z))+car.rotation.y;
+  navArrow.style.display='block';navArrow.style.transform=`translateX(-50%) rotate(${navAngle}rad)`;
   missionTimeLeft-=dt;
   if(missionTimeLeft<=0){finishMission(false)}
   else {
