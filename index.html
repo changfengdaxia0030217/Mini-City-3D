@@ -21,6 +21,10 @@
 .control:active,.control.active{background:#ffbd4a;color:#152235}
 #gas{width:62px;height:62px;border-radius:50%;font-size:14px;background:#1b8e68dd}
 #brake{width:54px;height:54px;border-radius:50%;font-size:12px;background:#b84747dd}
+#minimap-wrap{position:absolute;right:16px;top:112px;width:164px;padding:7px;border-radius:14px;background:#102033b8;border:1px solid #ffffff35;backdrop-filter:blur(8px);box-shadow:0 8px 28px #10203320}
+#minimap-title{font-size:10px;font-weight:800;letter-spacing:.12em;opacity:.8;margin:0 0 5px 3px}
+#minimap{display:block;width:100%;aspect-ratio:1;border-radius:8px;background:#83b96a}
+@media(max-width:700px){#minimap-wrap{top:104px;right:12px;width:112px;padding:5px}#minimap-title{font-size:9px;margin-bottom:3px}} 
 @media(max-width:700px){#mobile{display:flex}#help{bottom:165px;font-size:11px;max-width:190px}#brand{top:12px;left:12px}#stats{top:12px;right:12px}#toast{top:78px;font-size:12px}}
 </style>
 </head>
@@ -29,6 +33,7 @@
   <div id="brand" class="panel">MINI CITY <small>3D DRIVE · ALPHA 0.1</small></div>
   <div id="stats" class="panel"><div id="speed">0<span>KM/H</span></div><div style="font-size:11px;opacity:.75;margin-top:6px">自由驾驶 · 城市探索</div></div>
   <div id="toast" class="panel">WASD / 方向键驾驶 · 手机使用屏幕按键</div>
+  <div id="minimap-wrap"><div id="minimap-title">CITY MAP · N</div><canvas id="minimap" width="220" height="220" aria-label="城市小地图"></canvas></div>
   <div id="help" class="panel">目标：在小城里自由驾驶。<br>W / ↑ 加速　S / ↓ 刹车倒车<br>A / ← 左转　D / → 右转<br>空格手刹　R 重置车辆</div>
 </div>
 <div id="mobile">
@@ -125,6 +130,7 @@ for(const x of [-1.08,1.08])for(const z of [-1.32,1.32]){
  const hub=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,.29,10),mat(0xcbd2d9));hub.rotation.z=Math.PI/2;hub.position.set(x,.42,z);car.add(hub);
 }
 car.position.set(0,0,8);
+window.miniCityCar = car;
 
 const keys=new Set();
 addEventListener('keydown',e=>{keys.add(e.code);if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.code==='KeyR')resetCar()});
@@ -172,5 +178,6 @@ camera.position.set(0,5,18);camera.lookAt(0,1,0);
 requestAnimationFrame(animate);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.8))});
 </script>
+<script type="module" src="./minimap.js"></script>
 </body>
 </html>
