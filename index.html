@@ -67,9 +67,9 @@
   <div id="garage" class="panel">
     <h3>🚘 城市车库</h3>
     <p id="garage-balance">金币：0 · 解锁车辆并立即试驾</p>
-    <button class="garage-car active-car" data-car="0"><span><strong>街头轿车</strong><small>免费 · 均衡操控</small></span><b>已拥有</b></button>
-    <button class="garage-car" data-car="1"><span><strong>烈焰跑车</strong><small>250 金币 · 红色车身</small></span><b>解锁</b></button>
-    <button class="garage-car" data-car="2"><span><strong>霓虹跑车</strong><small>500 金币 · 蓝色车身</small></span><b>解锁</b></button>
+    <button class="garage-car active-car" data-car="0"><span><strong>街头轿车</strong><small>免费 · 稳定操控 · 极速 122</small></span><b>已拥有</b></button>
+    <button class="garage-car" data-car="1"><span><strong>烈焰跑车</strong><small>250 金币 · 加速更快 · 极速 155</small></span><b>解锁</b></button>
+    <button class="garage-car" data-car="2"><span><strong>霓虹跑车</strong><small>500 金币 · 极速最高 · 灵活漂移</small></span><b>解锁</b></button>
     <button id="garage-close">返回驾驶</button>
   </div>
   <div id="minimap-wrap"><div id="minimap-title">CITY MAP · N</div><canvas id="minimap" width="220" height="220" aria-label="城市小地图"></canvas></div>
@@ -168,6 +168,18 @@ for(const x of [-1.08,1.08])for(const z of [-1.32,1.32]){
  wheel.rotation.z=Math.PI/2;wheel.position.set(x,.42,z);wheel.castShadow=true;car.add(wheel);wheels.push(wheel);
  const hub=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,.29,10),mat(0xcbd2d9));hub.rotation.z=Math.PI/2;hub.position.set(x,.42,z);car.add(hub);
 }
+// Distinct body kits for the unlocked cars.
+const sportKit=new THREE.Group();car.add(sportKit);
+box(1.9,.12,.55,mat(0x292d35),0,.53,-2.12,sportKit);
+box(1.9,.12,.45,mat(0x292d35),0,.65,1.88,sportKit);
+for(const x of [-.98,.98])box(.18,.22,2.65,mat(0x292d35),x,.48,0,sportKit);
+box(1.9,.12,.18,mat(0x292d35),0,1.55,1.55,sportKit);
+for(const x of [-.78,.78]){box(.12,.52,.12,mat(0x292d35),x,1.32,1.58,sportKit);box(.12,.12,.55,mat(0x292d35),x,1.58,1.83,sportKit)}
+const neonKit=new THREE.Group();car.add(neonKit);
+box(1.95,.1,.6,mat(0x172333),0,.5,-2.05,neonKit);
+for(const x of [-1.01,1.01]){box(.07,.07,2.8,new THREE.MeshStandardMaterial({color:0x42eaff,emissive:0x159dff,emissiveIntensity:1.4}),x,.47,0,neonKit);box(.18,.12,.45,mat(0x172333),x,1.5,1.48,neonKit)}
+box(1.95,.1,.2,mat(0x172333),0,1.57,1.55,neonKit);
+const vehicleStats=[{name:'街头轿车',maxSpeed:34,acceleration:24,grip:4.6},{name:'烈焰跑车',maxSpeed:43,acceleration:29,grip:3.9},{name:'霓虹跑车',maxSpeed:49,acceleration:32,grip:3.5}];
 car.position.set(0,0,8);
 window.miniCityCar = car;
 
@@ -195,7 +207,7 @@ let unlockedCars=Array.isArray(savedProgress.unlockedCars)?[0,...savedProgress.u
 let selectedVehicle=unlockedCars.includes(savedProgress.selectedVehicle)?savedProgress.selectedVehicle:0;
 const vehicleColors=[0xf5a623,0xf04d4d,0x35b9ff];
 function saveProgress(){try{localStorage.setItem('miniCitySave',JSON.stringify({coins,unlockedCars,selectedVehicle}))}catch(e){}}
-function applyVehicle(){carPaint.color.setHex(vehicleColors[selectedVehicle]||vehicleColors[0]);document.querySelectorAll('[data-car]').forEach(b=>{const id=Number(b.dataset.car),owned=unlockedCars.includes(id);b.classList.toggle('active-car',id===selectedVehicle);b.querySelector('b').textContent=id===selectedVehicle?'正在驾驶':owned?'已拥有':`解锁 ${id===1?250:500} 金币`;});document.getElementById('garage-balance').textContent=`金币：${coins} · 解锁车辆并立即试驾`;missionReward.textContent=`金币 ${coins}`;}
+function applyVehicle(){carPaint.color.setHex(vehicleColors[selectedVehicle]||vehicleColors[0]);sportKit.visible=selectedVehicle===1;neonKit.visible=selectedVehicle===2;document.querySelectorAll('[data-car]').forEach(b=>{const id=Number(b.dataset.car),owned=unlockedCars.includes(id);b.classList.toggle('active-car',id===selectedVehicle);b.querySelector('b').textContent=id===selectedVehicle?'正在驾驶':owned?'已拥有':`解锁 ${id===1?250:500} 金币`;});document.getElementById('garage-balance').textContent=`金币：${coins} · 当前：${vehicleStats[selectedVehicle].name} · 极速 ${Math.round(vehicleStats[selectedVehicle].maxSpeed*3.6)} km/h`;missionReward.textContent=`金币 ${coins}`; }
 let selectedMission=0, activeMission=null, checkpointIndex=0, missionTimeLeft=0, missionRunning=false;
 const missionMeshes=[];
 const missionStatus=document.getElementById('mission-status');
@@ -253,11 +265,11 @@ function update(dt){
  const right=keys.has('KeyD')||keys.has('ArrowRight');
  const handbrake=keys.has('Space');
  const steerInput=(left?1:0)-(right?1:0);
-  if(forward)speed+=24*dt;
+  if(forward)speed+=vehicleStats[selectedVehicle].acceleration*dt;
   else if(reverse)speed-=19*dt;
   else speed*=Math.pow(handbrake?.985:.992,dt*60);
   if(handbrake)speed*=Math.pow(.965,dt*60);
-  speed=THREE.MathUtils.clamp(speed,-8,34);
+  speed=THREE.MathUtils.clamp(speed,-8,vehicleStats[selectedVehicle].maxSpeed);
   steering=THREE.MathUtils.damp(steering,steerInput,14,dt);
   const speedAbs=Math.abs(speed);
   const speedFactor=THREE.MathUtils.clamp(speedAbs/4,0,1);
@@ -265,7 +277,7 @@ function update(dt){
   const yawRate=THREE.MathUtils.clamp(.85+speedAbs*.038,.85,2.15);
   if(speedAbs>.18)car.rotation.y+=steering*yawRate*dt*Math.sign(speed)*(handbrake?1.42:1);
   // Lateral velocity creates a controllable slip angle instead of movement glued to the nose.
-  const driftGrip=handbrake?0.72:4.6;
+  const driftGrip=handbrake?0.72:vehicleStats[selectedVehicle].grip;
   const lateralPush=steering*speedAbs*(handbrake?1.55:.22)*speedFactor;
   lateralSpeed+=lateralPush*dt;
   lateralSpeed*=Math.exp(-driftGrip*dt);
