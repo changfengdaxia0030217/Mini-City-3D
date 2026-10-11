@@ -157,7 +157,23 @@ for(const axis of ['x','z'])for(let p=-100;p<=100;p+=20)for(const side of [-1,1]
 // car group: local forward is negative Z
 const car=new THREE.Group();scene.add(car);
 const carPaint=mat(0xf5a623,.45), glass=mat(0x8ed4e8,.35), tireMat=mat(0xff202f,.28);
-const carBody=box(2.15,.65,4.1,carPaint,0,.75,0,car);
+// Tapered, bevelled low-poly shell replaces the plain rectangular body.
+const bodyShape=new THREE.Shape();
+bodyShape.moveTo(-1.92,-.20);
+bodyShape.lineTo(-2.02,.02);
+bodyShape.lineTo(-1.70,.28);
+bodyShape.lineTo(-1.10,.32);
+bodyShape.lineTo(1.52,.32);
+bodyShape.lineTo(1.95,.16);
+bodyShape.lineTo(2.02,-.10);
+bodyShape.lineTo(1.82,-.25);
+bodyShape.lineTo(-1.65,-.25);
+bodyShape.close();
+const bodyGeometry=new THREE.ExtrudeGeometry(bodyShape,{depth:1.88,steps:1,bevelEnabled:true,bevelSegments:2,bevelSize:.055,bevelThickness:.045,curveSegments:2});
+bodyGeometry.rotateY(Math.PI/2);
+bodyGeometry.translate(-.94,0,0);
+const carBody=new THREE.Mesh(bodyGeometry,carPaint);
+carBody.position.set(0,.75,0);carBody.castShadow=true;carBody.receiveShadow=true;car.add(carBody);
 const carCabin=box(1.55,.72,1.95,glass,0,1.38,-.35,car);
 const carRoof=box(1.65,.12,1.05,carPaint,0,1.78,-.32,car);
 // Extra bodywork: sloped glass, hood, trunk, bumpers, lamps and door details.
