@@ -244,6 +244,19 @@ function update(dt){
   car.position.z+=(-Math.cos(car.rotation.y)*speed-Math.sin(car.rotation.y)*lateralSpeed)*dt;
   if(collides(car.position.x,car.position.z)){car.position.x=oldX;car.position.z=oldZ;speed*=-.22;lateralSpeed*=-.25}
  car.position.x=THREE.MathUtils.clamp(car.position.x,-119,119);car.position.z=THREE.MathUtils.clamp(car.position.z,-119,119);
+ if(missionRunning&&activeMission){
+  missionTimeLeft-=dt;
+  if(missionTimeLeft<=0){finishMission(false)}
+  else {
+   const target=activeMission.points[checkpointIndex];
+   if(Math.hypot(car.position.x-target.x,car.position.z-target.z)<5.2){
+    checkpointIndex++;
+    if(checkpointIndex>=activeMission.points.length){finishMission(true)}
+    else {buildMissionMarkers();showMissionToast(`检查点 ${checkpointIndex}/${activeMission.points.length}`)}
+   }
+   if(missionRunning)refreshMissionPanel();
+  }
+ }
  wheels.forEach(w=>w.rotation.x+=speed*dt*1.5);
  cameraTarget.set(car.position.x+Math.sin(car.rotation.y)*9,4.8,car.position.z+Math.cos(car.rotation.y)*9);
  camera.position.lerp(cameraTarget,.075);
