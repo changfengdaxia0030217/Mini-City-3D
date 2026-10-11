@@ -32,6 +32,14 @@
 #mission-status{font-size:12px;line-height:1.55;margin-top:8px;white-space:pre-line}
 #mission-meta{display:flex;justify-content:space-between;gap:8px;font-size:11px;opacity:.85;margin-top:6px}
 #mission-toast{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:20px;font-weight:900;text-align:center;background:#102033e8;border:1px solid #ffffff45;border-radius:18px;padding:18px 24px;display:none;max-width:calc(100vw - 36px)}
+#garage-open{margin-top:7px;padding:6px 10px;border:1px solid #ffffff45;border-radius:8px;background:#ffffff14;color:#fff;font-weight:800;cursor:pointer}
+#garage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(340px,calc(100vw - 28px));pointer-events:auto;display:none;z-index:5}
+#garage h3{margin:0 0 8px;font-size:16px}#garage p{font-size:12px;opacity:.8;margin:0 0 12px}
+.garage-car{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;margin:7px 0;border:1px solid #ffffff30;border-radius:10px;background:#ffffff0b;color:#fff;width:100%;text-align:left;cursor:pointer}
+.garage-car strong{display:block;font-size:13px}.garage-car small{display:block;font-size:11px;opacity:.75;margin-top:3px}
+.garage-car:disabled{opacity:.55;cursor:default}.garage-car.active-car{border-color:#ffc04d;background:#ffc04d22}
+#garage-close{width:100%;margin-top:6px;border:0;border-radius:9px;background:#ffffff20;color:white;padding:9px;font-weight:800;cursor:pointer}
+#nav-arrow{position:absolute;left:50%;bottom:18%;transform:translateX(-50%);font-size:36px;color:#7dffb0;text-shadow:0 0 14px #00ff8a,0 3px 8px #102033;display:none;line-height:1}
 @media(max-width:700px){#missions{top:72px;left:12px;width:min(235px,calc(100vw - 140px));padding:9px 10px}#missions h3{font-size:11px}#mission-options{gap:4px;margin-bottom:6px}.mission-choice{padding:7px 2px;font-size:10px}#mission-start{padding:7px;font-size:11px}#mission-status{font-size:10px;margin-top:5px}#mission-meta{font-size:10px}}
 #minimap{display:block;width:100%;aspect-ratio:1;border-radius:8px;background:#83b96a}
 @media(max-width:700px){#minimap-wrap{top:104px;right:12px;width:112px;padding:5px}#minimap-title{font-size:9px;margin-bottom:3px}} 
@@ -41,7 +49,7 @@
 <body>
 <div id="hud">
   <div id="brand" class="panel">MINI CITY <small>3D DRIVE · ALPHA 0.1</small></div>
-  <div id="stats" class="panel"><div id="speed">0<span>KM/H</span></div><div style="font-size:11px;opacity:.75;margin-top:6px">自由驾驶 · 城市探索</div></div>
+  <div id="stats" class="panel"><div id="speed">0<span>KM/H</span></div><div style="font-size:11px;opacity:.75;margin-top:6px">城市驾驶 · 任务挑战</div><button id="garage-open">🚘 车库</button></div>
   <div id="toast" class="panel">WASD / 方向键驾驶 · 手机使用屏幕按键</div>
   <div id="missions" class="panel">
     <h3>🏁 城市驾驶挑战</h3>
@@ -55,6 +63,15 @@
     <div id="mission-meta"><span id="mission-progress">进度 0/0</span><span id="mission-reward">金币 0</span></div>
   </div>
   <div id="mission-toast"></div>
+  <div id="nav-arrow">⬆</div>
+  <div id="garage" class="panel">
+    <h3>🚘 城市车库</h3>
+    <p id="garage-balance">金币：0 · 解锁车辆并立即试驾</p>
+    <button class="garage-car active-car" data-car="0"><span><strong>街头轿车</strong><small>免费 · 均衡操控</small></span><b>已拥有</b></button>
+    <button class="garage-car" data-car="1"><span><strong>烈焰跑车</strong><small>250 金币 · 红色车身</small></span><b>解锁</b></button>
+    <button class="garage-car" data-car="2"><span><strong>霓虹跑车</strong><small>500 金币 · 蓝色车身</small></span><b>解锁</b></button>
+    <button id="garage-close">返回驾驶</button>
+  </div>
   <div id="minimap-wrap"><div id="minimap-title">CITY MAP · N</div><canvas id="minimap" width="220" height="220" aria-label="城市小地图"></canvas></div>
   <div id="help" class="panel">目标：在小城里自由驾驶。<br>W / ↑ 加速　S / ↓ 刹车倒车<br>A / ← 左转　D / → 右转<br>空格手刹　R 重置车辆</div>
 </div>
