@@ -189,7 +189,14 @@ const missionConfigs=[
  {name:'街区赛',time:85,reward:250,desc:'完成 6 个检查点，挑战连续转弯。',points:[{x:0,z:-42},{x:0,z:-60},{x:60,z:-60,rot:Math.PI/2},{x:60,z:0},{x:0,z:60,rot:Math.PI/2},{x:0,z:28}]},
  {name:'极限赛',time:125,reward:500,desc:'环绕城市完成 7 个检查点。',points:[{x:0,z:-55},{x:60,z:-60,rot:Math.PI/2},{x:60,z:60},{x:-60,z:60,rot:Math.PI/2},{x:-60,z:0},{x:0,z:0,rot:Math.PI/2},{x:0,z:-30}] }
 ];
-let selectedMission=0, activeMission=null, checkpointIndex=0, missionTimeLeft=0, missionRunning=false, coins=0;
+const savedProgress=(()=>{try{return JSON.parse(localStorage.getItem('miniCitySave')||'{}')}catch(e){return {}}})();
+let coins=Math.max(0,Number(savedProgress.coins)||0);
+let unlockedCars=Array.isArray(savedProgress.unlockedCars)?[0,...savedProgress.unlockedCars.filter(n=>n===1||n===2)]:[0];
+let selectedVehicle=unlockedCars.includes(savedProgress.selectedVehicle)?savedProgress.selectedVehicle:0;
+const vehicleColors=[0xf5a623,0xf04d4d,0x35b9ff];
+function saveProgress(){try{localStorage.setItem('miniCitySave',JSON.stringify({coins,unlockedCars,selectedVehicle}))}catch(e){}}
+function applyVehicle(){carPaint.color.setHex(vehicleColors[selectedVehicle]||vehicleColors[0]);document.querySelectorAll('[data-car]').forEach(b=>{const id=Number(b.dataset.car),owned=unlockedCars.includes(id);b.classList.toggle('active-car',id===selectedVehicle);b.querySelector('b').textContent=id===selectedVehicle?'正在驾驶':owned?'已拥有':`解锁 ${id===1?250:500} 金币`;});document.getElementById('garage-balance').textContent=`金币：${coins} · 解锁车辆并立即试驾`;missionReward.textContent=`金币 ${coins}`;}
+let selectedMission=0, activeMission=null, checkpointIndex=0, missionTimeLeft=0, missionRunning=false;
 const missionMeshes=[];
 const missionStatus=document.getElementById('mission-status');
 const missionProgress=document.getElementById('mission-progress');
@@ -221,13 +228,23 @@ function startMission(){
 }
 function finishMission(success){
  missionRunning=false;clearMissionMarkers();
- if(success){coins+=activeMission.reward;missionStatus.textContent=`挑战成功！获得 ${activeMission.reward} 金币。\n可以选择其他难度继续挑战。`;showMissionToast(`🏆 挑战成功！ +${activeMission.reward} 金币`)}
+ if(success){coins+=activeMission.reward;saveProgress();applyVehicle();missionStatus.textContent=`挑战成功！获得 ${activeMission.reward} 金币。\n可以选择其他难度继续挑战。`;showMissionToast(`🏆 挑战成功！ +${activeMission.reward} 金币`)}
  else {missionStatus.textContent='时间到！别放弃，重新开始再试一次。';showMissionToast('时间到！挑战失败')}
  missionProgress.textContent=`进度 ${success?activeMission.points.length:checkpointIndex}/${activeMission.points.length}`;missionReward.textContent=`金币 ${coins}`;missionStart.textContent='再次挑战';activeMission=null;
 }
 document.querySelectorAll('[data-mission]').forEach(b=>b.addEventListener('click',()=>{if(missionRunning){missionRunning=false;clearMissionMarkers()}selectedMission=Number(b.dataset.mission);refreshMissionPanel()}));
 missionStart.addEventListener('click',startMission);
 refreshMissionPanel();
+const garage=document.getElementById('garage');
+document.getElementById('garage-open').addEventListener('click',()=>{garage.style.display='block';applyVehicle()});
+document.getElementById('garage-close').addEventListener('click',()=>garage.style.display='none');
+document.querySelectorAll('[data-car]').forEach(b=>b.addEventListener('click',()=>{
+ const id=Number(b.dataset.car);
+ if(!unlockedCars.includes(id)){const price=id===1?250:500;if(coins<price){showMissionToast(`金币不足，还需要 ${price-coins} 金币`);return}coins-=price;unlockedCars.push(id);showMissionToast(`已解锁：${id===1?'烈焰跑车':'霓虹跑车'}`)}
+ selectedVehicle=id;saveProgress();applyVehicle();
+}));
+applyVehicle();saveProgress();
+const navArrow=document.getElementById('nav-arrow');
 function collides(x,z){return occupied.some(b=>Math.abs(x-b.x)<b.hw+1.15&&Math.abs(z-b.z)<b.hd+2.1)}
 function update(dt){
  const forward=keys.has('KeyW')||keys.has('ArrowUp');
