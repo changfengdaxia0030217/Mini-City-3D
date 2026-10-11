@@ -23,6 +23,16 @@
 #brake{width:54px;height:54px;border-radius:50%;font-size:12px;background:#b84747dd}
 #minimap-wrap{position:absolute;right:16px;top:112px;width:164px;padding:7px;border-radius:14px;background:#102033b8;border:1px solid #ffffff35;backdrop-filter:blur(8px);box-shadow:0 8px 28px #10203320}
 #minimap-title{font-size:10px;font-weight:800;letter-spacing:.12em;opacity:.8;margin:0 0 5px 3px}
+#missions{position:absolute;top:100px;left:16px;width:min(290px,calc(100vw - 32px));pointer-events:auto}
+#missions h3{margin:0 0 8px;font-size:13px;letter-spacing:.04em}
+#mission-options{display:flex;gap:6px;margin-bottom:9px}
+.mission-choice{flex:1;border:1px solid #ffffff35;border-radius:9px;background:#ffffff12;color:#fff;padding:8px 5px;font-size:11px;font-weight:800;cursor:pointer}
+.mission-choice.selected{background:#ffc04d;color:#172538;border-color:#ffe0a0}
+#mission-start{width:100%;border:0;border-radius:9px;background:#1db783;color:#08271d;padding:9px;font-weight:900;cursor:pointer}
+#mission-status{font-size:12px;line-height:1.55;margin-top:8px;white-space:pre-line}
+#mission-meta{display:flex;justify-content:space-between;gap:8px;font-size:11px;opacity:.85;margin-top:6px}
+#mission-toast{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:20px;font-weight:900;text-align:center;background:#102033e8;border:1px solid #ffffff45;border-radius:18px;padding:18px 24px;display:none;max-width:calc(100vw - 36px)}
+@media(max-width:700px){#missions{top:72px;left:12px;width:min(235px,calc(100vw - 140px));padding:9px 10px}#missions h3{font-size:11px}#mission-options{gap:4px;margin-bottom:6px}.mission-choice{padding:7px 2px;font-size:10px}#mission-start{padding:7px;font-size:11px}#mission-status{font-size:10px;margin-top:5px}#mission-meta{font-size:10px}}
 #minimap{display:block;width:100%;aspect-ratio:1;border-radius:8px;background:#83b96a}
 @media(max-width:700px){#minimap-wrap{top:104px;right:12px;width:112px;padding:5px}#minimap-title{font-size:9px;margin-bottom:3px}} 
 @media(max-width:700px){#mobile{display:flex}#help{bottom:165px;font-size:11px;max-width:190px}#brand{top:12px;left:12px}#stats{top:12px;right:12px}#toast{top:78px;font-size:12px}}
@@ -33,6 +43,18 @@
   <div id="brand" class="panel">MINI CITY <small>3D DRIVE · ALPHA 0.1</small></div>
   <div id="stats" class="panel"><div id="speed">0<span>KM/H</span></div><div style="font-size:11px;opacity:.75;margin-top:6px">自由驾驶 · 城市探索</div></div>
   <div id="toast" class="panel">WASD / 方向键驾驶 · 手机使用屏幕按键</div>
+  <div id="missions" class="panel">
+    <h3>🏁 城市驾驶挑战</h3>
+    <div id="mission-options">
+      <button class="mission-choice selected" data-mission="0">新手赛</button>
+      <button class="mission-choice" data-mission="1">街区赛</button>
+      <button class="mission-choice" data-mission="2">极限赛</button>
+    </div>
+    <button id="mission-start">开始挑战</button>
+    <div id="mission-status">选择难度，穿过城市里的发光检查点。</div>
+    <div id="mission-meta"><span id="mission-progress">进度 0/0</span><span id="mission-reward">金币 0</span></div>
+  </div>
+  <div id="mission-toast"></div>
   <div id="minimap-wrap"><div id="minimap-title">CITY MAP · N</div><canvas id="minimap" width="220" height="220" aria-label="城市小地图"></canvas></div>
   <div id="help" class="panel">目标：在小城里自由驾驶。<br>W / ↑ 加速　S / ↓ 刹车倒车<br>A / ← 左转　D / → 右转<br>空格手刹　R 重置车辆</div>
 </div>
