@@ -749,7 +749,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  const weaponRaycaster=new THREE.Raycaster(),lineOfSightRaycaster=new THREE.Raycaster(),weaponScreenCenter=new THREE.Vector2(0,0);
  const shotOrigin=new THREE.Vector3(),shotDirection=new THREE.Vector3();
  const aimAssistWorld=new THREE.Vector3(),aimAssistScreen=new THREE.Vector3();
- function hasClearShotToPoint(point){
+ function hasClearShotToPoint(point,targetPed=null){
   camera.updateMatrixWorld(true);
   camera.getWorldPosition(shotOrigin);
   shotDirection.copy(point).sub(shotOrigin);
@@ -763,7 +763,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
   return !blockers.some(hit=>{
    let node=hit.object;
    while(node){
-    if(node===playerAvatar||node===car)return false;
+    if(node===playerAvatar||node===car||(targetPed&&node===targetPed.group))return false;
     node=node.parent;
    }
    return hit.object!==ground&&hit.object.visible;
@@ -778,7 +778,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
   for(const hit of intersections){
    let obj=hit.object,found=null;
    while(obj&&!found){found=available.find(p=>p.group===obj);obj=obj.parent;}
-   if(found&&hit.distance<65&&hasClearShotToPoint(hit.point))return {pedestrian:found,point:hit.point,distance:hit.distance,assisted:false};
+   if(found&&hit.distance<65&&hasClearShotToPoint(hit.point,found))return {pedestrian:found,point:hit.point,distance:hit.distance,assisted:false};
   }
   // Gentle screen-space aim assist: a small NPC can be hard to hit with a strict mesh ray.
   // If its torso is close to the reticle, snap the shot to that torso instead of requiring pixel-perfect aim.
@@ -795,7 +795,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
    if(distance>65)continue;
    // Favor the NPC nearest the reticle, with a slight preference for nearer targets.
    const score=screenDistance+distance*.00012;
-   if(score<bestScore&&hasClearShotToPoint(aimAssistWorld)){bestScore=score;best={pedestrian:p,point:aimAssistWorld.clone(),distance,assisted:true};}
+   if(score<bestScore&&hasClearShotToPoint(aimAssistWorld,p)){bestScore=score;best={pedestrian:p,point:aimAssistWorld.clone(),distance,assisted:true};}
   }
   return best;
  }
@@ -1380,9 +1380,9 @@ function updateOnFoot(dt,now){
  const horizontal=Math.cos(cameraPitch),vertical=Math.sin(cameraPitch);
  cameraRight.set(Math.cos(cameraYaw),0,-Math.sin(cameraYaw));
  cameraDesiredPosition.set(
-  cameraPivot.x-Math.sin(cameraYaw)*horizontal*cameraDistance+cameraRight.x*(cameraRotating?.58:0),
+  cameraPivot.x-Math.sin(cameraYaw)*horizontal*cameraDistance+cameraRight.x*(cameraRotating ? .58 : 0),
   cameraPivot.y-vertical*cameraDistance+cameraDistance*.24,
-  cameraPivot.z-Math.cos(cameraYaw)*horizontal*cameraDistance+cameraRight.z*(cameraRotating?.58:0)
+  cameraPivot.z-Math.cos(cameraYaw)*horizontal*cameraDistance+cameraRight.z*(cameraRotating ? .58 : 0)
  );
  // Pull the camera in when buildings or props block the desired orbit position.
  cameraDirection.copy(cameraDesiredPosition).sub(cameraPivot);
