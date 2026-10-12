@@ -296,6 +296,31 @@ for(const x of [-1.08,1.08])for(const z of [-1.32,1.32]){
   }
  }
 }
+// Fine body-panel lines, side vents and rear diffuser fins sharpen the silhouette.
+const panelLineMat=mat(0x9b641b,.72),ventMat=mat(0x171d24,.62),carbonMat=mat(0x20262e,.48);
+for(const side of [-1,1]){
+ // Hood creases follow the bonnet toward the front bumper.
+ const hoodCrease=box(.025,.018,.78,panelLineMat,side*.58,1.105,-1.34,car);
+ hoodCrease.rotation.y=side*.045;
+ // Functional-looking side gills behind the front wheel.
+ for(let n=0;n<3;n++){
+  const vent=box(.22,.035,.045,ventMat,side*.965,.86,-.88+n*.13,car);
+  vent.rotation.y=side*.12;
+ }
+ // A thin highlight along the door shoulder and a rear quarter detail.
+ box(.025,.025,.92,mat(0xffc35a,.5),side*.986,.91,.05,car);
+ box(.16,.045,.055,carbonMat,side*.94,.79,1.02,car);
+}
+// Rear diffuser strakes are visible from a low chase camera.
+for(const x of [-.42,0,.42]){
+ const fin=box(.055,.12,.28,carbonMat,x,.37,2.13,car);
+ fin.rotation.x=-.08;
+}
+// Small tow loop and a layered lower front splitter.
+const towMat=mat(0xff493f,.42);
+const towLoop=new THREE.Mesh(new THREE.TorusGeometry(.075,.022,6,12),towMat);
+towLoop.position.set(0,.40,-2.27);car.add(towLoop);
+box(1.62,.045,.12,carbonMat,0,.32,-2.20,car);
 // Brake discs and red performance calipers sit behind the spokes for extra depth.
 const brakeDiscMat=mat(0x78838c,.48),caliperMat=mat(0xd8323e,.38);
 for(const x of [-1.08,1.08])for(const z of [-1.32,1.32]){
