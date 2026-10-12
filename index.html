@@ -525,7 +525,7 @@ function createTrafficSignals(){
   box(.72,.92,.36,mat(0x202a34,.5),poleX,3.45,poleZ);
   const bulbs=[];
   for(let b=0;b<3;b++){
-   const material=[signalRedMat,signalYellowMat,signalGreenMat][b];
+   const material=[signalRedMat,signalYellowMat,signalGreenMat][b].clone();
    const bulb=new THREE.Mesh(new THREE.SphereGeometry(.19,10,8),material);
    bulb.position.set(poleX,3.73-b*.28,poleZ+.205);scene.add(bulb);bulbs.push(bulb);
   }
