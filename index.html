@@ -457,7 +457,7 @@ pickupPositions.forEach((p,i)=>{
 });
 const navArrow=document.getElementById('nav-arrow');
 function collides(x,z){return occupied.some(b=>Math.abs(x-b.x)<b.hw+1.15&&Math.abs(z-b.z)<b.hd+2.1)}
-function update(dt){
+function update(dt, now){
  const forward=keys.has('KeyW')||keys.has('ArrowUp');
  const reverse=keys.has('KeyS')||keys.has('ArrowDown');
  const left=keys.has('KeyA')||keys.has('ArrowLeft');
@@ -541,7 +541,7 @@ function update(dt){
  camera.lookAt(look);
  speedEl.innerHTML=Math.round(Math.abs(speed)*3.6)+'<span>KM/H</span>';
 }
-function animate(now){requestAnimationFrame(animate);const dt=Math.min((now-last)/1000,.04);last=now;update(dt);renderer.render(scene,camera)}
+function animate(now){requestAnimationFrame(animate);const dt=Math.min((now-last)/1000,.04);last=now;update(dt,now);renderer.render(scene,camera)}
 // initial camera position behind car
 camera.position.set(0,5,18);camera.lookAt(0,1,0);
 requestAnimationFrame(animate);
