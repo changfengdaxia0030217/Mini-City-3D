@@ -1309,9 +1309,9 @@ function updateOnFoot(dt,now){
  const moving=Math.abs(fwd)>.02||Math.abs(side)>.02;
  const fx=Math.sin(cameraYaw),fz=Math.cos(cameraYaw),rx=Math.cos(cameraYaw),rz=-Math.sin(cameraYaw);
  let moveX=fx*fwd+rx*side,moveZ=fz*fwd+rz*side;const moveLen=Math.hypot(moveX,moveZ);if(moveLen>1){moveX/=moveLen;moveZ/=moveLen;}
- if(moving){
-  // In shoulder-aim mode (right mouse held), face the camera aim direction while allowing strafing.
-  // In exploration mode, face the direction of travel.
+ if(moving||cameraRotating){
+  // While aiming, face the reticle direction even when standing still; allow strafing and backing up.
+  // During exploration, face the direction of travel.
   const desiredYaw=cameraRotating?cameraYaw:Math.atan2(moveX,moveZ);
   let delta=((desiredYaw-playerAvatar.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;
   playerAvatar.rotation.y+=delta*(1-Math.exp(-(cameraRotating?8.5:6.0)*dt));
