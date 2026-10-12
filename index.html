@@ -26,7 +26,7 @@ body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{di
 .control{border:1px solid #ffffff65;background:#10203399;color:white;border-radius:14px;font-size:20px;font-weight:800;touch-action:none;user-select:none;-webkit-user-select:none;display:grid;place-items:center;box-shadow:0 4px 14px #10203330}
 .control:active,.control.active{background:#ffbd4a;color:#152235}
 #mode-toggle,#punch-button{border:1px solid #ffffff55;border-radius:8px;background:#20394ddd;color:#fff;padding:5px 8px;margin-top:5px;font-size:11px;font-weight:800;cursor:pointer}
-#foot-mode{font-size:11px;padding:0 7px;min-width:52px;height:54px}
+#foot-mode{font-size:11px;padding:0 7px;min-width:52px;height:54px}#foot-run{height:45px;width:42px;font-size:13px;background:#a85d20dd}#foot-run.active{background:#ffc04d;color:#152235}
 #gas{width:62px;height:62px;border-radius:50%;font-size:14px;background:#1b8e68dd}
 #brake{width:54px;height:54px;border-radius:50%;font-size:12px;background:#b84747dd}
 #minimap-wrap{position:absolute;right:16px;bottom:16px;top:auto;width:150px;padding:7px;border-radius:14px;background:#102033e8;border:1px solid #ffffff45;backdrop-filter:blur(8px);box-shadow:0 8px 28px #10203330;z-index:3}
@@ -57,7 +57,7 @@ body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{di
 <body>
 <div id="hud">
   <div id="brand" class="panel">MINI CITY <small>3D DRIVE · ALPHA 0.1</small></div>
-  <div id="stats" class="panel"><div id="speed">0<span>KM/H</span></div><div id="traffic-status" style="font-size:11px;opacity:.75;margin-top:6px">城市驾驶 · AI 交通加载中</div><div id="police-status" style="font-size:11px;color:#bfe8ff;margin-top:5px">🚓 警察系统：未通缉</div><button id="police-call" style="margin-top:7px;width:100%;padding:7px 9px;border:1px solid #8acbff;border-radius:8px;background:#17466c;color:#fff;font-weight:900;cursor:pointer">🚨 触发警察追捕</button><div id="pickup-streak" style="font-size:11px;color:#ffd34f;margin-top:4px">🪙 金币连击：—</div><div id="nitro-wrap" style="margin-top:9px;text-align:left"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;margin-bottom:4px"><span>⚡ 氮气加速 SHIFT</span><span id="nitro-value">100%</span></div><div style="height:6px;background:#ffffff30;border-radius:99px;overflow:hidden"><div id="nitro-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#38e8ff,#7b8cff);border-radius:99px;box-shadow:0 0 10px #38e8ff88"></div></div></div><button id="garage-open">🚘 车库</button></div>
+  <div id="stats" class="panel"><div id="speed">0<span>KM/H</span></div><div id="combat-hud" style="margin-top:8px;text-align:left"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:900"><span>❤️ 生命</span><span id="health-value">100 / 100</span></div><div style="height:7px;background:#ffffff30;border-radius:99px;overflow:hidden;margin-top:3px"><div id="health-fill" style="height:100%;width:100%;background:#ef4444"></div></div><div id="cash-value" style="font-size:12px;color:#8dffb0;font-weight:900;margin-top:5px">💵 现金 $0</div><div id="weapon-status" style="font-size:10px;margin-top:3px;color:#ffd98a">🔫 简易手枪 · 点击攻击</div></div><div id="traffic-status" style="font-size:11px;opacity:.75;margin-top:6px">城市驾驶 · AI 交通加载中</div><div id="police-status" style="font-size:11px;color:#bfe8ff;margin-top:5px">🚓 警察系统：未通缉</div><button id="police-call" style="margin-top:7px;width:100%;padding:7px 9px;border:1px solid #8acbff;border-radius:8px;background:#17466c;color:#fff;font-weight:900;cursor:pointer">🚨 触发警察追捕</button><div id="pickup-streak" style="font-size:11px;color:#ffd34f;margin-top:4px">🪙 金币连击：—</div><div id="nitro-wrap" style="margin-top:9px;text-align:left"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;margin-bottom:4px"><span>⚡ 氮气加速 SHIFT</span><span id="nitro-value">100%</span></div><div style="height:6px;background:#ffffff30;border-radius:99px;overflow:hidden"><div id="nitro-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#38e8ff,#7b8cff);border-radius:99px;box-shadow:0 0 10px #38e8ff88"></div></div></div><button id="garage-open">🚘 车库</button></div>
   <div id="toast" class="panel">WASD / 方向键驾驶 · 手机使用屏幕按键</div>
   <div id="missions" class="panel">
     <h3>🏁 城市驾驶挑战</h3>
@@ -84,11 +84,11 @@ body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{di
     <button id="garage-close">返回驾驶</button>
   </div>
   <div id="minimap-wrap"><div id="minimap-title">CITY MAP · N</div><canvas id="minimap" width="220" height="220" aria-label="城市小地图"></canvas></div>
-  <div id="help" class="panel">目标：自由驾驶并收集金币环，每个 +25 金币。<br>驾驶：WASD / 方向键，Shift 氮气，R 重置<br>按 E 下车/上车；下车后 WASD 走动，F 出拳。<br><button id="mode-toggle" type="button">🚶 下车（E）</button> <button id="punch-button" type="button">👊 出拳（F）</button></div>
+  <div id="help" class="panel">目标：自由驾驶并收集金币环，每个 +25 金币。<br>驾驶：WASD / 方向键，Shift 氮气，R 重置<br>按 E 下车/上车；下车后 WASD 走动，Shift 跑步，F/🔫 攻击。<br><button id="mode-toggle" type="button">🚶 下车（E）</button> <button id="punch-button" type="button">👊 出拳（F）</button></div>
 </div>
 <div id="mobile">
   <div id="joystick" role="application" aria-label="虚拟摇杆，向上加速，左右转向，向下倒车"><div id="joystick-knob"></div></div>
-  <div style="display:flex;gap:9px;align-items:end;pointer-events:auto"><button class="control" id="brake" data-key="Space">刹车</button><button class="control" id="gas" data-key="KeyW">加速</button><button class="control" id="foot-mode" type="button">下车</button><button class="control" id="foot-punch" type="button">👊</button></div>
+  <div style="display:flex;gap:9px;align-items:end;pointer-events:auto"><button class="control" id="brake" data-key="Space">刹车</button><button class="control" id="gas" data-key="KeyW">加速</button><button class="control" id="foot-mode" type="button">下车</button><button class="control" id="foot-punch" type="button">🔫</button><button class="control" id="foot-run" type="button">跑</button></div>
 </div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
 <script type="module">
@@ -582,7 +582,8 @@ const pedestrians=[];
 function createPedestrian(x,z,index){
  const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
  const skin=mat([0xdca77e,0x9b674b,0xf0c9a2,0xc88e68][index%4]);
- const shirt=pedestrianMats[index%pedestrianMats.length];
+ const hostile=index%7===0;
+  const shirt=hostile?mat(0xb72f36):pedestrianMats[index%pedestrianMats.length];
  box(.62,.9,.38,shirt,0,1.12,0,g);
  const head=new THREE.Mesh(new THREE.SphereGeometry(.28,8,7),skin);head.position.set(0,1.82,0);head.castShadow=true;g.add(head);
  const hair=mat([0x3c2c24,0x211d1b,0x76523a][index%3]);
@@ -593,7 +594,8 @@ function createPedestrian(x,z,index){
  }
  g.rotation.y=Math.random()*Math.PI*2;
  const route=index%4;
- pedestrians.push({group:g,homeX:x,homeZ:z,route,phase:Math.random()*Math.PI*2,baseX:x,baseZ:z,stun:0,walkSpeed:.65+Math.random()*.45,fleeTime:0,reportTimer:0,reported:false});
+ if(hostile){const mark=mat(0xff3535,.5);const dot=new THREE.Mesh(new THREE.SphereGeometry(.09,8,6),mark);dot.position.set(0,2.27,0);g.add(dot);}
+  pedestrians.push({group:g,homeX:x,homeZ:z,route,phase:Math.random()*Math.PI*2,baseX:x,baseZ:z,stun:0,walkSpeed:.65+Math.random()*.45,fleeTime:0,reportTimer:0,reported:false,hostile,health:hostile?55:100,attackCooldown:1+Math.random()*2});
 }
 for(let i=0;i<56;i++){
  const row=Math.floor(i/7),col=i%7;
@@ -641,6 +643,11 @@ const punchArm=new THREE.Group();punchArm.position.set(.39,1.48,0);fallbackAvata
 addLimbSegment(punchArm,shirtMat,.11,.34,-.18);
 addLimbSegment(punchArm,skinMat,.08,.34,-.49);
 addHand(punchArm,-.69);
+// A simple low-poly pistol model held in the character's right hand.
+const pistolMat=mat(0x252a30,.55),pistolGripMat=mat(0x111820,.8);
+box(.13,.13,.34,pistolMat,0,-.63,-.19,punchArm);
+box(.105,.22,.12,pistolGripMat,0,-.76,-.08,punchArm);
+box(.07,.07,.19,mat(0x080b0f,.4),0,-.61,-.42,punchArm);
 function makeLeg(x){
  const leg=new THREE.Group();leg.position.set(x,.76,0);fallbackAvatar.add(leg);
  addLimbSegment(leg,pantsMat,.13,.36,-.18);
@@ -657,10 +664,18 @@ avatarLoader.load('https://threejs.org/examples/models/gltf/Soldier.glb',gltf=>{
 function setRiggedMotion(kind){if(!avatarMixer)return;const names=Object.keys(avatarActions),find=terms=>names.find(n=>terms.some(t=>n.includes(t)));const key=kind==='run'?(find(['run'])||find(['walk'])):kind==='walk'?(find(['walk'])||find(['run'])):(find(['idle'])||find(['walk'])||find(['run']));const next=key?avatarActions[key]:null;if(!next||next===activeAvatarAction)return;next.reset().fadeIn(.18).play();if(activeAvatarAction)activeAvatarAction.fadeOut(.18);activeAvatarAction=next;}
 let punchAnim=0;
 let onFoot=false, punchCooldown=0, playerWalkSpeed=0, jumpVelocity=0, footstepPhase=0, turnBlend=0;
+let playerHealth=100,playerCash=0,respawnPending=false;
+const cashDrops=[];
+const healthFill=document.getElementById("health-fill"),healthValue=document.getElementById("health-value"),cashValue=document.getElementById("cash-value");
+function refreshCombatHud(){healthValue.textContent=Math.ceil(playerHealth)+" / 100";healthFill.style.width=Math.max(0,playerHealth)+"%";healthFill.style.background=playerHealth<30?"#ff3434":playerHealth<60?"#ff9f43":"#ef4444";cashValue.textContent="💵 现金 $"+playerCash.toLocaleString("en-US");}
 const modeButton=document.getElementById('mode-toggle');
 const mobileModeButton=document.getElementById('foot-mode');
 const punchButton=document.getElementById('punch-button');
 document.getElementById('foot-punch').addEventListener('click',punchNearby);
+const runButton=document.getElementById("foot-run");
+runButton.addEventListener("pointerdown",e=>{e.preventDefault();keys.add("ShiftLeft");runButton.classList.add("active");});
+const stopRun=()=>{keys.delete("ShiftLeft");runButton.classList.remove("active")};
+runButton.addEventListener("pointerup",stopRun);runButton.addEventListener("pointercancel",stopRun);runButton.addEventListener("lostpointercapture",stopRun);
 function setMode(walking){
  if(walking&&Math.abs(speed)>1.4&&!forcedExit){showMissionToast('请先停车，再下车');return}
  if(!walking&&carDamage>=1.8){showMissionToast('车辆已报废，请按 R 救援修复后再上车');return}
@@ -680,21 +695,25 @@ function setMode(walking){
 }
 function punchNearby(){
  if(!onFoot||punchCooldown>0)return;
- punchCooldown=.55;
- punchAnim=1;
- playerAvatar.rotation.y+=.06;
- let hit=null,best=2.35;
+ punchCooldown=.42;punchAnim=1;
+ let hit=null,best=18;
  for(const p of pedestrians){
   if(p.stun>0)continue;
   const d=Math.hypot(p.group.position.x-playerAvatar.position.x,p.group.position.z-playerAvatar.position.z);
   const dx=p.group.position.x-playerAvatar.position.x,dz=p.group.position.z-playerAvatar.position.z;
   const facing=dx*Math.sin(playerAvatar.rotation.y)+dz*Math.cos(playerAvatar.rotation.y);
-  if(d<best&&facing>-.2){best=d;hit=p}
+  if(d<best&&facing>-.35){best=d;hit=p}
  }
  if(hit){
-  const dx=hit.group.position.x-playerAvatar.position.x,dz=hit.group.position.z-playerAvatar.position.z,d=Math.max(.01,Math.hypot(dx,dz));
-  hit.group.position.x+=dx/d*1.5;hit.group.position.z+=dz/d*1.5;hit.stun=.45;hit.fleeTime=9;hit.reportTimer=2.2;hit.reported=false;
- }
+  hit.health=(hit.health??(hit.hostile?55:100))-34;hit.stun=.3;
+  if(hit.health<=0){
+   const px=hit.group.position.x,pz=hit.group.position.z;scene.remove(hit.group);const idx=pedestrians.indexOf(hit);if(idx>=0)pedestrians.splice(idx,1);
+   const amount=hit.hostile?Math.floor(35+Math.random()*66):Math.floor(10+Math.random()*31);
+   const drop=new THREE.Group();drop.position.set(px,.15,pz);scene.add(drop);const billMat=mat(0x2f9e58,.95),bandMat=mat(0xd7f5b8,.8);
+   for(let i=0;i<3;i++)box(.62,.055,.32,billMat,(i-1)*.035,i*.025,0,drop);box(.13,.065,.34,bandMat,.02,.075,0,drop);
+   cashDrops.push({group:drop,value:amount,phase:Math.random()*6.28});showMissionToast("💵 NPC 被击败！掉落 $"+amount+"，靠近拾取");
+  }else{const dx=hit.group.position.x-playerAvatar.position.x,dz=hit.group.position.z-playerAvatar.position.z,d=Math.max(.01,Math.hypot(dx,dz));hit.group.position.x+=dx/d*.45;hit.group.position.z+=dz/d*.45;hit.fleeTime=hit.hostile?0:7;hit.reportTimer=1.6;hit.reported=false;showMissionToast(hit.hostile?"🎯 命中敌对 NPC":"🎯 命中 NPC");}
+ }else showMissionToast("没有瞄准到 NPC");
 }
 modeButton.addEventListener('click',()=>setMode(!onFoot));
 mobileModeButton.addEventListener('click',()=>setMode(!onFoot));
@@ -1158,6 +1177,11 @@ function updatePedestrians(dt){
   p.group.rotation.y=Math.atan2(p.group.position.x-p.homeX,p.group.position.z-p.homeZ);
  }
 }
+function updateCombatAI(dt,now){
+ if(onFoot&&playerHealth>0){for(const p of pedestrians){if(!p.hostile||p.stun>0)continue;p.attackCooldown=Math.max(0,(p.attackCooldown||0)-dt);const dx=playerAvatar.position.x-p.group.position.x,dz=playerAvatar.position.z-p.group.position.z,d=Math.max(.01,Math.hypot(dx,dz));if(d<15){p.group.rotation.y=Math.atan2(dx,dz);if(d>1.65){p.group.position.x+=dx/d*2.1*dt;p.group.position.z+=dz/d*2.1*dt;}else if(p.attackCooldown<=0){p.attackCooldown=1.25;playerHealth=Math.max(0,playerHealth-8);refreshCombatHud();showMissionToast(playerHealth<=0?"💀 你被击倒了！":"⚠️ 敌对 NPC 攻击你！生命 -8");}}}}
+ for(let i=cashDrops.length-1;i>=0;i--){const d=cashDrops[i];d.phase+=dt*2.3;d.group.rotation.y+=dt*.7;d.group.position.y=.15+Math.sin(d.phase)*.1;const target=onFoot?playerAvatar.position:car.position;if(Math.hypot(target.x-d.group.position.x,target.z-d.group.position.z)<1.9){playerCash+=d.value;scene.remove(d.group);cashDrops.splice(i,1);refreshCombatHud();showMissionToast("💵 拾取现金 +$"+d.value);}}
+ if(playerHealth<=0&&onFoot&&!respawnPending){respawnPending=true;playerAvatar.visible=false;onFoot=false;setTimeout(()=>{playerAvatar.position.set(car.position.x+2.1,0,car.position.z);playerAvatar.visible=true;onFoot=true;playerHealth=100;refreshCombatHud();respawnPending=false;showMissionToast("❤️ 已重生，生命恢复");},900);}
+}
 function updateOnFoot(dt,now){
  punchCooldown=Math.max(0,punchCooldown-dt);
  punchAnim=Math.max(0,punchAnim-dt*3.8);
@@ -1244,6 +1268,7 @@ function update(dt, now){
  // Keep signal phases live; without this call the lamps and right-of-way would freeze.
  updateTrafficSignals(now);
  updatePedestrians(dt);
+  updateCombatAI(dt,now);
   updateCarDamageEffects(now);
   destructibleProps.forEach(p=>{if(p.fallen&&p.group.position.y>.05)p.group.position.y=Math.max(.05,p.group.position.y-dt*1.5)});
  if(onFoot){updateTraffic(dt,now);updatePolice(dt,now);updateOnFoot(dt,now);return;}
