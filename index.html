@@ -1132,7 +1132,10 @@ function updateOnFoot(dt,now){
   const dx=playerAvatar.position.x-p.group.position.x,dz=playerAvatar.position.z-p.group.position.z,d=Math.hypot(dx,dz);
   if(d<.95&&d>.01){playerAvatar.position.x+=dx/d*(.95-d);playerAvatar.position.z+=dz/d*(.95-d)}
  }
- avatarBody.position.y=1.17+Math.sin(now*.012)*.025*playerWalkSpeed;\n const walkSwing=Math.sin(now*.014)*.48*playerWalkSpeed;\n leftLeg.rotation.x=walkSwing;rightLeg.rotation.x=-walkSwing;leftArm.rotation.x=-walkSwing*.65;\n punchArm.rotation.x=Math.sin((1-punchAnim)*Math.PI)*1.18*punchAnim;
+ avatarBody.position.y=1.17+Math.sin(now*.012)*.025*playerWalkSpeed;
+ const walkSwing=Math.sin(now*.014)*.48*playerWalkSpeed;
+ leftLeg.rotation.x=walkSwing;rightLeg.rotation.x=-walkSwing;leftArm.rotation.x=-walkSwing*.65;
+ punchArm.rotation.x=Math.sin((1-punchAnim)*Math.PI)*1.18*punchAnim;
  playerAvatar.position.y=0;
  camera.fov=62;camera.updateProjectionMatrix();
  const target=new THREE.Vector3(playerAvatar.position.x+Math.sin(playerAvatar.rotation.y)*5.8,4.1,playerAvatar.position.z+Math.cos(playerAvatar.rotation.y)*5.8);
