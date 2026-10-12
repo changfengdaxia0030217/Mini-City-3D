@@ -14,7 +14,7 @@
 #stats{position:absolute;top:16px;right:16px;min-width:135px;text-align:right;font-variant-numeric:tabular-nums;pointer-events:auto}
 #speed{font-size:30px;font-weight:900;line-height:1}#speed span{font-size:11px;font-weight:700;opacity:.75;margin-left:5px}
 #help{position:absolute;left:16px;bottom:16px;font-size:12px;line-height:1.6;max-width:245px}
-#toast{position:absolute;top:90px;left:50%;transform:translateX(-50%);font-weight:700;font-size:13px;white-space:nowrap}#crosshair{display:none;position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);opacity:.92;filter:drop-shadow(0 1px 3px #001)}#crosshair:before,#crosshair:after{content:'';position:absolute;background:#fff;border-radius:2px}#crosshair:before{width:2px;height:22px;left:10px;top:0}#crosshair:after{height:2px;width:22px;left:0;top:10px}#crosshair .dot{position:absolute;width:4px;height:4px;background:#ffcc55;border:1px solid #18202b;border-radius:50%;left:9px;top:9px;z-index:1}body.on-foot #crosshair{display:block}
+#toast{position:absolute;top:90px;left:50%;transform:translateX(-50%);font-weight:700;font-size:13px;white-space:nowrap}#crosshair{display:none;position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);opacity:.92;filter:drop-shadow(0 1px 3px #001)}#crosshair:before,#crosshair:after{content:'';position:absolute;background:#fff;border-radius:2px}#crosshair:before{width:2px;height:22px;left:10px;top:0}#crosshair:after{height:2px;width:22px;left:0;top:10px}#crosshair .dot{position:absolute;width:4px;height:4px;background:#ffcc55;border:1px solid #18202b;border-radius:50%;left:9px;top:9px;z-index:1}body.on-foot #crosshair{display:block}body.aiming-target #crosshair:before,body.aiming-target #crosshair:after{background:#ff5656}body.aiming-target #crosshair .dot{background:#ff5656;transform:scale(1.35)}
 #mobile{display:none;position:fixed;inset:auto 0 18px 0;padding:0 16px;justify-content:space-between;align-items:end;pointer-events:none;gap:10px}
 #joystick{position:relative;width:142px;height:142px;flex:0 0 142px;border:1px solid #ffffff65;border-radius:50%;background:radial-gradient(circle,#263e55bb,#10203399);box-shadow:0 4px 18px #10203355;touch-action:none;pointer-events:auto;user-select:none;-webkit-user-select:none}
 #look-zone{display:none}@media(max-width:700px){#look-zone{display:block;position:fixed;right:0;top:22%;width:48vw;height:48vh;z-index:1;touch-action:none;pointer-events:auto;background:transparent}#look-hint{position:absolute;right:12px;top:8px;color:#ffffff8a;font-size:10px;font-weight:800;text-shadow:0 1px 5px #102033;pointer-events:none}}#joystick:before{content:'移动';position:absolute;inset:0;display:grid;place-items:center;color:#ffffff88;font-size:11px;font-weight:800;pointer-events:none}
@@ -742,13 +742,24 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  // PC controls: center-reticle raycast shooting; mouse movement freely controls the camera.
  let cameraPitch=0;
  const weaponRaycaster=new THREE.Raycaster(),weaponScreenCenter=new THREE.Vector2(0,0);
+ function findAimedPedestrian(){
+  camera.updateMatrixWorld(true);
+  weaponRaycaster.setFromCamera(weaponScreenCenter,camera);
+  const intersections=weaponRaycaster.intersectObjects(pedestrians.filter(p=>p.group&&p.group.parent&&p.stun<=0).map(p=>p.group),true);
+  for(const hit of intersections){let obj=hit.object,found=null;while(obj&&!found){found=pedestrians.find(p=>p.group===obj);obj=obj.parent;}if(found&&hit.distance<65)return {pedestrian:found,point:hit.point,distance:hit.distance};}
+  return null;
+ }
+ function updateAimReticle(){
+  if(!onFoot){document.body.classList.remove('aiming-target');return;}
+  document.body.classList.toggle('aiming-target',!!findAimedPedestrian());
+ }
  function fireWeapon(){
   if(!onFoot||punchCooldown>0)return;
   punchCooldown=.22;
+  camera.updateMatrixWorld(true);
   weaponRaycaster.setFromCamera(weaponScreenCenter,camera);
-  const intersections=weaponRaycaster.intersectObjects(pedestrians.filter(p=>p.group&&p.group.parent&&p.stun<=0).map(p=>p.group),true);
-  let hitPed=null,hitPoint=null;
-  for(const hit of intersections){let obj=hit.object,found=null;while(obj&&!found){found=pedestrians.find(p=>p.group===obj);obj=obj.parent;}if(found&&hit.distance<65){hitPed=found;hitPoint=hit.point;break;}}
+  const aim=findAimedPedestrian();
+  const hitPed=aim?.pedestrian||null,hitPoint=aim?.point||null;
   const origin=new THREE.Vector3();camera.getWorldPosition(origin);
   const end=hitPoint||origin.clone().add(weaponRaycaster.ray.direction.clone().multiplyScalar(45));
   const beamGeometry=new THREE.BufferGeometry().setFromPoints([origin,end]);
@@ -1308,6 +1319,8 @@ function updateOnFoot(dt,now){
  const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(cameraYaw)*9.2,5.2-cameraPitch*7,playerAvatar.position.z-Math.cos(cameraYaw)*9.2);
  camera.position.lerp(target,1-Math.exp(-5.2*dt));
  camera.lookAt(playerAvatar.position.x+Math.sin(cameraYaw)*1.1,1.45-cameraPitch*2.5,playerAvatar.position.z+Math.cos(cameraYaw)*1.1);
+ camera.updateMatrixWorld(true);
+ updateAimReticle();
  speedEl.innerHTML='0<span>KM/H</span>';
 }
 function updateCarDamageEffects(now){
