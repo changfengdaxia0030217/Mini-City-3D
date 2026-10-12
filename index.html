@@ -834,7 +834,7 @@ function collides(x,z){return occupied.some(b=>Math.abs(x-b.x)<b.hw+1.15&&Math.a
 function pointHitsProp(x,z,pad=.45){return destructibleProps.some(p=>!p.fallen&&Math.hypot(x-p.x,z-p.z)<p.radius+pad)}
 function pointHitsTraffic(x,z,pad=1.15,ignore=null){return trafficCars.some(a=>a!==ignore&&Math.hypot(x-a.group.position.x,z-a.group.position.z)<pad+1.05)}
 function pointHitsBuilding(x,z,pad=.45){return occupied.some(b=>Math.abs(x-b.x)<b.hw+pad&&Math.abs(z-b.z)<b.hd+pad)}
-function footBlocked(x,z){return pointHitsBuilding(x,z,.38)||pointHitsProp(x,z,.38)||pointHitsTraffic(x,z,.55)||(!onFoot&&Math.hypot(x-car.position.x,z-car.position.z)<1.55)}
+function footBlocked(x,z){return pointHitsBuilding(x,z,.38)||pointHitsProp(x,z,.38)||pointHitsTraffic(x,z,.55)||(onFoot&&Math.hypot(x-car.position.x,z-car.position.z)<1.55)}
 // AI city traffic: compact autonomous cars circulate on road loops, steer through turns,
 // keep following distance, and yield when the player is directly ahead.
 const trafficStatus=document.getElementById('traffic-status');
