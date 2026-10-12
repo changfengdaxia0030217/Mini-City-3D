@@ -231,6 +231,38 @@ for(const side of [-1,1]){
 for(const x of [-.34,.34])box(.12,.025,.48,mat(0x303943),x,1.11,-1.32,car);
 box(.72,.15,.08,mat(0xffffff),-.65,.85,-2.07,car);box(.72,.15,.08,mat(0xffffff),.65,.85,-2.07,car);
 box(.65,.18,.08,mat(0xe85a4f),-.65,.82,2.07,car);box(.65,.18,.08,mat(0xe85a4f),.65,.82,2.07,car);
+// Final exterior details: LED signatures, grille slats, plates and twin exhaust tips.
+const ledHeadlightMat=new THREE.MeshStandardMaterial({color:0xf7ffff,emissive:0x8fdfff,emissiveIntensity:.7,roughness:.22});
+const ledTailMat=new THREE.MeshStandardMaterial({color:0xff293d,emissive:0x9d0618,emissiveIntensity:.55,roughness:.25});
+const amberSignalMat=new THREE.MeshStandardMaterial({color:0xffa12b,emissive:0x7b3500,emissiveIntensity:.3,roughness:.3});
+for(const side of [-1,1]){
+ // Slim LED strips sit on the outer edge of each headlamp.
+ box(.34,.035,.025,ledHeadlightMat,side*.68,.91,-2.185,car);
+ box(.40,.045,.025,ledTailMat,side*.68,.91,2.185,car);
+ box(.12,.045,.025,amberSignalMat,side*.91,.88,-2.17,car);
+ // Front grille crossbars and lower air intakes.
+ box(.58,.035,.025,mat(0x59636d,.5),0,.68,-2.28,car);
+ box(.58,.035,.025,mat(0x59636d,.5),0,.59,-2.28,car);
+ box(.32,.11,.025,mat(0x171d24),side*.61,.51,-2.205,car);
+ // A restrained side marker and rear reflector.
+ box(.055,.07,.035,amberSignalMat,side*1.015,.78,-.65,car);
+ box(.16,.045,.025,ledTailMat,side*.94,.72,2.18,car);
+}
+// Small front emblem and front/rear license plates give the bumpers scale.
+const emblemMat=new THREE.MeshStandardMaterial({color:0xe8edf2,metalness:.8,roughness:.25});
+box(.13,.13,.035,emblemMat,0,.73,-2.285,car);
+box(.62,.18,.035,mat(0xe8edf2,.4),0,.48,-2.245,car);
+box(.62,.18,.035,mat(0xe8edf2,.4),0,.48,2.245,car);
+box(.50,.035,.018,mat(0x252c35),0,.48,-2.27,car);
+box(.50,.035,.018,mat(0x252c35),0,.48,2.27,car);
+// Twin metal exhaust tips under the rear diffuser.
+const exhaustMat=new THREE.MeshStandardMaterial({color:0x9ba5ae,metalness:.85,roughness:.24});
+for(const side of [-1,1]){
+ const exhaust=new THREE.Mesh(new THREE.CylinderGeometry(.095,.11,.20,12),exhaustMat);
+ exhaust.rotation.x=Math.PI/2;exhaust.position.set(side*.57,.39,2.22);car.add(exhaust);
+ const exhaustDark=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,.205,12),rimDark);
+ exhaustDark.rotation.x=Math.PI/2;exhaustDark.position.set(side*.57,.39,2.23);car.add(exhaustDark);
+}
 const wheels=[];
 const rimMat=mat(0xdce3e9,.35),rimDark=mat(0x303943,.55);
 for(const x of [-1.08,1.08])for(const z of [-1.32,1.32]){
