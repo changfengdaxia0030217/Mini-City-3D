@@ -1139,12 +1139,19 @@ function updateOnFoot(dt,now){
   if(d<.95&&d>.01){playerAvatar.position.x+=dx/d*(.95-d);playerAvatar.position.z+=dz/d*(.95-d)}
  }
  const gait=Math.sin(now*.014*(running?1.65:1))*.48*playerWalkSpeed;
- avatarBody.position.y=1.17+Math.sin(now*.012)*.025*playerWalkSpeed;
+ const airborne=playerAvatar.position.y>.04;
  const walkSwing=gait;
- leftLeg.rotation.x=walkSwing;rightLeg.rotation.x=-walkSwing;leftArm.rotation.x=-walkSwing*.65;
- punchArm.rotation.x=Math.sin((1-punchAnim)*Math.PI)*1.18*punchAnim;
- // Slight forward lean while running; keep it independent of the jump height.
- avatarBody.rotation.x=running?-.09:0;
+ // Animate both arms and legs together; use a compact airborne pose during jumps.
+ avatarBody.position.y=1.17+Math.sin(now*.018)*.035*playerWalkSpeed;
+ leftLeg.rotation.x=airborne?.42:walkSwing;
+ rightLeg.rotation.x=airborne?.42:-walkSwing;
+ leftArm.rotation.x=airborne?-.72:-walkSwing*.72;
+ const punchPose=Math.sin((1-punchAnim)*Math.PI)*1.18*punchAnim;
+ punchArm.rotation.x=punchAnim>0?Math.max(-.15,punchPose):(airborne?-.72:walkSwing*.72);
+ leftArm.rotation.z=airborne?-.12:0;
+ punchArm.rotation.z=airborne?.12:0;
+ // Slight forward lean while running, with a subtle airborne tuck.
+ avatarBody.rotation.x=running?-.09:(airborne?-.07:0);
  camera.fov=62;camera.updateProjectionMatrix();
  const target=new THREE.Vector3(playerAvatar.position.x+Math.sin(playerAvatar.rotation.y)*5.8,4.1,playerAvatar.position.z+Math.cos(playerAvatar.rotation.y)*5.8);
  camera.position.lerp(target,1-Math.exp(-7*dt));
