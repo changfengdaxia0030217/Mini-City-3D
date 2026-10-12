@@ -405,6 +405,8 @@ function update(dt){
  const left=keys.has('KeyA')||keys.has('ArrowLeft');
  const right=keys.has('KeyD')||keys.has('ArrowRight');
  const handbrake=keys.has('Space');
+ // Rear LED lamps brighten while reversing or using the handbrake.
+ ledTailMat.emissiveIntensity=(reverse||handbrake)?1.8:.55;
  const steerInput=(left?1:0)-(right?1:0);
   if(forward)speed+=vehicleStats[selectedVehicle].acceleration*dt;
   else if(reverse)speed-=19*dt;
