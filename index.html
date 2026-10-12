@@ -210,6 +210,23 @@ for(const x of [-.79,.79]){
  sideWindows.push(frontWindow,backWindow);
  box(.06,.48,.055,mat(0x303943),x,1.43,-.02,car);
 }
+// Side mirrors, A-pillars and lower side skirts add a more recognizable road-car profile.
+const mirrorMat=mat(0x303943,.4),mirrorGlass=mat(0x9bdcf0,.25);
+for(const side of [-1,1]){
+ const mirrorStem=box(.075,.09,.25,mirrorMat,side*.86,1.34,-.72,car);
+ mirrorStem.rotation.x=-.18;
+ const mirror=box(.22,.16,.28,mirrorMat,side*.98,1.39,-.78,car);
+ mirror.rotation.y=side*.08;
+ box(.025,.095,.18,mirrorGlass,side*1.095,1.4,-.79,car);
+ const pillarFront=box(.075,.48,.09,carPaint,side*.59,1.47,-.88,car);
+ pillarFront.rotation.x=-.42;
+ const pillarRear=box(.075,.40,.09,carPaint,side*.59,1.46,.22,car);
+ pillarRear.rotation.x=.48;
+ box(.12,.13,2.45,mat(0x303943),side*1.00,.48,.02,car);
+ // Small front wheel-arch accent and a rear quarter-panel trim.
+ box(.06,.12,.72,mat(0x303943),side*1.025,.55,-1.30,car);
+ box(.06,.12,.62,mat(0x303943),side*1.025,.55,1.30,car);
+}
 // Sporty raised hood vents; these remain subtle on the base car.
 for(const x of [-.34,.34])box(.12,.025,.48,mat(0x303943),x,1.11,-1.32,car);
 box(.72,.15,.08,mat(0xffffff),-.65,.85,-2.07,car);box(.72,.15,.08,mat(0xffffff),.65,.85,-2.07,car);
