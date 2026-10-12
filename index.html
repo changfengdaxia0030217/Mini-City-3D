@@ -575,6 +575,7 @@ const modeButton=document.getElementById('mode-toggle');
 const mobileModeButton=document.getElementById('foot-mode');
 const punchButton=document.getElementById('punch-button');\ndocument.getElementById('foot-punch').addEventListener('click',punchNearby);
 function setMode(walking){
+ if(walking&&Math.abs(speed)>1.4){showMissionToast('请先停车，再下车');return}
  onFoot=walking;speed=0;lateralSpeed=0;steering=0;
  if(walking){
   playerAvatar.position.set(car.position.x+Math.cos(car.rotation.y)*2.1,0,car.position.z+Math.sin(car.rotation.y)*2.1);
