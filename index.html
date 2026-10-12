@@ -631,16 +631,16 @@ function addHand(parent,y){
  const hand=new THREE.Mesh(new THREE.SphereGeometry(.105,10,8),skinMat);
  hand.scale.set(.88,1.08,.85);hand.position.set(0,y,-.015);parent.add(hand);return hand;
 }
-const leftArm=new THREE.Group();leftArm.position.set(-.39,1.48,0);playerAvatar.add(leftArm);
+const leftArm=new THREE.Group();leftArm.position.set(-.39,1.48,0);avatarVisual.add(leftArm);
 addLimbSegment(leftArm,shirtMat,.105,.34,-.18);
 addLimbSegment(leftArm,skinMat,.078,.32,-.49);
 addHand(leftArm,-.68);
-const punchArm=new THREE.Group();punchArm.position.set(.39,1.48,0);playerAvatar.add(punchArm);
+const punchArm=new THREE.Group();punchArm.position.set(.39,1.48,0);avatarVisual.add(punchArm);
 addLimbSegment(punchArm,shirtMat,.11,.34,-.18);
 addLimbSegment(punchArm,skinMat,.08,.34,-.49);
 addHand(punchArm,-.69);
 function makeLeg(x){
- const leg=new THREE.Group();leg.position.set(x,.76,0);playerAvatar.add(leg);
+ const leg=new THREE.Group();leg.position.set(x,.76,0);avatarVisual.add(leg);
  addLimbSegment(leg,pantsMat,.13,.36,-.18);
  addLimbSegment(leg,pantsMat,.095,.34,-.51);
  const shoe=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),shoeMat);
@@ -648,10 +648,10 @@ function makeLeg(x){
  return leg;
 }
 const leftLeg=makeLeg(-.19),rightLeg=makeLeg(.19);
-const fallbackAvatar=new THREE.Group();while(playerAvatar.children.length)fallbackAvatar.add(playerAvatar.children[0]);playerAvatar.add(fallbackAvatar);
+const fallbackAvatar=new THREE.Group();while(playerAvatar.children.length)fallbackAvatar.add(playerAvatar.children[0]);avatarVisual.add(fallbackAvatar);
 let riggedAvatar=null,avatarMixer=null,avatarActions={},activeAvatarAction=null;
 const avatarLoader=new GLTFLoader();
-avatarLoader.load('https://threejs.org/examples/models/gltf/Soldier.glb',gltf=>{riggedAvatar=gltf.scene;riggedAvatar.scale.setScalar(1);riggedAvatar.rotation.y=Math.PI;riggedAvatar.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});playerAvatar.add(riggedAvatar);avatarMixer=new THREE.AnimationMixer(riggedAvatar);for(const clip of gltf.animations)avatarActions[clip.name.toLowerCase()]=avatarMixer.clipAction(clip);fallbackAvatar.visible=false;const idle=Object.keys(avatarActions).find(n=>n.includes('idle'))||Object.keys(avatarActions)[0];if(idle){activeAvatarAction=avatarActions[idle];activeAvatarAction.play();}},undefined,err=>console.warn('Rigged character failed to load; using fallback model.',err));
+avatarLoader.load('https://threejs.org/examples/models/gltf/Soldier.glb',gltf=>{riggedAvatar=gltf.scene;riggedAvatar.scale.setScalar(1);riggedAvatar.rotation.y=Math.PI;riggedAvatar.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});avatarVisual.add(riggedAvatar);avatarMixer=new THREE.AnimationMixer(riggedAvatar);for(const clip of gltf.animations)avatarActions[clip.name.toLowerCase()]=avatarMixer.clipAction(clip);fallbackAvatar.visible=false;const idle=Object.keys(avatarActions).find(n=>n.includes('idle'))||Object.keys(avatarActions)[0];if(idle){activeAvatarAction=avatarActions[idle];activeAvatarAction.play();}},undefined,err=>console.warn('Rigged character failed to load; using fallback model.',err));
 function setRiggedMotion(kind){if(!avatarMixer)return;const names=Object.keys(avatarActions),find=terms=>names.find(n=>terms.some(t=>n.includes(t)));const key=kind==='run'?(find(['run'])||find(['walk'])):kind==='walk'?(find(['walk'])||find(['run'])):(find(['idle'])||find(['walk'])||find(['run']));const next=key?avatarActions[key]:null;if(!next||next===activeAvatarAction)return;next.reset().fadeIn(.18).play();if(activeAvatarAction)activeAvatarAction.fadeOut(.18);activeAvatarAction=next;}
 let punchAnim=0;
 let onFoot=false, punchCooldown=0, playerWalkSpeed=0, jumpVelocity=0;
@@ -686,7 +686,7 @@ function punchNearby(){
   if(p.stun>0)continue;
   const d=Math.hypot(p.group.position.x-playerAvatar.position.x,p.group.position.z-playerAvatar.position.z);
   const dx=p.group.position.x-playerAvatar.position.x,dz=p.group.position.z-playerAvatar.position.z;
-  const facing=dx*(-Math.sin(playerAvatar.rotation.y))+dz*(-Math.cos(playerAvatar.rotation.y));
+  const facing=dx*Math.sin(playerAvatar.rotation.y)+dz*Math.cos(playerAvatar.rotation.y);
   if(d<best&&facing>-.2){best=d;hit=p}
  }
  if(hit){
