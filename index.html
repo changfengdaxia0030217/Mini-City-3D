@@ -736,11 +736,11 @@ const joystick=document.getElementById('joystick'),joystickKnob=document.getElem
 let joystickPointer=null,footMoveX=0,footMoveY=0;
 let cameraYaw=playerAvatar.rotation.y,lookPointer=null,lastLookX=0;const lookZone=document.getElementById('look-zone');
 function beginLook(e){if(!onFoot||lookPointer!==null)return;e.preventDefault();lookPointer=e.pointerId;lastLookX=e.clientX;lookZone.setPointerCapture(e.pointerId);}
-function moveLook(e){if(lookPointer!==e.pointerId||!onFoot)return;e.preventDefault();const dx=e.clientX-lastLookX;lastLookX=e.clientX;cameraYaw-=dx*.008;}
+function moveLook(e){if(lookPointer!==e.pointerId||!onFoot)return;e.preventDefault();const dx=e.clientX-lastLookX;lastLookX=e.clientX;cameraYaw-=dx*.0048;}
 function endLook(e){if(lookPointer===e.pointerId)lookPointer=null;}
 lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('pointermove',moveLook);lookZone.addEventListener('pointerup',endLook);lookZone.addEventListener('pointercancel',endLook);lookZone.addEventListener('lostpointercapture',endLook);
 function releaseJoystick(){joystickPointer=null;footMoveX=0;footMoveY=0;keys.delete('ArrowUp');keys.delete('ArrowDown');keys.delete('ArrowLeft');keys.delete('ArrowRight');joystickKnob.style.transform='translate(0px,0px)';}
-function moveJoystick(e){if(joystickPointer!==e.pointerId)return;const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.34,d=Math.hypot(dx,dy),scale=d>max?max/d:1,x=dx*scale,y=dy*scale;joystickKnob.style.transform=`translate(${x}px,${y}px)`;const nx=dx/max,ny=dy/max;if(onFoot){footMoveX=Math.abs(nx)<.12?0:THREE.MathUtils.clamp(nx,-1,1);footMoveY=Math.abs(ny)<.12?0:THREE.MathUtils.clamp(ny,-1,1);for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);return;}footMoveX=0;footMoveY=0;const wasLeft=keys.has('ArrowLeft'),wasRight=keys.has('ArrowRight'),wasUp=keys.has('ArrowUp'),wasDown=keys.has('ArrowDown');for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);const dead=.42,release=.30;if(nx<-(wasLeft?release:dead))keys.add('ArrowLeft');if(nx>(wasRight?release:dead))keys.add('ArrowRight');if(ny<-(wasUp?release:dead))keys.add('ArrowUp');if(ny>(wasDown?release:dead))keys.add('ArrowDown');}
+function moveJoystick(e){if(joystickPointer!==e.pointerId)return;const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.34,d=Math.hypot(dx,dy),scale=d>max?max/d:1,x=dx*scale,y=dy*scale;joystickKnob.style.transform=`translate(${x}px,${y}px)`;const nx=dx/max,ny=dy/max;if(onFoot){const mag=Math.min(1,Math.hypot(nx,ny)),dead=.16,power=mag<=dead?0:Math.pow((mag-dead)/(1-dead),1.35);footMoveX=mag?nx/mag*power:0;footMoveY=mag?ny/mag*power:0;for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);return;}footMoveX=0;footMoveY=0;const wasLeft=keys.has('ArrowLeft'),wasRight=keys.has('ArrowRight'),wasUp=keys.has('ArrowUp'),wasDown=keys.has('ArrowDown');for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);const dead=.42,release=.30;if(nx<-(wasLeft?release:dead))keys.add('ArrowLeft');if(nx>(wasRight?release:dead))keys.add('ArrowRight');if(ny<-(wasUp?release:dead))keys.add('ArrowUp');if(ny>(wasDown?release:dead))keys.add('ArrowDown');}
 joystick.addEventListener('pointerdown',e=>{e.preventDefault();joystickPointer=e.pointerId;joystick.setPointerCapture(e.pointerId);moveJoystick(e)});
 joystick.addEventListener('pointermove',e=>{e.preventDefault();moveJoystick(e)});
 joystick.addEventListener('pointerup',e=>{if(joystickPointer===e.pointerId)releaseJoystick()});
@@ -1207,9 +1207,9 @@ function updateOnFoot(dt,now){
   // Keep the character facing the camera's forward direction while strafing left/right;
   // only reverse-facing movement turns the character around. This avoids the sideways joystick
   // input unexpectedly spinning the avatar 90 degrees.
-  const desiredYaw=fwd<-.15?cameraYaw+Math.PI:cameraYaw;
+  const desiredYaw=fwd<-.28&&Math.abs(fwd)>Math.abs(side)*1.15?cameraYaw+Math.PI:cameraYaw;
   let delta=((desiredYaw-playerAvatar.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;
-  playerAvatar.rotation.y+=delta*(1-Math.exp(-8*dt));
+  playerAvatar.rotation.y+=delta*(1-Math.exp(-5.5*dt));
  }
  turnBlend=0;
  const footOldX=playerAvatar.position.x,footOldZ=playerAvatar.position.z;
