@@ -584,16 +584,49 @@ for(let i=0;i<28;i++){
 }
 // The controllable on-foot character is separate from the parked vehicle.
 const playerAvatar=new THREE.Group();scene.add(playerAvatar);playerAvatar.visible=false;
-const avatarBody=box(.68,.95,.42,mat(0x2477d4),0,1.12,0,playerAvatar);
-const avatarHead=new THREE.Mesh(new THREE.SphereGeometry(.29,10,8),mat(0xd6a17d));avatarHead.position.set(0,1.85,0);playerAvatar.add(avatarHead);
-const avatarHair=new THREE.Mesh(new THREE.SphereGeometry(.3,10,6,0,Math.PI*2,0,Math.PI*.56),mat(0x292522));avatarHair.position.set(0,1.99,0);playerAvatar.add(avatarHair);
-// Left arm stays relaxed; the right arm is a separate pivot so every punch has a visible swing.
-box(.2,.68,.22,mat(0x26364a),-.18,.43,0,playerAvatar);
-box(.19,.66,.2,mat(0xd6a17d),-.48,1.05,0,playerAvatar);
+// Rounded, two-legged stylized 3D human (keeps the existing third-person controller).
+const skinMat=mat(0xd6a17d), shirtMat=mat(0x2477d4), pantsMat=mat(0x26364a), shoeMat=mat(0x20242b);
+const avatarBody=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),shirtMat);
+avatarBody.scale.set(.36,.52,.245);avatarBody.position.set(0,1.17,0);playerAvatar.add(avatarBody);
+const avatarChest=new THREE.Mesh(new THREE.SphereGeometry(1,14,10),shirtMat);
+avatarChest.scale.set(.31,.27,.235);avatarChest.position.set(0,1.38,-.015);playerAvatar.add(avatarChest);
+const avatarNeck=new THREE.Mesh(new THREE.CylinderGeometry(.105,.12,.16,10),skinMat);
+avatarNeck.position.set(0,1.65,0);playerAvatar.add(avatarNeck);
+const avatarHead=new THREE.Mesh(new THREE.SphereGeometry(.265,16,12),skinMat);
+avatarHead.scale.set(1,1.08,.94);avatarHead.position.set(0,1.86,0);playerAvatar.add(avatarHead);
+const avatarHair=new THREE.Mesh(new THREE.SphereGeometry(.276,14,9,0,Math.PI*2,0,Math.PI*.56),mat(0x292522));
+avatarHair.position.set(0,1.99,.012);playerAvatar.add(avatarHair);
+// Eyes face toward -Z, the direction the character walks when facing forward.
+for(const x of [-.09,.09]){
+ const eye=new THREE.Mesh(new THREE.SphereGeometry(.027,8,6),mat(0x26211f));
+ eye.position.set(x,1.88,-.238);playerAvatar.add(eye);
+}
+function addLimbSegment(parent,material,radius,length,y){
+ const limb=new THREE.Mesh(new THREE.CylinderGeometry(radius*.82,radius,length,10),material);
+ limb.position.y=y;parent.add(limb);return limb;
+}
+function addHand(parent,y){
+ const hand=new THREE.Mesh(new THREE.SphereGeometry(.105,10,8),skinMat);
+ hand.scale.set(.88,1.08,.85);hand.position.set(0,y,-.015);parent.add(hand);return hand;
+}
+const leftArm=new THREE.Group();leftArm.position.set(-.39,1.48,0);playerAvatar.add(leftArm);
+addLimbSegment(leftArm,shirtMat,.105,.34,-.18);
+addLimbSegment(leftArm,skinMat,.078,.32,-.49);
+addHand(leftArm,-.68);
+const punchArm=new THREE.Group();punchArm.position.set(.39,1.48,0);playerAvatar.add(punchArm);
+addLimbSegment(punchArm,shirtMat,.11,.34,-.18);
+addLimbSegment(punchArm,skinMat,.08,.34,-.49);
+addHand(punchArm,-.69);
+function makeLeg(x){
+ const leg=new THREE.Group();leg.position.set(x,.76,0);playerAvatar.add(leg);
+ addLimbSegment(leg,pantsMat,.13,.36,-.18);
+ addLimbSegment(leg,pantsMat,.095,.34,-.51);
+ const shoe=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),shoeMat);
+ shoe.scale.set(.9,.62,1.45);shoe.position.set(0,-.69,-.065);leg.add(shoe);
+ return leg;
+}
+const leftLeg=makeLeg(-.19),rightLeg=makeLeg(.19);
 let punchAnim=0;
-const punchArm=new THREE.Group();punchArm.position.set(.48,1.42,0);playerAvatar.add(punchArm);
-box(.19,.52,.2,mat(0xd6a17d),0,-.22,0,punchArm);
-box(.2,.2,.22,mat(0xd6a17d),0,-.47,-.04,punchArm);
 let onFoot=false, punchCooldown=0, playerWalkSpeed=0;
 const modeButton=document.getElementById('mode-toggle');
 const mobileModeButton=document.getElementById('foot-mode');
@@ -1099,7 +1132,7 @@ function updateOnFoot(dt,now){
   const dx=playerAvatar.position.x-p.group.position.x,dz=playerAvatar.position.z-p.group.position.z,d=Math.hypot(dx,dz);
   if(d<.95&&d>.01){playerAvatar.position.x+=dx/d*(.95-d);playerAvatar.position.z+=dz/d*(.95-d)}
  }
- avatarBody.position.y=1.12+Math.sin(now*.012)*.045*playerWalkSpeed;
+ avatarBody.position.y=1.17+Math.sin(now*.012)*.025*playerWalkSpeed;\n const walkSwing=Math.sin(now*.014)*.48*playerWalkSpeed;\n leftLeg.rotation.x=walkSwing;rightLeg.rotation.x=-walkSwing;leftArm.rotation.x=-walkSwing*.65;\n punchArm.rotation.x=Math.sin((1-punchAnim)*Math.PI)*1.18*punchAnim;
  playerAvatar.position.y=0;
  camera.fov=62;camera.updateProjectionMatrix();
  const target=new THREE.Vector3(playerAvatar.position.x+Math.sin(playerAvatar.rotation.y)*5.8,4.1,playerAvatar.position.z+Math.cos(playerAvatar.rotation.y)*5.8);
