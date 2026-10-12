@@ -739,16 +739,15 @@ function beginLook(e){if(!onFoot||lookPointer!==null)return;e.preventDefault();l
 function moveLook(e){if(lookPointer!==e.pointerId||!onFoot)return;e.preventDefault();const dx=e.clientX-lastLookX;lastLookX=e.clientX;cameraYaw-=dx*.0048;}
 function endLook(e){if(lookPointer===e.pointerId)lookPointer=null;}
 lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('pointermove',moveLook);lookZone.addEventListener('pointerup',endLook);lookZone.addEventListener('pointercancel',endLook);lookZone.addEventListener('lostpointercapture',endLook);
- // PC controls: aim with the center reticle; left click fires, mouse movement freely controls the camera.
+ // PC controls: center-reticle raycast shooting; mouse movement freely controls the camera.
  let cameraPitch=0;
- const weaponRaycaster=new THREE.Raycaster();
- const weaponScreenCenter=new THREE.Vector2(0,0);
+ const weaponRaycaster=new THREE.Raycaster(),weaponScreenCenter=new THREE.Vector2(0,0);
  function fireWeapon(){
   if(!onFoot||punchCooldown>0)return;
   punchCooldown=.22;
   weaponRaycaster.setFromCamera(weaponScreenCenter,camera);
   const targets=[];
-  pedestrians.forEach(p=>{if(p.group&&p.group.parent&&p.stun<=0)targets.push(...p.group.children)});
+  pedestrians.forEach(p=>{if(p.group&&p.group.parent&&p.stun<=0)targets.push(p.group)});
   const intersections=weaponRaycaster.intersectObjects(targets,true);
   let hitPed=null,hitPoint=null;
   for(const hit of intersections){
@@ -757,13 +756,12 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
    if(found&&hit.distance<65){hitPed=found;hitPoint=hit.point;break;}
   }
   const origin=new THREE.Vector3();camera.getWorldPosition(origin);
-  const end=hitPoint?hitPoint:origin.clone().add(weaponRaycaster.ray.direction.clone().multiplyScalar(55));
+  const end=hitPoint||origin.clone().add(weaponRaycaster.ray.direction.clone().multiplyScalar(45));
   const beamGeometry=new THREE.BufferGeometry().setFromPoints([origin,end]);
   const beam=new THREE.Line(beamGeometry,new THREE.LineBasicMaterial({color:hitPed?0xffd45b:0xfff0b5,transparent:true,opacity:.95}));
   scene.add(beam);setTimeout(()=>{scene.remove(beam);beamGeometry.dispose();beam.material.dispose();},75);
   if(!hitPed){showMissionToast('🔫 未命中：把准星对准 NPC');return;}
-  hitPed.health=(hitPed.health??(hitPed.hostile?55:100))-34;
-  hitPed.stun=.45;
+  hitPed.health=(hitPed.health??(hitPed.hostile?55:100))-34;hitPed.stun=.45;
   hitPed.fleeTime=hitPed.hostile?0:7;hitPed.reportTimer=1.6;hitPed.reported=false;
   if(hitPed.health<=0){
    const px=hitPed.group.position.x,pz=hitPed.group.position.z;
@@ -1448,19 +1446,12 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
 <script type="module" src="./minimap.js"></script>
 </body>
 </html>+amount+'，靠近自动拾取');
-  }else{
-   const dx=hitPed.group.position.x-playerAvatar.position.x,dz=hitPed.group.position.z-playerAvatar.position.z,d=Math.max(.01,Math.hypot(dx,dz));
-   hitPed.group.position.x+=dx/d*.25;hitPed.group.position.z+=dz/d*.25;
-   showMissionToast(hitPed.hostile?'🎯 命中敌对 NPC！':'🎯 命中 NPC！');
-  }
+  }else showMissionToast(hitPed.hostile?'🎯 命中敌对 NPC！':'🎯 命中 NPC！');
  }
  renderer.domElement.addEventListener('mousedown',e=>{
   if(!onFoot||e.button!==0)return;
   e.preventDefault();
-  if(document.pointerLockElement!==renderer.domElement){
-   if(renderer.domElement.requestPointerLock)renderer.domElement.requestPointerLock();
-   return;
-  }
+  if(document.pointerLockElement!==renderer.domElement){if(renderer.domElement.requestPointerLock)renderer.domElement.requestPointerLock();return;}
   fireWeapon();
  });
  addEventListener('mousemove',e=>{
