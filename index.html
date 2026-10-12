@@ -587,10 +587,13 @@ const playerAvatar=new THREE.Group();scene.add(playerAvatar);playerAvatar.visibl
 const avatarBody=box(.68,.95,.42,mat(0x2477d4),0,1.12,0,playerAvatar);
 const avatarHead=new THREE.Mesh(new THREE.SphereGeometry(.29,10,8),mat(0xd6a17d));avatarHead.position.set(0,1.85,0);playerAvatar.add(avatarHead);
 const avatarHair=new THREE.Mesh(new THREE.SphereGeometry(.3,10,6,0,Math.PI*2,0,Math.PI*.56),mat(0x292522));avatarHair.position.set(0,1.99,0);playerAvatar.add(avatarHair);
-for(const side of [-1,1]){
- box(.2,.68,.22,mat(0x26364a),side*.18,.43,0,playerAvatar);
- box(.19,.66,.2,mat(0xd6a17d),side*.48,1.05,0,playerAvatar);
-}
+// Left arm stays relaxed; the right arm is a separate pivot so every punch has a visible swing.
+box(.2,.68,.22,mat(0x26364a),-.18,.43,0,playerAvatar);
+box(.19,.66,.2,mat(0xd6a17d),-.48,1.05,0,playerAvatar);
+let punchAnim=0;
+const punchArm=new THREE.Group();punchArm.position.set(.48,1.42,0);playerAvatar.add(punchArm);
+box(.19,.52,.2,mat(0xd6a17d),0,-.22,0,punchArm);
+box(.2,.2,.22,mat(0xd6a17d),0,-.47,-.04,punchArm);
 let onFoot=false, punchCooldown=0, playerWalkSpeed=0;
 const modeButton=document.getElementById('mode-toggle');
 const mobileModeButton=document.getElementById('foot-mode');
@@ -615,6 +618,7 @@ function setMode(walking){
 function punchNearby(){
  if(!onFoot||punchCooldown>0)return;
  punchCooldown=.55;
+ punchAnim=1;
  playerAvatar.rotation.y+=.06;
  let hit=null,best=2.35;
  for(const p of pedestrians){
@@ -628,7 +632,7 @@ function punchNearby(){
   const dx=hit.group.position.x-playerAvatar.position.x,dz=hit.group.position.z-playerAvatar.position.z,d=Math.max(.01,Math.hypot(dx,dz));
   hit.group.position.x+=dx/d*1.5;hit.group.position.z+=dz/d*1.5;hit.stun=.45;hit.fleeTime=9;hit.reportTimer=2.2;hit.reported=false;
   showMissionToast('👊 路人受惊逃跑！他可能会报警');
- }else showMissionToast('👊 出拳！靠近路人再试试');
+ }else showMissionToast('👊 挥拳成功！前方没有目标也可以出拳');
 }
 modeButton.addEventListener('click',()=>setMode(!onFoot));
 mobileModeButton.addEventListener('click',()=>setMode(!onFoot));
@@ -1074,6 +1078,8 @@ function updatePedestrians(dt){
 }
 function updateOnFoot(dt,now){
  punchCooldown=Math.max(0,punchCooldown-dt);
+ punchAnim=Math.max(0,punchAnim-dt*3.8);
+ punchArm.rotation.x=Math.sin((1-punchAnim)*Math.PI)*1.18*punchAnim;
  const forward=keys.has('KeyW')||keys.has('ArrowUp'),back=keys.has('KeyS')||keys.has('ArrowDown');
  const left=keys.has('KeyA')||keys.has('ArrowLeft'),right=keys.has('KeyD')||keys.has('ArrowRight');
  const fwd=(forward?1:0)-(back?1:0);
