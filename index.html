@@ -1203,7 +1203,14 @@ function updateOnFoot(dt,now){
  const moving=Math.abs(fwd)>.02||Math.abs(side)>.02;
  const fx=Math.sin(cameraYaw),fz=Math.cos(cameraYaw),rx=Math.cos(cameraYaw),rz=-Math.sin(cameraYaw);
  let moveX=fx*fwd+rx*side,moveZ=fz*fwd+rz*side;const moveLen=Math.hypot(moveX,moveZ);if(moveLen>1){moveX/=moveLen;moveZ/=moveLen;}
- if(moving){const desiredYaw=Math.atan2(moveX,moveZ);let delta=((desiredYaw-playerAvatar.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;playerAvatar.rotation.y+=delta*(1-Math.exp(-10*dt));}
+ if(moving){
+  // Keep the character facing the camera's forward direction while strafing left/right;
+  // only reverse-facing movement turns the character around. This avoids the sideways joystick
+  // input unexpectedly spinning the avatar 90 degrees.
+  const desiredYaw=fwd<-.15?cameraYaw+Math.PI:cameraYaw;
+  let delta=((desiredYaw-playerAvatar.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;
+  playerAvatar.rotation.y+=delta*(1-Math.exp(-8*dt));
+ }
  turnBlend=0;
  const footOldX=playerAvatar.position.x,footOldZ=playerAvatar.position.z;
  const running=(keys.has('ShiftLeft')||keys.has('ShiftRight'))&&moving;
