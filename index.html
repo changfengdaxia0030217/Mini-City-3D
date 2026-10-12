@@ -604,22 +604,24 @@ for(let i=0;i<56;i++){
 }
 // The controllable on-foot character is separate from the parked vehicle.
 const playerAvatar=new THREE.Group();scene.add(playerAvatar);playerAvatar.visible=false;
+// Keep movement/controller axes separate from the rendered model's forward axis.
+const avatarVisual=new THREE.Group();avatarVisual.rotation.y=Math.PI;playerAvatar.add(avatarVisual);
 // Rounded, two-legged stylized 3D human (keeps the existing third-person controller).
 const skinMat=mat(0xd6a17d), shirtMat=mat(0x2477d4), pantsMat=mat(0x26364a), shoeMat=mat(0x20242b);
 const avatarBody=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),shirtMat);
-avatarBody.scale.set(.36,.52,.245);avatarBody.position.set(0,1.17,0);playerAvatar.add(avatarBody);
+avatarBody.scale.set(.36,.52,.245);avatarBody.position.set(0,1.17,0);avatarVisual.add(avatarBody);
 const avatarChest=new THREE.Mesh(new THREE.SphereGeometry(1,14,10),shirtMat);
-avatarChest.scale.set(.31,.27,.235);avatarChest.position.set(0,1.38,-.015);playerAvatar.add(avatarChest);
+avatarChest.scale.set(.31,.27,.235);avatarChest.position.set(0,1.38,-.015);avatarVisual.add(avatarChest);
 const avatarNeck=new THREE.Mesh(new THREE.CylinderGeometry(.105,.12,.16,10),skinMat);
-avatarNeck.position.set(0,1.65,0);playerAvatar.add(avatarNeck);
+avatarNeck.position.set(0,1.65,0);avatarVisual.add(avatarNeck);
 const avatarHead=new THREE.Mesh(new THREE.SphereGeometry(.265,16,12),skinMat);
-avatarHead.scale.set(1,1.08,.94);avatarHead.position.set(0,1.86,0);playerAvatar.add(avatarHead);
+avatarHead.scale.set(1,1.08,.94);avatarHead.position.set(0,1.86,0);avatarVisual.add(avatarHead);
 const avatarHair=new THREE.Mesh(new THREE.SphereGeometry(.276,14,9,0,Math.PI*2,0,Math.PI*.56),mat(0x292522));
-avatarHair.position.set(0,1.99,.012);playerAvatar.add(avatarHair);
+avatarHair.position.set(0,1.99,.012);avatarVisual.add(avatarHair);
 // Eyes face toward -Z, the direction the character walks when facing forward.
 for(const x of [-.09,.09]){
  const eye=new THREE.Mesh(new THREE.SphereGeometry(.027,8,6),mat(0x26211f));
- eye.position.set(x,1.88,-.238);playerAvatar.add(eye);
+ eye.position.set(x,1.88,-.238);avatarVisual.add(eye);
 }
 function addLimbSegment(parent,material,radius,length,y){
  const limb=new THREE.Mesh(new THREE.CylinderGeometry(radius*.82,radius,length,10),material);
@@ -664,7 +666,7 @@ function setMode(walking){
  if(walking){
   playerAvatar.position.set(car.position.x+Math.cos(car.rotation.y)*2.1,0,car.position.z+Math.sin(car.rotation.y)*2.1);
   playerAvatar.rotation.y=car.rotation.y;playerAvatar.visible=true;car.visible=true;
-  modeButton.textContent='🚗 上车（E）';mobileModeButton.textContent='上车';showMissionToast('已下车：WASD 移动，Shift 跑步，Space 跳跃，F 出拳');
+  modeButton.textContent='🚗 上车（E）';mobileModeButton.textContent='上车';
  }else{
   const d=Math.hypot(playerAvatar.position.x-car.position.x,playerAvatar.position.z-car.position.z);
   if(d>4.2){showMissionToast('靠近车辆后才能上车');return}
@@ -690,8 +692,7 @@ function punchNearby(){
  if(hit){
   const dx=hit.group.position.x-playerAvatar.position.x,dz=hit.group.position.z-playerAvatar.position.z,d=Math.max(.01,Math.hypot(dx,dz));
   hit.group.position.x+=dx/d*1.5;hit.group.position.z+=dz/d*1.5;hit.stun=.45;hit.fleeTime=9;hit.reportTimer=2.2;hit.reported=false;
-  showMissionToast('👊 路人受惊逃跑！他可能会报警');
- }else showMissionToast('👊 挥拳成功！前方没有目标也可以出拳');
+ }
 }
 modeButton.addEventListener('click',()=>setMode(!onFoot));
 mobileModeButton.addEventListener('click',()=>setMode(!onFoot));
@@ -1170,8 +1171,8 @@ function updateOnFoot(dt,now){
  const running=(keys.has('ShiftLeft')||keys.has('ShiftRight'))&&moving;
  const moveSpeed=running?8.2:4.4;
  if(moving){
-  playerAvatar.position.x+=-Math.sin(playerAvatar.rotation.y)*fwd*moveSpeed*dt;
-  playerAvatar.position.z+=-Math.cos(playerAvatar.rotation.y)*fwd*moveSpeed*dt;
+  playerAvatar.position.x+=Math.sin(playerAvatar.rotation.y)*fwd*moveSpeed*dt;
+  playerAvatar.position.z+=Math.cos(playerAvatar.rotation.y)*fwd*moveSpeed*dt;
   playerWalkSpeed=Math.min(1,playerWalkSpeed+dt*(running?8:5));
  }else playerWalkSpeed=Math.max(0,playerWalkSpeed-dt*4);
  // Jump arc: Space starts an upward impulse; gravity brings the character back to the ground.
@@ -1220,7 +1221,7 @@ function updateOnFoot(dt,now){
  // Small shoulder roll and forward lean sell the running/jumping motion.
  avatarBody.rotation.x=running?-.12:(airborne?-.09:Math.sin(cycle*2)*.018*playerWalkSpeed);
  camera.fov=62;camera.updateProjectionMatrix();
- const target=new THREE.Vector3(playerAvatar.position.x+Math.sin(playerAvatar.rotation.y)*5.8,4.1,playerAvatar.position.z+Math.cos(playerAvatar.rotation.y)*5.8);
+ const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(playerAvatar.rotation.y)*5.8,4.1,playerAvatar.position.z-Math.cos(playerAvatar.rotation.y)*5.8);
  camera.position.lerp(target,1-Math.exp(-7*dt));
  camera.lookAt(playerAvatar.position.x,1.15,playerAvatar.position.z);
  speedEl.innerHTML='0<span>KM/H</span>';
