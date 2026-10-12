@@ -75,14 +75,14 @@
     <button id="garage-close">返回驾驶</button>
   </div>
   <div id="minimap-wrap"><div id="minimap-title">CITY MAP · N</div><canvas id="minimap" width="220" height="220" aria-label="城市小地图"></canvas></div>
-  <div id="help" class="panel">目标：自由驾驶并收集金币环，每个 +25 金币。<br>W / ↑ 加速　S / ↓ 刹车倒车<br>A / ← 左转　D / → 右转<br>空格手刹　Shift 氮气加速　R 重置车辆</div>
+  <div id="help" class="panel">目标：自由驾驶并收集金币环，每个 +25 金币。<br>驾驶：WASD / 方向键，Shift 氮气，R 重置<br>按 E 下车/上车；下车后 WASD 走动，F 出拳。<br><button id="mode-toggle" type="button">🚶 下车（E）</button> <button id="punch-button" type="button">👊 出拳（F）</button></div>
 </div>
 <div id="mobile">
   <div class="pad">
     <div></div><button class="control" data-key="ArrowUp">▲</button><div></div>
     <button class="control" data-key="ArrowLeft">◀</button><button class="control" data-key="ArrowDown">▼</button><button class="control" data-key="ArrowRight">▶</button>
   </div>
-  <div style="display:flex;gap:9px;align-items:end;pointer-events:auto"><button class="control" id="brake" data-key="Space">刹车</button><button class="control" id="gas" data-key="KeyW">加速</button></div>
+  <div style="display:flex;gap:9px;align-items:end;pointer-events:auto"><button class="control" id="brake" data-key="Space">刹车</button><button class="control" id="gas" data-key="KeyW">加速</button><button class="control" id="foot-punch" type="button">👊</button></div>
 </div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
@@ -533,8 +533,81 @@ const vehicleStats=[{name:'街头轿车',maxSpeed:34,acceleration:24,grip:4.6},{
 car.position.set(0,0,8);
 window.miniCityCar = car;
 
-const keys=new Set();
-addEventListener('keydown',e=>{keys.add(e.code);if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.code==='KeyR')resetCar()});
+// Pedestrians make sidewalks feel inhabited; simple low-poly citizens wander along safe roadside routes.
+const pedestrianMats=[mat(0x3e82bd),mat(0xd45c4b),mat(0xe6bd55),mat(0x7a62aa),mat(0x47a78b),mat(0xe8e8e8),mat(0x343d4b)];
+const pedestrians=[];
+function createPedestrian(x,z,index){
+ const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
+ const skin=mat([0xdca77e,0x9b674b,0xf0c9a2,0xc88e68][index%4]);
+ const shirt=pedestrianMats[index%pedestrianMats.length];
+ box(.62,.9,.38,shirt,0,1.12,0,g);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.28,8,7),skin);head.position.set(0,1.82,0);head.castShadow=true;g.add(head);
+ const hair=mat([0x3c2c24,0x211d1b,0x76523a][index%3]);
+ const cap=new THREE.Mesh(new THREE.SphereGeometry(.29,8,5,0,Math.PI*2,0,Math.PI*.58),hair);cap.position.set(0,1.96,0);cap.castShadow=true;g.add(cap);
+ for(const side of [-1,1]){
+  box(.19,.66,.22,skin,side*.19,.43,0,g);
+  box(.17,.72,.18,mat(0x303844),side*.16,.42,0,g);
+ }
+ g.rotation.y=Math.random()*Math.PI*2;
+ const route=index%4;
+ pedestrians.push({group:g,homeX:x,homeZ:z,route,phase:Math.random()*Math.PI*2,baseX:x,baseZ:z,stun:0,walkSpeed:.65+Math.random()*.45});
+}
+for(let i=0;i<28;i++){
+ const row=Math.floor(i/7),col=i%7;
+ const axis=row%2===0;
+ const x=axis?-86+col*27:(row===1?-92:92)+(Math.random()-.5)*4;
+ const z=axis?(row===0?-72:72)+(Math.random()-.5)*4:-84+col*27;
+ createPedestrian(x,z,i);
+}
+// The controllable on-foot character is separate from the parked vehicle.
+const playerAvatar=new THREE.Group();scene.add(playerAvatar);playerAvatar.visible=false;
+const avatarBody=box(.68,.95,.42,mat(0x2477d4),0,1.12,0,playerAvatar);
+const avatarHead=new THREE.Mesh(new THREE.SphereGeometry(.29,10,8),mat(0xd6a17d));avatarHead.position.set(0,1.85,0);playerAvatar.add(avatarHead);
+const avatarHair=new THREE.Mesh(new THREE.SphereGeometry(.3,10,6,0,Math.PI*2,0,Math.PI*.56),mat(0x292522));avatarHair.position.set(0,1.99,0);playerAvatar.add(avatarHair);
+for(const side of [-1,1]){
+ box(.2,.68,.22,mat(0x26364a),side*.18,.43,0,playerAvatar);
+ box(.19,.66,.2,mat(0xd6a17d),side*.48,1.05,0,playerAvatar);
+}
+let onFoot=false, punchCooldown=0, playerWalkSpeed=0;
+const modeButton=document.getElementById('mode-toggle');
+const punchButton=document.getElementById('punch-button');\ndocument.getElementById('foot-punch').addEventListener('click',punchNearby);
+function setMode(walking){
+ onFoot=walking;speed=0;lateralSpeed=0;steering=0;
+ if(walking){
+  playerAvatar.position.set(car.position.x+Math.cos(car.rotation.y)*2.1,0,car.position.z+Math.sin(car.rotation.y)*2.1);
+  playerAvatar.rotation.y=car.rotation.y;playerAvatar.visible=true;car.visible=false;
+  modeButton.textContent='🚗 上车（E）';showMissionToast('已下车：WASD 走动，F 出拳');
+ }else{
+  const d=Math.hypot(playerAvatar.position.x-car.position.x,playerAvatar.position.z-car.position.z);
+  if(d>4.2){showMissionToast('靠近车辆后才能上车');return}
+  car.position.x=playerAvatar.position.x-Math.cos(car.rotation.y)*2.1;
+  car.position.z=playerAvatar.position.z-Math.sin(car.rotation.y)*2.1;
+  playerAvatar.visible=false;car.visible=true;modeButton.textContent='🚶 下车（E）';
+  showMissionToast('已上车，继续驾驶');
+ }
+}
+function punchNearby(){
+ if(!onFoot||punchCooldown>0)return;
+ punchCooldown=.55;
+ playerAvatar.rotation.y+=.06;
+ let hit=null,best=2.35;
+ for(const p of pedestrians){
+  if(p.stun>0)continue;
+  const d=Math.hypot(p.group.position.x-playerAvatar.position.x,p.group.position.z-playerAvatar.position.z);
+  const dx=p.group.position.x-playerAvatar.position.x,dz=p.group.position.z-playerAvatar.position.z;
+  const facing=dx*(-Math.sin(playerAvatar.rotation.y))+dz*(-Math.cos(playerAvatar.rotation.y));
+  if(d<best&&facing>-.2){best=d;hit=p}
+ }
+ if(hit){
+  const dx=hit.group.position.x-playerAvatar.position.x,dz=hit.group.position.z-playerAvatar.position.z,d=Math.max(.01,Math.hypot(dx,dz));
+  hit.group.position.x+=dx/d*1.5;hit.group.position.z+=dz/d*1.5;hit.stun=1.8;
+  showMissionToast('👊 命中！路人踉跄了一下');
+ }else showMissionToast('👊 出拳！靠近路人再试试');
+}
+modeButton.addEventListener('click',()=>setMode(!onFoot));
+punchButton.addEventListener('click',punchNearby);
+\nconst keys=new Set();
+addEventListener('keydown',e=>{keys.add(e.code);if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.code==='KeyR'&&!onFoot)resetCar();if(e.code==='KeyE'&&!e.repeat){if(onFoot)setMode(false);else if(Math.abs(speed)<1.4)setMode(true)}if(e.code==='KeyF'&&!e.repeat)punchNearby()});
 addEventListener('keyup',e=>keys.delete(e.code));
 document.querySelectorAll('[data-key]').forEach(btn=>{
  const key=btn.dataset.key;
@@ -929,6 +1002,45 @@ function updatePolice(dt,now){
  }
 }
 let lastTrafficImpact=0;
+function updatePedestrians(dt){
+ for(const p of pedestrians){
+  if(p.stun>0){p.stun-=dt;continue}
+  p.phase+=dt*p.walkSpeed*.55;
+  const radius=2.2;
+  if(p.route===0){p.group.position.x=p.baseX+Math.sin(p.phase)*radius;p.group.position.z=p.baseZ}
+  else if(p.route===1){p.group.position.x=p.baseX;p.group.position.z=p.baseZ+Math.sin(p.phase)*radius}
+  else if(p.route===2){p.group.position.x=p.baseX+Math.sin(p.phase)*radius;p.group.position.z=p.baseZ+Math.cos(p.phase)*1.2}
+  else {p.group.position.x=p.baseX+Math.cos(p.phase)*1.6;p.group.position.z=p.baseZ+Math.sin(p.phase)*radius}
+  p.group.rotation.y=Math.atan2(p.group.position.x-p.homeX,p.group.position.z-p.homeZ);
+ }
+}
+function updateOnFoot(dt,now){
+ updatePedestrians(dt);punchCooldown=Math.max(0,punchCooldown-dt);
+ const forward=keys.has('KeyW')||keys.has('ArrowUp'),back=keys.has('KeyS')||keys.has('ArrowDown');
+ const left=keys.has('KeyA')||keys.has('ArrowLeft'),right=keys.has('KeyD')||keys.has('ArrowRight');
+ const ix=(right?1:0)-(left?1:0),iz=(back?1:0)-(forward?1:0);
+ const moving=Math.hypot(ix,iz)>0;
+ if(moving){
+  const len=Math.hypot(ix,iz),dx=ix/len,dz=iz/len;
+  playerAvatar.position.x+=dx*4.4*dt;playerAvatar.position.z+=dz*4.4*dt;
+  playerAvatar.rotation.y=Math.atan2(-dx,-dz);
+  playerWalkSpeed=Math.min(1,playerWalkSpeed+dt*5);
+ }else playerWalkSpeed=Math.max(0,playerWalkSpeed-dt*4);
+ playerAvatar.position.x=THREE.MathUtils.clamp(playerAvatar.position.x,-136,136);
+ playerAvatar.position.z=THREE.MathUtils.clamp(playerAvatar.position.z,-136,136);
+ // Keep pedestrians on their route and prevent the avatar walking straight through them.
+ for(const p of pedestrians){
+  const dx=playerAvatar.position.x-p.group.position.x,dz=playerAvatar.position.z-p.group.position.z,d=Math.hypot(dx,dz);
+  if(d<.95&&d>.01){playerAvatar.position.x+=dx/d*(.95-d);playerAvatar.position.z+=dz/d*(.95-d)}
+ }
+ avatarBody.position.y=1.12+Math.sin(now*.012)*.045*playerWalkSpeed;
+ playerAvatar.position.y=0;
+ camera.fov=62;camera.updateProjectionMatrix();
+ const target=new THREE.Vector3(playerAvatar.position.x+Math.sin(playerAvatar.rotation.y)*5.8,4.1,playerAvatar.position.z+Math.cos(playerAvatar.rotation.y)*5.8);
+ camera.position.lerp(target,1-Math.exp(-7*dt));
+ camera.lookAt(playerAvatar.position.x,1.15,playerAvatar.position.z);
+ speedEl.innerHTML='0<span>KM/H</span>';
+}
 function update(dt, now){
  // Keep signal phases live; without this call the lamps and right-of-way would freeze.
  updateTrafficSignals(now);
