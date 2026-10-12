@@ -656,7 +656,7 @@ const avatarLoader=new GLTFLoader();
 avatarLoader.load('https://threejs.org/examples/models/gltf/Soldier.glb',gltf=>{riggedAvatar=gltf.scene;riggedAvatar.scale.setScalar(1);/* The parent avatarVisual already corrects the model's forward axis; avoid a second 180-degree turn. */riggedAvatar.rotation.y=0;riggedAvatar.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});avatarVisual.add(riggedAvatar);avatarMixer=new THREE.AnimationMixer(riggedAvatar);for(const clip of gltf.animations)avatarActions[clip.name.toLowerCase()]=avatarMixer.clipAction(clip);fallbackAvatar.visible=false;const idle=Object.keys(avatarActions).find(n=>n.includes('idle'))||Object.keys(avatarActions)[0];if(idle){activeAvatarAction=avatarActions[idle];activeAvatarAction.play();}},undefined,err=>console.warn('Rigged character failed to load; using fallback model.',err));
 function setRiggedMotion(kind){if(!avatarMixer)return;const names=Object.keys(avatarActions),find=terms=>names.find(n=>terms.some(t=>n.includes(t)));const key=kind==='run'?(find(['run'])||find(['walk'])):kind==='walk'?(find(['walk'])||find(['run'])):(find(['idle'])||find(['walk'])||find(['run']));const next=key?avatarActions[key]:null;if(!next||next===activeAvatarAction)return;next.reset().fadeIn(.18).play();if(activeAvatarAction)activeAvatarAction.fadeOut(.18);activeAvatarAction=next;}
 let punchAnim=0;
-let onFoot=false, punchCooldown=0, playerWalkSpeed=0, jumpVelocity=0;
+let onFoot=false, punchCooldown=0, playerWalkSpeed=0, jumpVelocity=0, footstepPhase=0, turnBlend=0;
 const modeButton=document.getElementById('mode-toggle');
 const mobileModeButton=document.getElementById('foot-mode');
 const punchButton=document.getElementById('punch-button');
@@ -1167,7 +1167,8 @@ function updateOnFoot(dt,now){
  const fwd=(forward?1:0)-(back?1:0);
  const turn=(left?1:0)-(right?1:0);
  // Third-person controls: W/S walk forward/back; A/D turn the character and camera.
- playerAvatar.rotation.y+=turn*1.55*dt;
+ turnBlend=THREE.MathUtils.damp(turnBlend,turn,7.5,dt);
+  playerAvatar.rotation.y+=turnBlend*1.45*dt;
  const moving=fwd!==0;
  const footOldX=playerAvatar.position.x,footOldZ=playerAvatar.position.z;
  const running=(keys.has('ShiftLeft')||keys.has('ShiftRight'))&&moving;
@@ -1197,13 +1198,15 @@ function updateOnFoot(dt,now){
   if(d<.95&&d>.01){playerAvatar.position.x+=dx/d*(.95-d);playerAvatar.position.z+=dz/d*(.95-d)}
  }
  if(avatarMixer){avatarMixer.update(dt);setRiggedMotion(playerAvatar.position.y>.04||running?'run':playerWalkSpeed>.12?'walk':'idle');}
-  const cycle=now*.014*(running?1.7:1);
+  // Advance the stride with actual movement so feet plant more naturally instead of sliding on a wall-clock cycle.
+  footstepPhase+=dt*(running?11.5:7.4)*playerWalkSpeed;
+  const cycle=footstepPhase;
  const airborne=playerAvatar.position.y>.04;
- const walkSwing=Math.sin(cycle)*.52*playerWalkSpeed;
+ const walkSwing=Math.sin(cycle)*.43*playerWalkSpeed;
  const idleSway=Math.sin(now*.0018);
  const idleBreath=Math.sin(now*.0024);
  // Layer a subtle idle stance under the stride so the character never feels frozen.
- avatarBody.position.y=1.17+Math.sin(now*.018)*.035*playerWalkSpeed+idleBreath*.012*(1-playerWalkSpeed)*(airborne?0:1);
+ avatarBody.position.y=1.17+Math.abs(Math.sin(cycle))*.035*playerWalkSpeed+idleBreath*.008*(1-playerWalkSpeed)*(airborne?0:1);
  avatarBody.rotation.z=idleSway*.012*(1-playerWalkSpeed);
  avatarChest.rotation.z=-avatarBody.rotation.z*.55;
  avatarHead.rotation.x=Math.sin(now*.0015)*.025+(airborne?-.06:0);
@@ -1212,9 +1215,11 @@ function updateOnFoot(dt,now){
  avatarHair.rotation.y=avatarHead.rotation.y*.7;
  // Alternate the legs, add a small knee-like lift and let the feet trail naturally.
  leftLeg.rotation.x=airborne?.42:walkSwing;
+  leftLeg.rotation.x+=!airborne?Math.max(0,Math.sin(cycle+Math.PI/2))*.12*playerWalkSpeed:0;
  rightLeg.rotation.x=airborne?.42:-walkSwing;
- leftLeg.rotation.z=Math.sin(cycle+Math.PI/2)*.025*playerWalkSpeed;
- rightLeg.rotation.z=Math.sin(cycle-Math.PI/2)*.025*playerWalkSpeed;
+  rightLeg.rotation.x+=!airborne?Math.max(0,Math.sin(cycle-Math.PI/2))*.12*playerWalkSpeed:0;
+ leftLeg.rotation.z=Math.sin(cycle+Math.PI/2)*.014*playerWalkSpeed;
+ rightLeg.rotation.z=Math.sin(cycle-Math.PI/2)*.014*playerWalkSpeed;
  leftArm.rotation.x=airborne?-.78:-walkSwing*.82;
  leftArm.rotation.z=(airborne?-.12:Math.sin(cycle+Math.PI)*.055*playerWalkSpeed)+idleSway*.012;
  const punchPose=Math.sin((1-punchAnim)*Math.PI)*1.18*punchAnim;
@@ -1225,8 +1230,8 @@ function updateOnFoot(dt,now){
  camera.fov=62;camera.updateProjectionMatrix();
  // Keep a clear third-person follow camera behind and above the character.
  // Restore a clearly visible GTA-style third-person camera: well behind and above the character.
- const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(playerAvatar.rotation.y)*10.5,6.4,playerAvatar.position.z-Math.cos(playerAvatar.rotation.y)*10.5);
- camera.position.lerp(target,1-Math.exp(-6*dt));
+ const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(playerAvatar.rotation.y)*9.6,5.8,playerAvatar.position.z-Math.cos(playerAvatar.rotation.y)*9.6);
+ camera.position.lerp(target,1-Math.exp(-4.2*dt));
  camera.lookAt(playerAvatar.position.x,1.35,playerAvatar.position.z);
  speedEl.innerHTML='0<span>KM/H</span>';
 }
