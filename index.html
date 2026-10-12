@@ -14,7 +14,7 @@
 #stats{position:absolute;top:16px;right:16px;min-width:135px;text-align:right;font-variant-numeric:tabular-nums;pointer-events:auto}
 #speed{font-size:30px;font-weight:900;line-height:1}#speed span{font-size:11px;font-weight:700;opacity:.75;margin-left:5px}
 #help{position:absolute;left:16px;bottom:16px;font-size:12px;line-height:1.6;max-width:245px}
-#toast{position:absolute;top:90px;left:50%;transform:translateX(-50%);font-weight:700;font-size:13px;white-space:nowrap}
+#toast{position:absolute;top:90px;left:50%;transform:translateX(-50%);font-weight:700;font-size:13px;white-space:nowrap}#crosshair{display:none;position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);opacity:.92;filter:drop-shadow(0 1px 3px #001)}#crosshair:before,#crosshair:after{content:'';position:absolute;background:#fff;border-radius:2px}#crosshair:before{width:2px;height:22px;left:10px;top:0}#crosshair:after{height:2px;width:22px;left:0;top:10px}#crosshair .dot{position:absolute;width:4px;height:4px;background:#ffcc55;border:1px solid #18202b;border-radius:50%;left:9px;top:9px;z-index:1}body.on-foot #crosshair{display:block}
 #mobile{display:none;position:fixed;inset:auto 0 18px 0;padding:0 16px;justify-content:space-between;align-items:end;pointer-events:none;gap:10px}
 #joystick{position:relative;width:142px;height:142px;flex:0 0 142px;border:1px solid #ffffff65;border-radius:50%;background:radial-gradient(circle,#263e55bb,#10203399);box-shadow:0 4px 18px #10203355;touch-action:none;pointer-events:auto;user-select:none;-webkit-user-select:none}
 #look-zone{display:none}@media(max-width:700px){#look-zone{display:block;position:fixed;right:0;top:22%;width:48vw;height:48vh;z-index:1;touch-action:none;pointer-events:auto;background:transparent}#look-hint{position:absolute;right:12px;top:8px;color:#ffffff8a;font-size:10px;font-weight:800;text-shadow:0 1px 5px #102033;pointer-events:none}}#joystick:before{content:'移动';position:absolute;inset:0;display:grid;place-items:center;color:#ffffff88;font-size:11px;font-weight:800;pointer-events:none}
@@ -58,7 +58,7 @@ body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{di
 <div id="hud">
   <div id="brand" class="panel">MINI CITY <small>3D DRIVE · ALPHA 0.1</small></div>
   <div id="stats" class="panel"><div id="speed">0<span>KM/H</span></div><div id="combat-hud" style="margin-top:8px;text-align:left"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:900"><span>❤️ 生命</span><span id="health-value">100 / 100</span></div><div style="height:7px;background:#ffffff30;border-radius:99px;overflow:hidden;margin-top:3px"><div id="health-fill" style="height:100%;width:100%;background:#ef4444"></div></div><div id="cash-value" style="font-size:12px;color:#8dffb0;font-weight:900;margin-top:5px">💵 现金 $0</div><div id="weapon-status" style="font-size:10px;margin-top:3px;color:#ffd98a">🔫 简易手枪 · 点击攻击</div></div><div id="traffic-status" style="font-size:11px;opacity:.75;margin-top:6px">城市驾驶 · AI 交通加载中</div><div id="police-status" style="font-size:11px;color:#bfe8ff;margin-top:5px">🚓 警察系统：未通缉</div><button id="police-call" style="margin-top:7px;width:100%;padding:7px 9px;border:1px solid #8acbff;border-radius:8px;background:#17466c;color:#fff;font-weight:900;cursor:pointer">🚨 触发警察追捕</button><div id="pickup-streak" style="font-size:11px;color:#ffd34f;margin-top:4px">🪙 金币连击：—</div><div id="nitro-wrap" style="margin-top:9px;text-align:left"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;margin-bottom:4px"><span>⚡ 氮气加速 SHIFT</span><span id="nitro-value">100%</span></div><div style="height:6px;background:#ffffff30;border-radius:99px;overflow:hidden"><div id="nitro-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#38e8ff,#7b8cff);border-radius:99px;box-shadow:0 0 10px #38e8ff88"></div></div></div><button id="garage-open">🚘 车库</button></div>
-  <div id="toast" class="panel">WASD / 方向键驾驶 · 手机使用屏幕按键</div>
+  <div id="toast" class="panel">WASD / 方向键驾驶 · 手机使用屏幕按键</div><div id="crosshair" aria-label="瞄准准星"><span class="dot"></span></div>
   <div id="missions" class="panel">
     <h3>🏁 城市驾驶挑战</h3>
     <div id="mission-options">
@@ -84,7 +84,7 @@ body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{di
     <button id="garage-close">返回驾驶</button>
   </div>
   <div id="minimap-wrap"><div id="minimap-title">CITY MAP · N</div><canvas id="minimap" width="220" height="220" aria-label="城市小地图"></canvas></div>
-  <div id="help" class="panel">目标：自由驾驶并收集金币环，每个 +25 金币。<br>驾驶：WASD / 方向键，Shift 氮气，R 重置<br>按 E 下车/上车；下车后左摇杆移动，右侧滑动转镜头；按住「跑」加速，🔫 攻击。<br><button id="mode-toggle" type="button">🚶 下车（E）</button> <button id="punch-button" type="button">👊 出拳（F）</button></div>
+  <div id="help" class="panel">目标：自由驾驶并收集金币环，每个 +25 金币。<br>驾驶：WASD / 方向键，Shift 氮气，R 重置<br>下车：WASD 移动，空格跳跃，按住 Shift 跑步；鼠标左键攻击，右键拖动转镜头，准星辅助瞄准。<br><button id="mode-toggle" type="button">🚶 下车（E）</button> <button id="punch-button" type="button">👊 攻击（F）</button></div>
 </div>
 <div id="look-zone" aria-label="滑动调整镜头"><div id="look-hint">右侧滑动：调整视角</div></div>
 <div id="mobile">
@@ -681,7 +681,7 @@ runButton.addEventListener("pointerup",stopRun);runButton.addEventListener("poin
 function setMode(walking){
  if(walking&&Math.abs(speed)>1.4&&!forcedExit){showMissionToast('请先停车，再下车');return}
  if(!walking&&carDamage>=1.8){showMissionToast('车辆已报废，请按 R 救援修复后再上车');return}
- onFoot=walking;speed=0;lateralSpeed=0;steering=0;footMoveX=0;footMoveY=0;lookPointer=null;cameraYaw=playerAvatar.rotation.y;
+ onFoot=walking;document.body.classList.toggle('on-foot',walking);speed=0;lateralSpeed=0;steering=0;footMoveX=0;footMoveY=0;lookPointer=null;cameraYaw=playerAvatar.rotation.y;
  if(walking){
   playerAvatar.position.set(car.position.x+Math.cos(car.rotation.y)*2.1,0,car.position.z+Math.sin(car.rotation.y)*2.1);
   playerAvatar.rotation.y=car.rotation.y;playerAvatar.visible=true;car.visible=true;
@@ -741,10 +741,10 @@ function endLook(e){if(lookPointer===e.pointerId)lookPointer=null;}
 lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('pointermove',moveLook);lookZone.addEventListener('pointerup',endLook);lookZone.addEventListener('pointercancel',endLook);lookZone.addEventListener('lostpointercapture',endLook);
  // PC mouse look: drag on the game canvas to rotate the camera while walking.
  let mouseLookActive=false,lastMouseLookX=0;
- renderer.domElement.addEventListener('mousedown',e=>{if(!onFoot||e.button!==0)return;e.preventDefault();mouseLookActive=true;lastMouseLookX=e.clientX;});
+ renderer.domElement.addEventListener('mousedown',e=>{if(!onFoot)return;if(e.button===0){e.preventDefault();punchNearby();}else if(e.button===2){e.preventDefault();mouseLookActive=true;lastMouseLookX=e.clientX;}});
  addEventListener('mousemove',e=>{if(!mouseLookActive||!onFoot)return;const dx=e.clientX-lastMouseLookX;lastMouseLookX=e.clientX;cameraYaw-=dx*.0048;});
  addEventListener('mouseup',()=>{mouseLookActive=false;});
- addEventListener('blur',()=>{mouseLookActive=false;});
+ addEventListener('blur',()=>{mouseLookActive=false;});renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 
 function releaseJoystick(){joystickPointer=null;footMoveX=0;footMoveY=0;keys.delete('ArrowUp');keys.delete('ArrowDown');keys.delete('ArrowLeft');keys.delete('ArrowRight');joystickKnob.style.transform='translate(0px,0px)';}
 function moveJoystick(e){if(joystickPointer!==e.pointerId)return;const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.34,d=Math.hypot(dx,dy),scale=d>max?max/d:1,x=dx*scale,y=dy*scale;joystickKnob.style.transform=`translate(${x}px,${y}px)`;const nx=dx/max,ny=dy/max;if(onFoot){const mag=Math.min(1,Math.hypot(nx,ny)),dead=.16,power=mag<=dead?0:Math.pow((mag-dead)/(1-dead),1.35);footMoveX=mag?nx/mag*power:0;footMoveY=mag?ny/mag*power:0;for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);return;}footMoveX=0;footMoveY=0;const wasLeft=keys.has('ArrowLeft'),wasRight=keys.has('ArrowRight'),wasUp=keys.has('ArrowUp'),wasDown=keys.has('ArrowDown');for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);const dead=.42,release=.30;if(nx<-(wasLeft?release:dead))keys.add('ArrowLeft');if(nx>(wasRight?release:dead))keys.add('ArrowRight');if(ny<-(wasUp?release:dead))keys.add('ArrowUp');if(ny>(wasDown?release:dead))keys.add('ArrowDown');}
