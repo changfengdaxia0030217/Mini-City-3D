@@ -25,7 +25,7 @@
 #minimap-title{font-size:10px;font-weight:800;letter-spacing:.12em;opacity:.8;margin:0 0 5px 3px}
 #missions{position:absolute;top:100px;left:16px;width:min(290px,calc(100vw - 32px));pointer-events:auto}
 #missions h3{margin:0 0 8px;font-size:13px;letter-spacing:.04em}
-#mission-options{display:flex;gap:6px;margin-bottom:9px}
+#mission-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:9px}
 .mission-choice{flex:1;border:1px solid #ffffff35;border-radius:9px;background:#ffffff12;color:#fff;padding:8px 5px;font-size:11px;font-weight:800;cursor:pointer}
 .mission-choice.selected{background:#ffc04d;color:#172538;border-color:#ffe0a0}
 #mission-start{width:100%;border:0;border-radius:9px;background:#1db783;color:#08271d;padding:9px;font-weight:900;cursor:pointer}
@@ -49,7 +49,7 @@
 <body>
 <div id="hud">
   <div id="brand" class="panel">MINI CITY <small>3D DRIVE · ALPHA 0.1</small></div>
-  <div id="stats" class="panel"><div id="speed">0<span>KM/H</span></div><div id="traffic-status" style="font-size:11px;opacity:.75;margin-top:6px">城市驾驶 · AI 交通加载中</div><div id="nitro-wrap" style="margin-top:9px;text-align:left"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;margin-bottom:4px"><span>⚡ 氮气加速 SHIFT</span><span id="nitro-value">100%</span></div><div style="height:6px;background:#ffffff30;border-radius:99px;overflow:hidden"><div id="nitro-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#38e8ff,#7b8cff);border-radius:99px;box-shadow:0 0 10px #38e8ff88"></div></div></div><button id="garage-open">🚘 车库</button></div>
+  <div id="stats" class="panel"><div id="speed">0<span>KM/H</span></div><div id="traffic-status" style="font-size:11px;opacity:.75;margin-top:6px">城市驾驶 · AI 交通加载中</div><div id="pickup-streak" style="font-size:11px;color:#ffd34f;margin-top:4px">🪙 金币连击：—</div><div id="nitro-wrap" style="margin-top:9px;text-align:left"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;margin-bottom:4px"><span>⚡ 氮气加速 SHIFT</span><span id="nitro-value">100%</span></div><div style="height:6px;background:#ffffff30;border-radius:99px;overflow:hidden"><div id="nitro-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#38e8ff,#7b8cff);border-radius:99px;box-shadow:0 0 10px #38e8ff88"></div></div></div><button id="garage-open">🚘 车库</button></div>
   <div id="toast" class="panel">WASD / 方向键驾驶 · 手机使用屏幕按键</div>
   <div id="missions" class="panel">
     <h3>🏁 城市驾驶挑战</h3>
@@ -57,6 +57,7 @@
       <button class="mission-choice selected" data-mission="0">新手赛</button>
       <button class="mission-choice" data-mission="1">街区赛</button>
       <button class="mission-choice" data-mission="2">极限赛</button>
+      <button class="mission-choice" data-mission="3">金币寻宝</button>
     </div>
     <button id="mission-start">开始挑战</button>
     <div id="mission-status">选择难度，穿过城市里的发光检查点。</div>
@@ -369,7 +370,8 @@ const cameraTarget=new THREE.Vector3();
 const missionConfigs=[
  {name:'新手赛',time:55,reward:100,desc:'沿主路穿过 4 个检查点。',points:[{x:0,z:-28},{x:0,z:-57},{x:60,z:-60,rot:Math.PI/2},{x:60,z:-22}]},
  {name:'街区赛',time:85,reward:250,desc:'完成 6 个检查点，挑战连续转弯。',points:[{x:0,z:-42},{x:0,z:-60},{x:60,z:-60,rot:Math.PI/2},{x:60,z:0},{x:0,z:60,rot:Math.PI/2},{x:0,z:28}]},
- {name:'极限赛',time:125,reward:500,desc:'环绕城市完成 7 个检查点。',points:[{x:0,z:-55},{x:60,z:-60,rot:Math.PI/2},{x:60,z:60},{x:-60,z:60,rot:Math.PI/2},{x:-60,z:0},{x:0,z:0,rot:Math.PI/2},{x:0,z:-30}] }
+ {name:'极限赛',time:125,reward:500,desc:'环绕城市完成 7 个检查点。',points:[{x:0,z:-55},{x:60,z:-60,rot:Math.PI/2},{x:60,z:60},{x:-60,z:60,rot:Math.PI/2},{x:-60,z:0},{x:0,z:0,rot:Math.PI/2},{x:0,z:-30}]},
+ {name:'金币寻宝',time:95,reward:180,desc:'追踪金色路线，穿过 6 个寻宝点。',points:[{x:0,z:-18},{x:60,z:-24},{x:60,z:42},{x:24,z:60},{x:-60,z:24},{x:0,z:42}]}
 ];
 const savedProgress=(()=>{try{return JSON.parse(localStorage.getItem('miniCitySave')||'{}')}catch(e){return {}}})();
 let coins=Math.max(0,Number(savedProgress.coins)||0);
@@ -405,7 +407,9 @@ function buildMissionMarkers(){
  clearMissionMarkers();if(!activeMission)return;
  activeMission.points.forEach((p,i)=>{
   const group=new THREE.Group();group.position.set(p.x,3.1,p.z);group.rotation.y=p.rot||0;
-  const ring=new THREE.Mesh(new THREE.TorusGeometry(3.2,.22,8,28),new THREE.MeshStandardMaterial({color:i===checkpointIndex?0x43ff9a:0x73c8ff,emissive:i===checkpointIndex?0x16b85a:0x145a88,emissiveIntensity:1.5,metalness:.15,roughness:.3}));
+  const activeColor=selectedMission===3?0xffd34f:(i===checkpointIndex?0x43ff9a:0x73c8ff);
+  const activeGlow=selectedMission===3?0xb87910:(i===checkpointIndex?0x16b85a:0x145a88);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(3.2,.22,8,28),new THREE.MeshStandardMaterial({color:activeColor,emissive:activeGlow,emissiveIntensity:1.5,metalness:.15,roughness:.3}));
   group.add(ring);
   const orb=new THREE.Mesh(new THREE.SphereGeometry(.38,12,8),new THREE.MeshStandardMaterial({color:0xffffff,emissive:0x7affc0,emissiveIntensity:1.6}));orb.position.y=3.1;group.add(orb);
   group.userData.checkpointIndex=i;scene.add(group);missionMeshes.push(group);
@@ -435,6 +439,8 @@ applyVehicle();saveProgress();
 
 // Open-world gameplay: collect glowing street tokens to earn persistent currency.
 const pickupMeshes=[];
+let pickupStreak=0,lastPickupTime=-12000;
+const pickupStreakEl=document.getElementById('pickup-streak');
 const pickupPositions=[
  [0,-18],[0,-38],[0,-78],[0,22],[0,42],[0,82],
  [60,-24],[60,24],[60,42],[-60,-24],[-60,24],[-60,42],
@@ -621,6 +627,7 @@ let lastTrafficImpact=0;
 function update(dt, now){
  // Keep signal phases live; without this call the lamps and right-of-way would freeze.
  updateTrafficSignals(now);
+ if(now-lastPickupTime>12000&&pickupStreak>0){pickupStreak=0;pickupStreakEl.textContent='🪙 金币连击：—'}
  const forward=keys.has('KeyW')||keys.has('ArrowUp');
  const reverse=keys.has('KeyS')||keys.has('ArrowDown');
  const left=keys.has('KeyA')||keys.has('ArrowLeft');
@@ -702,10 +709,15 @@ function update(dt, now){
   token.position.y=1.15+Math.sin(now*.003+i)*.13;
   if(Math.hypot(car.position.x-token.position.x,car.position.z-token.position.z)<2.35){
    const id=token.userData.pickupId;
-   collectedPickups.add(id);coins+=25;
+   collectedPickups.add(id);
+   if(now-lastPickupTime<=12000)pickupStreak++;else pickupStreak=1;
+   lastPickupTime=now;
+   const bonus=Math.min(25,Math.max(0,pickupStreak-1)*5);
+   const reward=25+bonus;coins+=reward;
    scene.remove(token);pickupMeshes.splice(i,1);
    saveProgress();applyVehicle();
-   showMissionToast('✨ 收集成功！ +25 金币');
+   pickupStreakEl.textContent=pickupStreak>1?'🪙 金币连击：'+pickupStreak+' · 本次 +'+reward:'🪙 金币连击：1';
+   showMissionToast(pickupStreak>1?'✨ 连续收集 '+pickupStreak+' 次！ +'+reward+' 金币':'✨ 收集成功！ +25 金币');
   }
  }
  // Driving feedback: the chase camera pulls back slightly at speed and FOV opens under acceleration.
