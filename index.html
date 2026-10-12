@@ -611,30 +611,30 @@ const playerAvatar=new THREE.Group();scene.add(playerAvatar);playerAvatar.visibl
 const avatarVisual=new THREE.Group();avatarVisual.rotation.y=Math.PI;playerAvatar.add(avatarVisual);
 // Keep the fallback human model in its own group so loading the animated model cannot detach or hide it.
 const fallbackAvatar=new THREE.Group();avatarVisual.add(fallbackAvatar);
-// Rounded, two-legged stylized 3D human (keeps the existing third-person controller).
+// Roblox-inspired blocky avatar: square head, torso, hands and feet, with animated hinged limbs.
 const skinMat=mat(0xd6a17d), shirtMat=mat(0x2477d4), pantsMat=mat(0x26364a), shoeMat=mat(0x20242b);
-const avatarBody=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),shirtMat);
-avatarBody.scale.set(.36,.52,.245);avatarBody.position.set(0,1.17,0);fallbackAvatar.add(avatarBody);
-const avatarChest=new THREE.Mesh(new THREE.SphereGeometry(1,14,10),shirtMat);
-avatarChest.scale.set(.31,.27,.235);avatarChest.position.set(0,1.38,-.015);fallbackAvatar.add(avatarChest);
-const avatarNeck=new THREE.Mesh(new THREE.CylinderGeometry(.105,.12,.16,10),skinMat);
+const avatarBody=new THREE.Mesh(new THREE.BoxGeometry(.62,.78,.42),shirtMat);
+avatarBody.position.set(0,1.17,0);fallbackAvatar.add(avatarBody);
+const avatarChest=new THREE.Mesh(new THREE.BoxGeometry(.54,.36,.43),shirtMat);
+avatarChest.position.set(0,1.38,-.015);fallbackAvatar.add(avatarChest);
+const avatarNeck=new THREE.Mesh(new THREE.BoxGeometry(.16,.14,.16),skinMat);
 avatarNeck.position.set(0,1.65,0);fallbackAvatar.add(avatarNeck);
-const avatarHead=new THREE.Mesh(new THREE.SphereGeometry(.265,16,12),skinMat);
-avatarHead.scale.set(1,1.08,.94);avatarHead.position.set(0,1.86,0);fallbackAvatar.add(avatarHead);
-const avatarHair=new THREE.Mesh(new THREE.SphereGeometry(.276,14,9,0,Math.PI*2,0,Math.PI*.56),mat(0x292522));
-avatarHair.position.set(0,1.99,.012);fallbackAvatar.add(avatarHair);
+const avatarHead=new THREE.Mesh(new THREE.BoxGeometry(.48,.48,.45),skinMat);
+avatarHead.position.set(0,1.86,0);fallbackAvatar.add(avatarHead);
+const avatarHair=new THREE.Mesh(new THREE.BoxGeometry(.5,.13,.47),mat(0x292522));
+avatarHair.position.set(0,2.12,.012);fallbackAvatar.add(avatarHair);
 // Eyes face toward -Z, the direction the character walks when facing forward.
 for(const x of [-.09,.09]){
- const eye=new THREE.Mesh(new THREE.SphereGeometry(.027,8,6),mat(0x26211f));
+ const eye=new THREE.Mesh(new THREE.BoxGeometry(.045,.045,.018),mat(0x26211f));
  eye.position.set(x,1.88,-.238);fallbackAvatar.add(eye);
 }
 function addLimbSegment(parent,material,radius,length,y){
- const limb=new THREE.Mesh(new THREE.CylinderGeometry(radius*.82,radius,length,10),material);
+ const limb=new THREE.Mesh(new THREE.BoxGeometry(radius*1.8,length,radius*1.8),material);
  limb.position.y=y;parent.add(limb);return limb;
 }
 function addHand(parent,y){
- const hand=new THREE.Mesh(new THREE.SphereGeometry(.105,10,8),skinMat);
- hand.scale.set(.88,1.08,.85);hand.position.set(0,y,-.015);parent.add(hand);return hand;
+ const hand=new THREE.Mesh(new THREE.BoxGeometry(.16,.17,.16),skinMat);
+ hand.position.set(0,y,-.015);parent.add(hand);return hand;
 }
 const leftArm=new THREE.Group();leftArm.position.set(-.39,1.48,0);fallbackAvatar.add(leftArm);
 addLimbSegment(leftArm,shirtMat,.105,.34,-.18);
@@ -654,15 +654,16 @@ function makeLeg(x){
  const leg=new THREE.Group();leg.position.set(x,.76,0);fallbackAvatar.add(leg);
  addLimbSegment(leg,pantsMat,.13,.36,-.18);
  addLimbSegment(leg,pantsMat,.095,.34,-.51);
- const shoe=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),shoeMat);
- shoe.scale.set(.9,.62,1.45);shoe.position.set(0,-.69,-.065);leg.add(shoe);
+ const shoe=new THREE.Mesh(new THREE.BoxGeometry(.23,.15,.32),shoeMat);
+ shoe.position.set(0,-.69,-.065);leg.add(shoe);
  return leg;
 }
 const leftLeg=makeLeg(-.19),rightLeg=makeLeg(.19);
 
 let riggedAvatar=null,avatarMixer=null,avatarActions={},activeAvatarAction=null;
 const avatarLoader=new GLTFLoader();
-avatarLoader.load('https://threejs.org/examples/models/gltf/Soldier.glb',gltf=>{riggedAvatar=gltf.scene;riggedAvatar.scale.setScalar(1);/* The parent avatarVisual already corrects the model's forward axis; avoid a second 180-degree turn. */riggedAvatar.rotation.y=0;riggedAvatar.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});avatarVisual.add(riggedAvatar);avatarMixer=new THREE.AnimationMixer(riggedAvatar);for(const clip of gltf.animations)avatarActions[clip.name.toLowerCase()]=avatarMixer.clipAction(clip);fallbackAvatar.visible=false;const idle=Object.keys(avatarActions).find(n=>n.includes('idle'))||Object.keys(avatarActions)[0];if(idle){activeAvatarAction=avatarActions[idle];activeAvatarAction.play();}},undefined,err=>console.warn('Rigged character failed to load; using fallback model.',err));
+// Keep the procedural blocky avatar active so its silhouette and combat pose stay consistent.
+// The fallback rig is animated below; do not replace it with a realistic external soldier model.
 function setRiggedMotion(kind){if(!avatarMixer)return;const names=Object.keys(avatarActions),find=terms=>names.find(n=>terms.some(t=>n.includes(t)));const key=kind==='run'?(find(['run'])||find(['walk'])):kind==='walk'?(find(['walk'])||find(['run'])):(find(['idle'])||find(['walk'])||find(['run']));const next=key?avatarActions[key]:null;if(!next||next===activeAvatarAction)return;next.reset().fadeIn(.18).play();if(activeAvatarAction)activeAvatarAction.fadeOut(.18);activeAvatarAction=next;}
 let punchAnim=0;
 let onFoot=false, punchCooldown=0, playerWalkSpeed=0, jumpVelocity=0, footstepPhase=0, turnBlend=0;
@@ -1316,9 +1317,12 @@ function updateOnFoot(dt,now){
  camera.fov=62;camera.updateProjectionMatrix();
  // Keep a clear third-person follow camera behind and above the character.
  // Restore a clearly visible GTA-style third-person camera: well behind and above the character.
- const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(cameraYaw)*9.2,5.2-cameraPitch*7,playerAvatar.position.z-Math.cos(cameraYaw)*9.2);
+ const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(cameraYaw)*8.6,4.65-cameraPitch*5.2,playerAvatar.position.z-Math.cos(cameraYaw)*8.6);
  camera.position.lerp(target,1-Math.exp(-5.2*dt));
- camera.lookAt(playerAvatar.position.x+Math.sin(cameraYaw)*1.1,1.45-cameraPitch*2.5,playerAvatar.position.z+Math.cos(cameraYaw)*1.1);
+ // Aim the camera farther down the street, not at the character's feet, so the center reticle tracks NPC torso height.
+ camera.lookAt(playerAvatar.position.x+Math.sin(cameraYaw)*3.8,1.55-cameraPitch*2.2,playerAvatar.position.z+Math.cos(cameraYaw)*3.8);
+ // Raise/lower the visible pistol with the camera pitch to make aiming direction readable.
+ pistolVisual.rotation.x=THREE.MathUtils.clamp(cameraPitch,-.45,.55);
  camera.updateMatrixWorld(true);
  updateAimReticle();
  speedEl.innerHTML='0<span>KM/H</span>';
