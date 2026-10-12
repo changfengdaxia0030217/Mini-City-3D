@@ -112,7 +112,7 @@ const ground=new THREE.Mesh(new THREE.PlaneGeometry(300,300),grassMat);ground.ro
 function box(w,h,d,material,x,y,z, parent=scene){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function road(x,z,w,d){box(w,.08,d,roadMat,x,0,z); if(w>d){for(let xx=x-w/2+3;xx<x+w/2;xx+=6)box(2,.012,.13,lineMat,xx,.05,z)}else{for(let zz=z-d/2+3;zz<z+d/2;zz+=6)box(.13,.012,2,lineMat,x,.05,zz)}}
 road(0,0,240,13);road(0,0,13,240);
-for(const p of [-60,60]){road(p,0,240,11);road(0,p,11,240)}
+for(const p of [-60,60]){road(0,p,240,11);road(p,0,11,240)}
 // blocks of colourful low-poly buildings
 const buildingColors=[0xf3bd85,0xd98573,0x88b6c9,0xe6d69a,0xb1c4a0,0xb2a3c9,0xe8a8ad,0xd8d9df];
 const windowMat=mat(0x9bd3e3,.55), roofMat=mat(0x586575);
@@ -510,12 +510,66 @@ function buildCityTraffic(){
  });
  if(trafficStatus)trafficStatus.textContent='城市驾驶 · AI 车辆 '+trafficCars.length+' 辆';
 }
+// Traffic lights at the 3x3 road grid. Each junction alternates right-of-way
+// between east-west (X) and north-south (Z) traffic, with a short yellow phase.
+const trafficSignals=[];
+const signalByJunction=new Map();
+const signalRedMat=new THREE.MeshStandardMaterial({color:0xff3849,emissive:0xff1020,emissiveIntensity:1.5});
+const signalYellowMat=new THREE.MeshStandardMaterial({color:0xffd34d,emissive:0xffa600,emissiveIntensity:.15});
+const signalGreenMat=new THREE.MeshStandardMaterial({color:0x48ff9a,emissive:0x13a957,emissiveIntensity:.15});
+function createTrafficSignals(){
+ let n=0;
+ for(const x of [-60,0,60])for(const z of [-60,0,60]){
+  const poleX=x+7.2,poleZ=z-7.2;
+  box(.16,3.8,.16,mat(0x3d4b56,.7),poleX,1.9,poleZ);
+  box(.72,.92,.36,mat(0x202a34,.5),poleX,3.45,poleZ);
+  const bulbs=[];
+  for(let b=0;b<3;b++){
+   const material=[signalRedMat,signalYellowMat,signalGreenMat][b];
+   const bulb=new THREE.Mesh(new THREE.SphereGeometry(.19,10,8),material);
+   bulb.position.set(poleX,3.73-b*.28,poleZ+.205);scene.add(bulb);bulbs.push(bulb);
+  }
+  const sig={x,z,offset:n*1.37,axis:'x',color:'green',bulbs};n++;
+  trafficSignals.push(sig);signalByJunction.set(x+','+z,sig);
+ }
+}
+function updateTrafficSignals(now){
+ const cycle=(now/1000)%14;
+ for(const sig of trafficSignals){
+  const phase=(cycle+sig.offset)%14;
+  if(phase<6){sig.axis='x';sig.color='green'}
+  else if(phase<7){sig.axis='x';sig.color='yellow'}
+  else if(phase<13){sig.axis='z';sig.color='green'}
+  else {sig.axis='z';sig.color='yellow'}
+  const active=sig.color==='green'?2:sig.color==='yellow'?1:0;
+  sig.bulbs.forEach((b,i)=>{
+   const on=i===active;
+   b.material.emissiveIntensity=on?(sig.color==='yellow'?.9:1.5):.08;
+   b.material.color.setHex(on?(i===0?0xff3849:i===1?0xffd34d:0x48ff9a):0x343b42);
+  });
+ }
+}
+function signalAllows(ai,target,prev){
+ // Only regulate actual grid intersections, not arbitrary route points.
+ const sx=Math.round(target.x/60)*60,sz=Math.round(target.z/60)*60;
+ if(Math.abs(target.x-sx)>.5||Math.abs(target.z-sz)>.5)return true;
+ const sig=signalByJunction.get(sx+','+sz);if(!sig)return true;
+ const axis=Math.abs(target.x-prev.x)>Math.abs(target.z-prev.z)?'x':'z';
+ return sig.axis===axis&&sig.color==='green';
+}
+createTrafficSignals();
+
 function updateTraffic(dt){
  for(let i=0;i<trafficCars.length;i++){
   const ai=trafficCars[i],g=ai.group,route=trafficRoutes[ai.route],target=route[ai.target];
   const dx=target.x-g.position.x,dz=target.z-g.position.z,dist=Math.hypot(dx,dz);
-  if(dist<2.8)ai.target=(ai.target+1)%route.length;
+  const prev=route[(ai.target-1+route.length)%route.length];
+  const signalGreen=signalAllows(ai,target,prev);
+  if(dist<2.8&&signalGreen)ai.target=(ai.target+1)%route.length;
   let desired=ai.baseSpeed;
+  // Red/yellow means brake before entering the junction and wait for green.
+  const targetIsJunction=Math.abs(target.x/60-Math.round(target.x/60))<.01&&Math.abs(target.z/60-Math.round(target.z/60))<.01;
+  if(targetIsJunction&&!signalGreen&&dist<13)desired=dist<5.2?0:Math.min(desired,ai.baseSpeed*THREE.MathUtils.clamp((dist-5.2)/7.8,0,1));
   // Soft following-distance control prevents AI cars from bunching up.
   for(let j=0;j<trafficCars.length;j++)if(i!==j){
    const other=trafficCars[j].group,ox=other.position.x-g.position.x,oz=other.position.z-g.position.z,d=Math.hypot(ox,oz);
@@ -583,7 +637,7 @@ function update(dt, now){
   car.position.z+=(-Math.cos(car.rotation.y)*speed-Math.sin(car.rotation.y)*lateralSpeed)*dt;
   if(collides(car.position.x,car.position.z)){car.position.x=oldX;car.position.z=oldZ;speed*=-.22;lateralSpeed*=-.25}
  car.position.x=THREE.MathUtils.clamp(car.position.x,-119,119);car.position.z=THREE.MathUtils.clamp(car.position.z,-119,119);
- updateTraffic(dt);
+ updateTraffic(dt,now);
  if(missionRunning&&activeMission){
   const navTarget=activeMission.points[checkpointIndex];
   const navAngle=Math.atan2(navTarget.x-car.position.x,-(navTarget.z-car.position.z))+car.rotation.y;
