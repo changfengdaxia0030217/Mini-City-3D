@@ -736,7 +736,7 @@ const joystick=document.getElementById('joystick'),joystickKnob=document.getElem
 let joystickPointer=null,footMoveX=0,footMoveY=0;
 let cameraYaw=playerAvatar.rotation.y,lookPointer=null,lastLookX=0;const lookZone=document.getElementById('look-zone');
 function beginLook(e){if(!onFoot||lookPointer!==null)return;e.preventDefault();lookPointer=e.pointerId;lastLookX=e.clientX;lookZone.setPointerCapture(e.pointerId);}
-function moveLook(e){if(lookPointer!==e.pointerId||!onFoot)return;e.preventDefault();const dx=e.clientX-lastLookX;lastLookX=e.clientX;cameraYaw+=dx*.0048;}
+function moveLook(e){if(lookPointer!==e.pointerId||!onFoot)return;e.preventDefault();const dx=e.clientX-lastLookX;lastLookX=e.clientX;cameraYaw-=dx*.0048;}
 function endLook(e){if(lookPointer===e.pointerId)lookPointer=null;}
 lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('pointermove',moveLook);lookZone.addEventListener('pointerup',endLook);lookZone.addEventListener('pointercancel',endLook);lookZone.addEventListener('lostpointercapture',endLook);
 function releaseJoystick(){joystickPointer=null;footMoveX=0;footMoveY=0;keys.delete('ArrowUp');keys.delete('ArrowDown');keys.delete('ArrowLeft');keys.delete('ArrowRight');joystickKnob.style.transform='translate(0px,0px)';}
