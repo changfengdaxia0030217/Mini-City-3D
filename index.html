@@ -296,6 +296,14 @@ for(const x of [-1.08,1.08])for(const z of [-1.32,1.32]){
   }
  }
 }
+// Brake discs and red performance calipers sit behind the spokes for extra depth.
+const brakeDiscMat=mat(0x78838c,.48),caliperMat=mat(0xd8323e,.38);
+for(const x of [-1.08,1.08])for(const z of [-1.32,1.32]){
+ const disc=new THREE.Mesh(new THREE.CylinderGeometry(.30,.30,.035,20),brakeDiscMat);
+ disc.rotation.z=Math.PI/2;disc.position.set(x,.42,z);car.add(disc);
+ const caliper=box(.075,.25,.16,caliperMat,x*1.17,.48,z+.17,car);
+ caliper.rotation.y=x>0?-.08:.08;
+}
 // Distinct body kits for the unlocked cars.
 const sportKit=new THREE.Group();car.add(sportKit);
 box(1.9,.12,.55,mat(0x292d35),0,.53,-2.12,sportKit);
