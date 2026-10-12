@@ -25,3 +25,40 @@ jobs:
           fs.writeFileSync('/tmp/game-check.mjs', html.slice(start + '<script type="module">'.length, end));
           NODE
           node --check /tmp/game-check.mjs
+      - name: Browser smoke test
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+          python3 -m http.server 8000 >/tmp/game-server.log 2>&1 &
+          SERVER_PID=$!
+          trap "kill $SERVER_PID" EXIT
+          sleep 2
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({headless:true});
+          const page = await browser.newPage();
+          const errors = [];
+          page.on('pageerror', e => errors.push(e.message));
+          page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+          await page.goto('http://127.0.0.1:8000/', {waitUntil:'networkidle', timeout:60000});
+          await page.waitForTimeout(5000);
+          const state = await page.evaluate(() => ({
+            canvas: !!document.querySelector('canvas'),
+            carExists: !!window.miniCityCar,
+            carVisible: window.miniCityCar?.visible,
+            carPosition: window.miniCityCar ? window.miniCityCar.position.toArray() : null,
+            canvasSize: (() => { const c=document.querySelector('canvas'); return c ? [c.width,c.height] : null; })()
+          }));
+          console.log(JSON.stringify({state, errors}, null, 2));
+          await browser.close();
+          if (!state.canvas || !state.carExists || !state.carVisible || errors.length) process.exit(1);
+          NODE
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const html = fs.readFileSync('index.html', 'utf8');
+          const start = html.indexOf('<script type="module">');
+          const end = html.indexOf('</script>', start);
+          if (start < 0 || end < 0) throw new Error('Game module script not found');
+          fs.writeFileSync('/tmp/game-check.mjs', html.slice(start + '<script type="module">'.length, end));
+          NODE
+          node --check /tmp/game-check.mjs
