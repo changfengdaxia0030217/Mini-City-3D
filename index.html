@@ -17,7 +17,7 @@
 #toast{position:absolute;top:90px;left:50%;transform:translateX(-50%);font-weight:700;font-size:13px;white-space:nowrap}
 #mobile{display:none;position:fixed;inset:auto 0 18px 0;padding:0 16px;justify-content:space-between;align-items:end;pointer-events:none;gap:10px}
 #joystick{position:relative;width:142px;height:142px;flex:0 0 142px;border:1px solid #ffffff65;border-radius:50%;background:radial-gradient(circle,#263e55bb,#10203399);box-shadow:0 4px 18px #10203355;touch-action:none;pointer-events:auto;user-select:none;-webkit-user-select:none}
-#joystick:before{content:'移动 / 转向';position:absolute;inset:0;display:grid;place-items:center;color:#ffffff88;font-size:11px;font-weight:800;pointer-events:none}
+#look-zone{display:none}@media(max-width:700px){#look-zone{display:block;position:fixed;right:0;top:22%;width:48vw;height:48vh;z-index:1;touch-action:none;pointer-events:auto;background:transparent}#look-hint{position:absolute;right:12px;top:8px;color:#ffffff8a;font-size:10px;font-weight:800;text-shadow:0 1px 5px #102033;pointer-events:none}}#joystick:before{content:'移动';position:absolute;inset:0;display:grid;place-items:center;color:#ffffff88;font-size:11px;font-weight:800;pointer-events:none}
 #joystick-knob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px;border-radius:50%;border:2px solid #ffffffa0;background:linear-gradient(145deg,#ffc95c,#e88d2c);box-shadow:0 4px 12px #0005;pointer-events:none;transform:translate(0,0)}
 #ui-toggles{position:absolute;top:62px;right:14px;display:flex;gap:5px;pointer-events:auto;z-index:4}
 .ui-toggle{border:1px solid #ffffff55;border-radius:9px;background:#102033d9;color:#fff;padding:7px 9px;font-size:11px;font-weight:900;box-shadow:0 3px 10px #10203330}
@@ -86,6 +86,7 @@ body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{di
   <div id="minimap-wrap"><div id="minimap-title">CITY MAP · N</div><canvas id="minimap" width="220" height="220" aria-label="城市小地图"></canvas></div>
   <div id="help" class="panel">目标：自由驾驶并收集金币环，每个 +25 金币。<br>驾驶：WASD / 方向键，Shift 氮气，R 重置<br>按 E 下车/上车；下车后 WASD 走动，Shift 跑步，F/🔫 攻击。<br><button id="mode-toggle" type="button">🚶 下车（E）</button> <button id="punch-button" type="button">👊 出拳（F）</button></div>
 </div>
+<div id="look-zone" aria-label="滑动调整镜头"><div id="look-hint">右侧滑动：调整视角</div></div>
 <div id="mobile">
   <div id="joystick" role="application" aria-label="虚拟摇杆，向上加速，左右转向，向下倒车"><div id="joystick-knob"></div></div>
   <div style="display:flex;gap:9px;align-items:end;pointer-events:auto"><button class="control" id="brake" data-key="Space">刹车</button><button class="control" id="gas" data-key="KeyW">加速</button><button class="control" id="foot-mode" type="button">下车</button><button class="control" id="foot-punch" type="button">🔫</button><button class="control" id="foot-run" type="button">跑</button></div>
@@ -674,13 +675,13 @@ const mobileModeButton=document.getElementById('foot-mode');
 const punchButton=document.getElementById('punch-button');
 document.getElementById('foot-punch').addEventListener('click',punchNearby);
 const runButton=document.getElementById("foot-run");
-runButton.addEventListener("pointerdown",e=>{e.preventDefault();keys.add("ShiftLeft");runButton.classList.add("active");});
+runButton.addEventListener("pointerdown",e=>{e.preventDefault();if(runButton.setPointerCapture)runButton.setPointerCapture(e.pointerId);keys.add("ShiftLeft");runButton.classList.add("active");});
 const stopRun=()=>{keys.delete("ShiftLeft");runButton.classList.remove("active")};
 runButton.addEventListener("pointerup",stopRun);runButton.addEventListener("pointercancel",stopRun);runButton.addEventListener("lostpointercapture",stopRun);
 function setMode(walking){
  if(walking&&Math.abs(speed)>1.4&&!forcedExit){showMissionToast('请先停车，再下车');return}
  if(!walking&&carDamage>=1.8){showMissionToast('车辆已报废，请按 R 救援修复后再上车');return}
- onFoot=walking;speed=0;lateralSpeed=0;steering=0;
+ onFoot=walking;speed=0;lateralSpeed=0;steering=0;footMoveX=0;footMoveY=0;lookPointer=null;cameraYaw=playerAvatar.rotation.y;
  if(walking){
   playerAvatar.position.set(car.position.x+Math.cos(car.rotation.y)*2.1,0,car.position.z+Math.sin(car.rotation.y)*2.1);
   playerAvatar.rotation.y=car.rotation.y;playerAvatar.visible=true;car.visible=true;
@@ -732,9 +733,14 @@ document.querySelectorAll('[data-key]').forEach(btn=>{
 });
 // Analog touch joystick: push forward/back to accelerate/reverse and left/right to steer or walk.
 const joystick=document.getElementById('joystick'),joystickKnob=document.getElementById('joystick-knob');
-let joystickPointer=null;
-function releaseJoystick(){joystickPointer=null;keys.delete('ArrowUp');keys.delete('ArrowDown');keys.delete('ArrowLeft');keys.delete('ArrowRight');joystickKnob.style.transform='translate(0px,0px)';}
-function moveJoystick(e){if(joystickPointer!==e.pointerId)return;const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.34,d=Math.hypot(dx,dy),scale=d>max?max/d:1,x=dx*scale,y=dy*scale;joystickKnob.style.transform=`translate(${x}px,${y}px)`;const nx=dx/max,ny=dy/max;const wasLeft=keys.has('ArrowLeft'),wasRight=keys.has('ArrowRight'),wasUp=keys.has('ArrowUp'),wasDown=keys.has('ArrowDown');for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);/* On foot, prioritize the direction of travel: small sideways thumb drift while pushing forward must not turn the character. */const dead=onFoot?.48:.42,release=onFoot?.34:.30;const allowTurn=!onFoot||Math.abs(nx)>Math.abs(ny)*.88;if(allowTurn&&nx<-(wasLeft?release:dead))keys.add('ArrowLeft');if(allowTurn&&nx>(wasRight?release:dead))keys.add('ArrowRight');if(ny<-(wasUp?release:dead))keys.add('ArrowUp');if(ny>(wasDown?release:dead))keys.add('ArrowDown');}
+let joystickPointer=null,footMoveX=0,footMoveY=0;
+let cameraYaw=playerAvatar.rotation.y,lookPointer=null,lastLookX=0;const lookZone=document.getElementById('look-zone');
+function beginLook(e){if(!onFoot||lookPointer!==null)return;e.preventDefault();lookPointer=e.pointerId;lastLookX=e.clientX;lookZone.setPointerCapture(e.pointerId);}
+function moveLook(e){if(lookPointer!==e.pointerId||!onFoot)return;e.preventDefault();const dx=e.clientX-lastLookX;lastLookX=e.clientX;cameraYaw-=dx*.008;}
+function endLook(e){if(lookPointer===e.pointerId)lookPointer=null;}
+lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('pointermove',moveLook);lookZone.addEventListener('pointerup',endLook);lookZone.addEventListener('pointercancel',endLook);lookZone.addEventListener('lostpointercapture',endLook);
+function releaseJoystick(){joystickPointer=null;footMoveX=0;footMoveY=0;keys.delete('ArrowUp');keys.delete('ArrowDown');keys.delete('ArrowLeft');keys.delete('ArrowRight');joystickKnob.style.transform='translate(0px,0px)';}
+function moveJoystick(e){if(joystickPointer!==e.pointerId)return;const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.34,d=Math.hypot(dx,dy),scale=d>max?max/d:1,x=dx*scale,y=dy*scale;joystickKnob.style.transform=`translate(${x}px,${y}px)`;const nx=dx/max,ny=dy/max;if(onFoot){footMoveX=Math.abs(nx)<.12?0:THREE.MathUtils.clamp(nx,-1,1);footMoveY=Math.abs(ny)<.12?0:THREE.MathUtils.clamp(ny,-1,1);for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);return;}footMoveX=0;footMoveY=0;const wasLeft=keys.has('ArrowLeft'),wasRight=keys.has('ArrowRight'),wasUp=keys.has('ArrowUp'),wasDown=keys.has('ArrowDown');for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);const dead=.42,release=.30;if(nx<-(wasLeft?release:dead))keys.add('ArrowLeft');if(nx>(wasRight?release:dead))keys.add('ArrowRight');if(ny<-(wasUp?release:dead))keys.add('ArrowUp');if(ny>(wasDown?release:dead))keys.add('ArrowDown');}
 joystick.addEventListener('pointerdown',e=>{e.preventDefault();joystickPointer=e.pointerId;joystick.setPointerCapture(e.pointerId);moveJoystick(e)});
 joystick.addEventListener('pointermove',e=>{e.preventDefault();moveJoystick(e)});
 joystick.addEventListener('pointerup',e=>{if(joystickPointer===e.pointerId)releaseJoystick()});
@@ -1191,18 +1197,20 @@ function updateOnFoot(dt,now){
  punchArm.rotation.x=Math.sin((1-punchAnim)*Math.PI)*1.18*punchAnim;
  const forward=keys.has('KeyW')||keys.has('ArrowUp'),back=keys.has('KeyS')||keys.has('ArrowDown');
  const left=keys.has('KeyA')||keys.has('ArrowLeft'),right=keys.has('KeyD')||keys.has('ArrowRight');
- const fwd=(forward?1:0)-(back?1:0);
- const turn=(left?1:0)-(right?1:0);
- // Third-person controls: W/S walk forward/back; A/D turn the character and camera.
- turnBlend=THREE.MathUtils.damp(turnBlend,turn,4.0,dt);
-  playerAvatar.rotation.y+=turnBlend*.72*dt;
- const moving=fwd!==0;
+ const keyFwd=(forward?1:0)-(back?1:0),keySide=(right?1:0)-(left?1:0);
+ const stickActive=Math.abs(footMoveX)>.001||Math.abs(footMoveY)>.001;
+ const fwd=stickActive?-footMoveY:keyFwd,side=stickActive?footMoveX:keySide;
+ const moving=Math.abs(fwd)>.02||Math.abs(side)>.02;
+ const fx=Math.sin(cameraYaw),fz=Math.cos(cameraYaw),rx=Math.cos(cameraYaw),rz=-Math.sin(cameraYaw);
+ let moveX=fx*fwd+rx*side,moveZ=fz*fwd+rz*side;const moveLen=Math.hypot(moveX,moveZ);if(moveLen>1){moveX/=moveLen;moveZ/=moveLen;}
+ if(moving){const desiredYaw=Math.atan2(moveX,moveZ);let delta=((desiredYaw-playerAvatar.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;playerAvatar.rotation.y+=delta*(1-Math.exp(-10*dt));}
+ turnBlend=0;
  const footOldX=playerAvatar.position.x,footOldZ=playerAvatar.position.z;
  const running=(keys.has('ShiftLeft')||keys.has('ShiftRight'))&&moving;
  const moveSpeed=running?8.2:4.4;
  if(moving){
-  playerAvatar.position.x+=Math.sin(playerAvatar.rotation.y)*fwd*moveSpeed*dt;
-  playerAvatar.position.z+=Math.cos(playerAvatar.rotation.y)*fwd*moveSpeed*dt;
+  playerAvatar.position.x+=moveX*moveSpeed*dt;
+  playerAvatar.position.z+=moveZ*moveSpeed*dt;
   playerWalkSpeed=Math.min(1,playerWalkSpeed+dt*(running?8:5));
  }else playerWalkSpeed=Math.max(0,playerWalkSpeed-dt*4);
  // Jump arc: Space starts an upward impulse; gravity brings the character back to the ground.
@@ -1257,9 +1265,9 @@ function updateOnFoot(dt,now){
  camera.fov=62;camera.updateProjectionMatrix();
  // Keep a clear third-person follow camera behind and above the character.
  // Restore a clearly visible GTA-style third-person camera: well behind and above the character.
- const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(playerAvatar.rotation.y)*9.6,5.8,playerAvatar.position.z-Math.cos(playerAvatar.rotation.y)*9.6);
- camera.position.lerp(target,1-Math.exp(-4.2*dt));
- camera.lookAt(playerAvatar.position.x,1.35,playerAvatar.position.z);
+ const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(cameraYaw)*9.2,5.2,playerAvatar.position.z-Math.cos(cameraYaw)*9.2);
+ camera.position.lerp(target,1-Math.exp(-5.2*dt));
+ camera.lookAt(playerAvatar.position.x+Math.sin(cameraYaw)*1.1,1.45,playerAvatar.position.z+Math.cos(cameraYaw)*1.1);
  speedEl.innerHTML='0<span>KM/H</span>';
 }
 function updateCarDamageEffects(now){
