@@ -260,7 +260,7 @@ const exhaustMat=new THREE.MeshStandardMaterial({color:0x9ba5ae,metalness:.85,ro
 for(const side of [-1,1]){
  const exhaust=new THREE.Mesh(new THREE.CylinderGeometry(.095,.11,.20,12),exhaustMat);
  exhaust.rotation.x=Math.PI/2;exhaust.position.set(side*.57,.39,2.22);car.add(exhaust);
- const exhaustDark=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,.205,12),rimDark);
+ const exhaustDark=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,.205,12),new THREE.MeshStandardMaterial({color:0x252c35,metalness:.35,roughness:.55}));
  exhaustDark.rotation.x=Math.PI/2;exhaustDark.position.set(side*.57,.39,2.23);car.add(exhaustDark);
 }
 // Subtle performance styling: hood scoop, pinstripes, ducktail wing and roof antenna.
