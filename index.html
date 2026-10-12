@@ -21,7 +21,7 @@
 .control:active,.control.active{background:#ffbd4a;color:#152235}
 #gas{width:62px;height:62px;border-radius:50%;font-size:14px;background:#1b8e68dd}
 #brake{width:54px;height:54px;border-radius:50%;font-size:12px;background:#b84747dd}
-#minimap-wrap{position:absolute;right:16px;top:220px;width:150px;padding:7px;border-radius:14px;background:#102033b8;border:1px solid #ffffff35;backdrop-filter:blur(8px);box-shadow:0 8px 28px #10203320}
+#minimap-wrap{position:absolute;right:16px;bottom:16px;top:auto;width:150px;padding:7px;border-radius:14px;background:#102033e8;border:1px solid #ffffff45;backdrop-filter:blur(8px);box-shadow:0 8px 28px #10203330;z-index:3}
 #minimap-title{font-size:10px;font-weight:800;letter-spacing:.12em;opacity:.8;margin:0 0 5px 3px}
 #missions{position:absolute;top:100px;left:16px;width:min(290px,calc(100vw - 32px));pointer-events:auto}
 #missions h3{margin:0 0 8px;font-size:13px;letter-spacing:.04em}
@@ -42,7 +42,7 @@
 #nav-arrow{position:absolute;left:50%;bottom:18%;transform:translateX(-50%);font-size:36px;color:#7dffb0;text-shadow:0 0 14px #00ff8a,0 3px 8px #102033;display:none;line-height:1}
 @media(max-width:700px){#missions{top:72px;left:12px;width:min(235px,calc(100vw - 140px));padding:9px 10px}#missions h3{font-size:11px}#mission-options{gap:4px;margin-bottom:6px}.mission-choice{padding:7px 2px;font-size:10px}#mission-start{padding:7px;font-size:11px}#mission-status{font-size:10px;margin-top:5px}#mission-meta{font-size:10px}}
 #minimap{display:block;width:100%;aspect-ratio:1;border-radius:8px;background:#83b96a}
-@media(max-width:700px){#minimap-wrap{top:222px;right:12px;width:96px;padding:4px}#minimap-title{font-size:9px;margin-bottom:3px}} 
+@media(max-width:700px){#minimap-wrap{top:auto;bottom:154px;right:12px;width:96px;padding:4px;z-index:3}#minimap-title{font-size:9px;margin-bottom:3px}} 
 @media(max-width:700px){#mobile{display:flex}#help{bottom:165px;font-size:11px;max-width:190px}#brand{top:12px;left:12px}#stats{top:12px;right:12px}#toast{top:78px;font-size:12px}}
 </style>
 </head>
@@ -116,7 +116,7 @@ function road(x,z,w,d){box(w,.08,d,roadMat,x,0,z); if(w>d){for(let xx=x-w/2+3;xx
 road(0,0,240,13);road(0,0,13,240);
 for(const p of [-60,60]){road(0,p,240,11);road(p,0,11,240)}
 // Outer ring roads add more routes around the expanded city.
-for(const p of [-100,100]){road(0,p,240,8);road(p,0,8,240)}
+for(const p of [-100,100]){road(0,p,280,8);road(p,0,8,280)}
 // A winding river cuts across the city; shallow banks and moving highlights make the water read as flowing.
 const riverCenterZ=x=>16+1.8*Math.sin(x*.028)+.65*Math.sin(x*.071);
 const riverHalfWidth=4.1;
@@ -179,6 +179,29 @@ function createRiverBridge(x){
  }
 }
 for(const x of [-100,-60,0,60,100])createRiverBridge(x);
+// Drive-through mountain tunnels on the outer ring road.
+function createMountainTunnel(x1,x2,z){
+ const stone=mat(0x737c7d,.95),inner=mat(0x202a31,.98),rim=mat(0x4b555b,.9),glow=mat(0xffd98b,.5);
+ const mid=(x1+x2)/2,len=Math.abs(x2-x1),direction=Math.sign(x2-x1)||1;
+ // Dark tunnel interior sits over the road; the road remains open and drivable.
+ box(len,.32,8.8,inner,mid,4.25,z);
+ box(len,.3,.42,stone,mid,7.15,z-4.35);box(len,.3,.42,stone,mid,7.15,z+4.35);
+ for(const side of [-1,1])box(len,7,.42,stone,mid,3.5,z+side*4.35);
+ for(const x of [x1,x2]){
+  const shape=new THREE.Shape();
+  shape.moveTo(-5.2,0);shape.lineTo(5.2,0);shape.lineTo(5.2,6.2);shape.quadraticCurveTo(0,8.5,-5.2,6.2);shape.closePath();
+  const hole=new THREE.Path();
+  hole.moveTo(-3.8,0);hole.lineTo(-3.8,4.2);hole.quadraticCurveTo(0,6.7,3.8,4.2);hole.lineTo(3.8,0);hole.closePath();shape.holes.push(hole);
+  const geo=new THREE.ExtrudeGeometry(shape,{depth:.65,bevelEnabled:false,curveSegments:12});
+  const portal=new THREE.Mesh(geo,stone);portal.rotation.y=Math.PI/2;portal.position.set(x,0,z);portal.castShadow=true;portal.receiveShadow=true;scene.add(portal);
+  for(const side of [-1,1])box(.18,.16,.18,glow,x+direction*.7,5.9,z+side*4.45);
+ }
+ for(let x=Math.min(x1,x2)+3;x<Math.max(x1,x2);x+=5){
+  box(.12,.12,.12,glow,x,6.55,z-2.7);box(.12,.12,.12,glow,x,6.55,z+2.7);
+ }
+}
+createMountainTunnel(108,140,100);
+createMountainTunnel(-108,-140,-100);
 // blocks of colourful low-poly buildings
 const buildingColors=[0xf3bd85,0xd98573,0x88b6c9,0xe6d69a,0xb1c4a0,0xb2a3c9,0xe8a8ad,0xd8d9df];
 const windowMat=mat(0x9bd3e3,.55), roofMat=mat(0x586575);
