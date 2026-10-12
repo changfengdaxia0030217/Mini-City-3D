@@ -606,22 +606,24 @@ for(let i=0;i<56;i++){
 const playerAvatar=new THREE.Group();scene.add(playerAvatar);playerAvatar.visible=false;
 // Keep movement/controller axes separate from the rendered model's forward axis.
 const avatarVisual=new THREE.Group();avatarVisual.rotation.y=Math.PI;playerAvatar.add(avatarVisual);
+// Keep the fallback human model in its own group so loading the animated model cannot detach or hide it.
+const fallbackAvatar=new THREE.Group();avatarVisual.add(fallbackAvatar);
 // Rounded, two-legged stylized 3D human (keeps the existing third-person controller).
 const skinMat=mat(0xd6a17d), shirtMat=mat(0x2477d4), pantsMat=mat(0x26364a), shoeMat=mat(0x20242b);
 const avatarBody=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),shirtMat);
-avatarBody.scale.set(.36,.52,.245);avatarBody.position.set(0,1.17,0);avatarVisual.add(avatarBody);
+avatarBody.scale.set(.36,.52,.245);avatarBody.position.set(0,1.17,0);fallbackAvatar.add(avatarBody);
 const avatarChest=new THREE.Mesh(new THREE.SphereGeometry(1,14,10),shirtMat);
-avatarChest.scale.set(.31,.27,.235);avatarChest.position.set(0,1.38,-.015);avatarVisual.add(avatarChest);
+avatarChest.scale.set(.31,.27,.235);avatarChest.position.set(0,1.38,-.015);fallbackAvatar.add(avatarChest);
 const avatarNeck=new THREE.Mesh(new THREE.CylinderGeometry(.105,.12,.16,10),skinMat);
-avatarNeck.position.set(0,1.65,0);avatarVisual.add(avatarNeck);
+avatarNeck.position.set(0,1.65,0);fallbackAvatar.add(avatarNeck);
 const avatarHead=new THREE.Mesh(new THREE.SphereGeometry(.265,16,12),skinMat);
-avatarHead.scale.set(1,1.08,.94);avatarHead.position.set(0,1.86,0);avatarVisual.add(avatarHead);
+avatarHead.scale.set(1,1.08,.94);avatarHead.position.set(0,1.86,0);fallbackAvatar.add(avatarHead);
 const avatarHair=new THREE.Mesh(new THREE.SphereGeometry(.276,14,9,0,Math.PI*2,0,Math.PI*.56),mat(0x292522));
-avatarHair.position.set(0,1.99,.012);avatarVisual.add(avatarHair);
+avatarHair.position.set(0,1.99,.012);fallbackAvatar.add(avatarHair);
 // Eyes face toward -Z, the direction the character walks when facing forward.
 for(const x of [-.09,.09]){
  const eye=new THREE.Mesh(new THREE.SphereGeometry(.027,8,6),mat(0x26211f));
- eye.position.set(x,1.88,-.238);avatarVisual.add(eye);
+ eye.position.set(x,1.88,-.238);fallbackAvatar.add(eye);
 }
 function addLimbSegment(parent,material,radius,length,y){
  const limb=new THREE.Mesh(new THREE.CylinderGeometry(radius*.82,radius,length,10),material);
@@ -631,16 +633,16 @@ function addHand(parent,y){
  const hand=new THREE.Mesh(new THREE.SphereGeometry(.105,10,8),skinMat);
  hand.scale.set(.88,1.08,.85);hand.position.set(0,y,-.015);parent.add(hand);return hand;
 }
-const leftArm=new THREE.Group();leftArm.position.set(-.39,1.48,0);avatarVisual.add(leftArm);
+const leftArm=new THREE.Group();leftArm.position.set(-.39,1.48,0);fallbackAvatar.add(leftArm);
 addLimbSegment(leftArm,shirtMat,.105,.34,-.18);
 addLimbSegment(leftArm,skinMat,.078,.32,-.49);
 addHand(leftArm,-.68);
-const punchArm=new THREE.Group();punchArm.position.set(.39,1.48,0);avatarVisual.add(punchArm);
+const punchArm=new THREE.Group();punchArm.position.set(.39,1.48,0);fallbackAvatar.add(punchArm);
 addLimbSegment(punchArm,shirtMat,.11,.34,-.18);
 addLimbSegment(punchArm,skinMat,.08,.34,-.49);
 addHand(punchArm,-.69);
 function makeLeg(x){
- const leg=new THREE.Group();leg.position.set(x,.76,0);avatarVisual.add(leg);
+ const leg=new THREE.Group();leg.position.set(x,.76,0);fallbackAvatar.add(leg);
  addLimbSegment(leg,pantsMat,.13,.36,-.18);
  addLimbSegment(leg,pantsMat,.095,.34,-.51);
  const shoe=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),shoeMat);
@@ -648,7 +650,7 @@ function makeLeg(x){
  return leg;
 }
 const leftLeg=makeLeg(-.19),rightLeg=makeLeg(.19);
-const fallbackAvatar=new THREE.Group();while(playerAvatar.children.length)fallbackAvatar.add(playerAvatar.children[0]);avatarVisual.add(fallbackAvatar);
+
 let riggedAvatar=null,avatarMixer=null,avatarActions={},activeAvatarAction=null;
 const avatarLoader=new GLTFLoader();
 avatarLoader.load('https://threejs.org/examples/models/gltf/Soldier.glb',gltf=>{riggedAvatar=gltf.scene;riggedAvatar.scale.setScalar(1);riggedAvatar.rotation.y=Math.PI;riggedAvatar.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});avatarVisual.add(riggedAvatar);avatarMixer=new THREE.AnimationMixer(riggedAvatar);for(const clip of gltf.animations)avatarActions[clip.name.toLowerCase()]=avatarMixer.clipAction(clip);fallbackAvatar.visible=false;const idle=Object.keys(avatarActions).find(n=>n.includes('idle'))||Object.keys(avatarActions)[0];if(idle){activeAvatarAction=avatarActions[idle];activeAvatarAction.play();}},undefined,err=>console.warn('Rigged character failed to load; using fallback model.',err));
