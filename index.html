@@ -573,16 +573,27 @@ function updateTraffic(dt){
   // Soft following-distance control prevents AI cars from bunching up.
   for(let j=0;j<trafficCars.length;j++)if(i!==j){
    const other=trafficCars[j].group,ox=other.position.x-g.position.x,oz=other.position.z-g.position.z,d=Math.hypot(ox,oz);
-   if(d<6.5&&d>.01){
+   if(d<7.5&&d>.01){
     const forwardX=-Math.sin(g.rotation.y),forwardZ=-Math.cos(g.rotation.y);
-    if((ox*forwardX+oz*forwardZ)>0&&Math.abs(ox*forwardZ-oz*forwardX)<3.2)desired=Math.min(desired,ai.baseSpeed*THREE.MathUtils.clamp((d-2.4)/4.1,.12,1));
+    const ahead=ox*forwardX+oz*forwardZ;
+    const lateral=Math.abs(ox*forwardZ-oz*forwardX);
+    if(ahead>0&&lateral<3.2){
+     // Stop rather than creep into the bumper when the queue is tight.
+     const followSpeed=d<2.9?0:ai.baseSpeed*THREE.MathUtils.clamp((d-2.9)/4.6,0,1);
+     desired=Math.min(desired,followSpeed);
+    }
    }
   }
   // Yield to the player if a traffic car approaches the player's immediate path.
   const px=car.position.x-g.position.x,pz=car.position.z-g.position.z,pd=Math.hypot(px,pz);
-  if(pd<7&&pd>.01){
+  if(pd<8&&pd>.01){
    const fx=-Math.sin(g.rotation.y),fz=-Math.cos(g.rotation.y);
-   if(px*fx+pz*fz>0&&Math.abs(px*fz-pz*fx)<3.5)desired=Math.min(desired,ai.baseSpeed*.22);
+   const playerAhead=px*fx+pz*fz;
+   const playerLateral=Math.abs(px*fz-pz*fx);
+   if(playerAhead>0&&playerLateral<3.7){
+    const playerClosing=Math.abs(speed)>2;
+    desired=Math.min(desired,playerAhead<3.1&&playerClosing?0:ai.baseSpeed*.2);
+   }
   }
   ai.speed=THREE.MathUtils.damp(ai.speed,desired,2.8,dt);
   const angle=Math.atan2(target.x-g.position.x,-(target.z-g.position.z));
@@ -591,10 +602,25 @@ function updateTraffic(dt){
   g.position.x-=Math.sin(g.rotation.y)*ai.speed*dt;
   g.position.z-=Math.cos(g.rotation.y)*ai.speed*dt;
  }
+ // Final low-cost spacing pass prevents cars from visibly occupying the same space.
+ for(let i=0;i<trafficCars.length;i++)for(let j=i+1;j<trafficCars.length;j++){
+  const a=trafficCars[i].group,b=trafficCars[j].group;
+  const dx=b.position.x-a.position.x,dz=b.position.z-a.position.z,d=Math.hypot(dx,dz);
+  if(d>0&&d<2.35){
+   const push=(2.35-d)*.5, nx=dx/d,nz=dz/d;
+   a.position.x-=nx*push;a.position.z-=nz*push;
+   b.position.x+=nx*push;b.position.z+=nz*push;
+   trafficCars[i].speed=Math.min(trafficCars[i].speed,1.2);
+   trafficCars[j].speed=Math.min(trafficCars[j].speed,1.2);
+  }
+ }
 }
 buildCityTraffic();
 
+let lastTrafficImpact=0;
 function update(dt, now){
+ // Keep signal phases live; without this call the lamps and right-of-way would freeze.
+ updateTrafficSignals(now);
  const forward=keys.has('KeyW')||keys.has('ArrowUp');
  const reverse=keys.has('KeyS')||keys.has('ArrowDown');
  const left=keys.has('KeyA')||keys.has('ArrowLeft');
@@ -638,6 +664,20 @@ function update(dt, now){
   if(collides(car.position.x,car.position.z)){car.position.x=oldX;car.position.z=oldZ;speed*=-.22;lateralSpeed*=-.25}
  car.position.x=THREE.MathUtils.clamp(car.position.x,-119,119);car.position.z=THREE.MathUtils.clamp(car.position.z,-119,119);
  updateTraffic(dt,now);
+ // Player/traffic contact: stop the player's car at impact, damp the AI car, and notify once per cooldown.
+ for(const ai of trafficCars){
+  const dx=car.position.x-ai.group.position.x,dz=car.position.z-ai.group.position.z,d=Math.hypot(dx,dz);
+  if(d<2.35){
+   car.position.x=oldX;car.position.z=oldZ;
+   speed*=-.28;lateralSpeed*=-.2;
+   ai.speed=Math.min(ai.speed,1.0);
+   if(now-lastTrafficImpact>1250){
+    showMissionToast('🚧 车辆碰撞！注意与车流保持距离');
+    lastTrafficImpact=now;
+   }
+   break;
+  }
+ }
  if(missionRunning&&activeMission){
   const navTarget=activeMission.points[checkpointIndex];
   const navAngle=Math.atan2(navTarget.x-car.position.x,-(navTarget.z-car.position.z))+car.rotation.y;
