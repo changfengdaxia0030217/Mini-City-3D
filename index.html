@@ -88,6 +88,7 @@
 </div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9dd8ee);
@@ -575,7 +576,7 @@ function createPedestrian(x,z,index){
  const route=index%4;
  pedestrians.push({group:g,homeX:x,homeZ:z,route,phase:Math.random()*Math.PI*2,baseX:x,baseZ:z,stun:0,walkSpeed:.65+Math.random()*.45,fleeTime:0,reportTimer:0,reported:false});
 }
-for(let i=0;i<28;i++){
+for(let i=0;i<56;i++){
  const row=Math.floor(i/7),col=i%7;
  const axis=row%2===0;
  const x=axis?-86+col*27:(row===1?-92:92)+(Math.random()-.5)*4;
@@ -626,6 +627,11 @@ function makeLeg(x){
  return leg;
 }
 const leftLeg=makeLeg(-.19),rightLeg=makeLeg(.19);
+const fallbackAvatar=new THREE.Group();while(playerAvatar.children.length)fallbackAvatar.add(playerAvatar.children[0]);playerAvatar.add(fallbackAvatar);
+let riggedAvatar=null,avatarMixer=null,avatarActions={},activeAvatarAction=null;
+const avatarLoader=new GLTFLoader();
+avatarLoader.load('https://threejs.org/examples/models/gltf/Soldier.glb',gltf=>{riggedAvatar=gltf.scene;riggedAvatar.scale.setScalar(1);riggedAvatar.rotation.y=Math.PI;riggedAvatar.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});playerAvatar.add(riggedAvatar);avatarMixer=new THREE.AnimationMixer(riggedAvatar);for(const clip of gltf.animations)avatarActions[clip.name.toLowerCase()]=avatarMixer.clipAction(clip);fallbackAvatar.visible=false;const idle=Object.keys(avatarActions).find(n=>n.includes('idle'))||Object.keys(avatarActions)[0];if(idle){activeAvatarAction=avatarActions[idle];activeAvatarAction.play();}},undefined,err=>console.warn('Rigged character failed to load; using fallback model.',err));
+function setRiggedMotion(kind){if(!avatarMixer)return;const names=Object.keys(avatarActions),find=terms=>names.find(n=>terms.some(t=>n.includes(t)));const key=kind==='run'?(find(['run'])||find(['walk'])):kind==='walk'?(find(['walk'])||find(['run'])):(find(['idle'])||find(['walk'])||find(['run']));const next=key?avatarActions[key]:null;if(!next||next===activeAvatarAction)return;next.reset().fadeIn(.18).play();if(activeAvatarAction)activeAvatarAction.fadeOut(.18);activeAvatarAction=next;}
 let punchAnim=0;
 let onFoot=false, punchCooldown=0, playerWalkSpeed=0, jumpVelocity=0;
 const modeButton=document.getElementById('mode-toggle');
@@ -683,6 +689,8 @@ document.querySelectorAll('[data-key]').forEach(btn=>{
 });
 function resetCar(){car.position.set(0,0,8);car.rotation.y=0;car.rotation.z=0;speed=0;steering=0;lateralSpeed=0}
 let speed=0, steering=0, lateralSpeed=0, last=performance.now(), nitro=100;
+const lastSafeCarPosition=new THREE.Vector3(0,0,8);let riverFallTimer=0,lastPedestrianImpact=0,lastLampImpact=0;
+function hitsStreetLamp(x,z){for(let p=-100;p<=100;p+=20)for(const side of [-1,1])if(Math.hypot(x-p,z-side*10)<1.35||Math.hypot(x-side*10,z-p)<1.35)return true;return false;}
 const speedEl=document.getElementById('speed');
 const cameraTarget=new THREE.Vector3();
 const missionConfigs=[
@@ -1138,7 +1146,8 @@ function updateOnFoot(dt,now){
   const dx=playerAvatar.position.x-p.group.position.x,dz=playerAvatar.position.z-p.group.position.z,d=Math.hypot(dx,dz);
   if(d<.95&&d>.01){playerAvatar.position.x+=dx/d*(.95-d);playerAvatar.position.z+=dz/d*(.95-d)}
  }
- const cycle=now*.014*(running?1.7:1);
+ if(avatarMixer){avatarMixer.update(dt);setRiggedMotion(playerAvatar.position.y>.04||running?'run':playerWalkSpeed>.12?'walk':'idle');}
+  const cycle=now*.014*(running?1.7:1);
  const airborne=playerAvatar.position.y>.04;
  const walkSwing=Math.sin(cycle)*.52*playerWalkSpeed;
  const idleSway=Math.sin(now*.0018);
@@ -1174,6 +1183,7 @@ function update(dt, now){
  updateTrafficSignals(now);
  updatePedestrians(dt);
  if(onFoot){updateTraffic(dt,now);updatePolice(dt,now);updateOnFoot(dt,now);return;}
+ if(riverFallTimer>0){riverFallTimer=Math.max(0,riverFallTimer-dt);car.position.y=-Math.min(2.4,(2.2-riverFallTimer)*1.35);speed=0;lateralSpeed=0;if(riverFallTimer===0){car.position.copy(lastSafeCarPosition);car.position.y=0;showMissionToast('🌊 车辆掉进河里！救援已将车辆拖回岸边');}updateTraffic(dt,now);updatePolice(dt,now);cameraTarget.set(car.position.x+Math.sin(car.rotation.y)*9,4.8,car.position.z+Math.cos(car.rotation.y)*9);camera.position.lerp(cameraTarget,1-Math.exp(-5.5*dt));camera.lookAt(car.position.x,1.0,car.position.z);speedEl.innerHTML='0<span>KM/H</span>';return;}
  if(now-lastPickupTime>12000&&pickupStreak>0){pickupStreak=0;pickupStreakEl.textContent='🪙 金币连击：—'}
  const forward=keys.has('KeyW')||keys.has('ArrowUp');
  const reverse=keys.has('KeyS')||keys.has('ArrowDown');
@@ -1215,7 +1225,10 @@ function update(dt, now){
  const oldX=car.position.x,oldZ=car.position.z;
   car.position.x+=(-Math.sin(car.rotation.y)*speed+Math.cos(car.rotation.y)*lateralSpeed)*dt;
   car.position.z+=(-Math.cos(car.rotation.y)*speed-Math.sin(car.rotation.y)*lateralSpeed)*dt;
-  if(collides(car.position.x,car.position.z)){car.position.x=oldX;car.position.z=oldZ;speed*=-.22;lateralSpeed*=-.25}
+  const inRiver=Math.abs(car.position.z-riverCenterZ(car.position.x))<riverHalfWidth+1.2;
+  if(inRiver){riverFallTimer=2.2;speed=0;lateralSpeed=0;showMissionToast('🌊 冲进河里了！车辆正在下沉');}
+  else if(collides(car.position.x,car.position.z)||hitsStreetLamp(car.position.x,car.position.z)){car.position.x=oldX;car.position.z=oldZ;speed*=-.24;lateralSpeed*=-.25;if(now-lastLampImpact>900){showMissionToast('💥 撞到路灯或障碍物了！车辆受阻');lastLampImpact=now;}}
+  else lastSafeCarPosition.set(car.position.x,0,car.position.z);
  car.position.x=THREE.MathUtils.clamp(car.position.x,-119,119);car.position.z=THREE.MathUtils.clamp(car.position.z,-119,119);
  updateTraffic(dt,now);
  updatePolice(dt,now);
@@ -1233,6 +1246,7 @@ function update(dt, now){
    break;
   }
  }
+ for(const p of pedestrians){const dx=car.position.x-p.group.position.x,dz=car.position.z-p.group.position.z,d=Math.hypot(dx,dz);if(d<2.15&&d>.01&&Math.abs(car.position.y)<.2){p.group.position.x-=dx/d*2.4;p.group.position.z-=dz/d*2.4;p.stun=.25;p.fleeTime=9;p.reportTimer=2.2;p.reported=false;if(now-lastPedestrianImpact>1000){showMissionToast('🚗 撞到行人！行人逃跑并可能报警');lastPedestrianImpact=now;}if(Math.abs(speed)>5)speed*=.82;}}
  if(missionRunning&&activeMission){
   const navTarget=activeMission.points[checkpointIndex];
   const navAngle=Math.atan2(navTarget.x-car.position.x,-(navTarget.z-car.position.z))+car.rotation.y;
