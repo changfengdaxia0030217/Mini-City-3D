@@ -283,6 +283,15 @@ const rimMat=mat(0xdce3e9,.35),rimDark=mat(0x303943,.55);
 for(const x of [-1.08,1.08])for(const z of [-1.32,1.32]){
  const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.28,16),tireMat);
  wheel.rotation.z=Math.PI/2;wheel.position.set(x,.42,z);wheel.castShadow=true;car.add(wheel);wheels.push(wheel);
+ // Wheel-arch lips: upper semicircular fenders hug each tire without hiding the red sidewall.
+ const archMat=mat(0x303943,.58);
+ const arch=new THREE.Mesh(new THREE.TorusGeometry(.49,.065,8,24,Math.PI),archMat);
+ arch.rotation.y=Math.PI/2;
+ arch.position.set(x*0.94,.43,z);
+ arch.castShadow=true;arch.receiveShadow=true;car.add(arch);
+ // Small body-colored fender shoulder makes the tire sit visually inside the bodywork.
+ const fenderShoulder=box(.09,.12,.88,carPaint,x*0.91,.76,z,car);
+ fenderShoulder.rotation.y=0;
  // Metallic rim face and six visible spokes on both sides of each wheel.
  const hub=new THREE.Mesh(new THREE.CylinderGeometry(.245,.245,.30,12),rimMat);
  hub.rotation.z=Math.PI/2;hub.position.set(x,.42,z);car.add(hub);
@@ -453,7 +462,9 @@ function update(dt){
   // Body roll adds weight and inertia during fast corners.
   const targetRoll=-steering*THREE.MathUtils.clamp(speedAbs/22,0,1)*(handbrake?.16:.075);
   car.rotation.z=THREE.MathUtils.damp(car.rotation.z,targetRoll,5,dt);
-  const oldX=car.position.x,oldZ=car.position.z;
+  // Front wheels visually follow steering input; keep the rear wheels aligned.
+ wheels.forEach((w,i)=>{w.rotation.y=(i===0||i===2)?steering*.28:0;});
+ const oldX=car.position.x,oldZ=car.position.z;
   car.position.x+=(-Math.sin(car.rotation.y)*speed+Math.cos(car.rotation.y)*lateralSpeed)*dt;
   car.position.z+=(-Math.cos(car.rotation.y)*speed-Math.sin(car.rotation.y)*lateralSpeed)*dt;
   if(collides(car.position.x,car.position.z)){car.position.x=oldX;car.position.z=oldZ;speed*=-.22;lateralSpeed*=-.25}
@@ -475,8 +486,13 @@ function update(dt){
   }
  }
  wheels.forEach(w=>w.rotation.x+=speed*dt*1.5);
- cameraTarget.set(car.position.x+Math.sin(car.rotation.y)*9,4.8,car.position.z+Math.cos(car.rotation.y)*9);
- camera.position.lerp(cameraTarget,.075);
+ // Driving feedback: the chase camera pulls back slightly at speed and FOV opens under acceleration.
+ const speedRatio=THREE.MathUtils.clamp(Math.abs(speed)/vehicleStats[selectedVehicle].maxSpeed,0,1);
+ const desiredFov=62+speedRatio*8+(handbrake?2:0);
+ camera.fov=THREE.MathUtils.damp(camera.fov,desiredFov,3.5,dt);
+ camera.updateProjectionMatrix();
+ cameraTarget.set(car.position.x+Math.sin(car.rotation.y)*(9+speedRatio*2.2),4.8+speedRatio*.45,car.position.z+Math.cos(car.rotation.y)*(9+speedRatio*2.2));
+ camera.position.lerp(cameraTarget,1-Math.exp(-5.5*dt));
  const look=new THREE.Vector3(car.position.x-Math.sin(car.rotation.y)*5,1.2,car.position.z-Math.cos(car.rotation.y)*5);
  camera.lookAt(look);
  speedEl.innerHTML=Math.round(Math.abs(speed)*3.6)+'<span>KM/H</span>';
