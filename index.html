@@ -42,7 +42,7 @@
 #nav-arrow{position:absolute;left:50%;bottom:18%;transform:translateX(-50%);font-size:36px;color:#7dffb0;text-shadow:0 0 14px #00ff8a,0 3px 8px #102033;display:none;line-height:1}
 @media(max-width:700px){#missions{top:72px;left:12px;width:min(235px,calc(100vw - 140px));padding:9px 10px}#missions h3{font-size:11px}#mission-options{gap:4px;margin-bottom:6px}.mission-choice{padding:7px 2px;font-size:10px}#mission-start{padding:7px;font-size:11px}#mission-status{font-size:10px;margin-top:5px}#mission-meta{font-size:10px}}
 #minimap{display:block;width:100%;aspect-ratio:1;border-radius:8px;background:#83b96a}
-@media(max-width:700px){#minimap-wrap{top:104px;right:12px;width:112px;padding:5px}#minimap-title{font-size:9px;margin-bottom:3px}} 
+@media(max-width:700px){#minimap-wrap{top:222px;right:12px;width:96px;padding:4px}#minimap-title{font-size:9px;margin-bottom:3px}} 
 @media(max-width:700px){#mobile{display:flex}#help{bottom:165px;font-size:11px;max-width:190px}#brand{top:12px;left:12px}#stats{top:12px;right:12px}#toast{top:78px;font-size:12px}}
 </style>
 </head>
@@ -650,7 +650,8 @@ buildCityTraffic();
 const policeStatus=document.getElementById('police-status');
 const policeCall=document.getElementById('police-call');
 const policeCars=[];
-let wantedActive=false, wantedElapsed=0, escapeElapsed=0, caughtElapsed=0, policeBlink=0, wantedLevel=0, lastRoadblockToast=0;\nlet roadblock=null;
+let wantedActive=false, wantedElapsed=0, escapeElapsed=0, caughtElapsed=0, policeBlink=0, wantedLevel=0, lastRoadblockToast=0;
+let roadblock=null;
 function buildPoliceCar(index){
  const g=new THREE.Group();
  const white=mat(0xe9f1f7,.42), darkBlue=mat(0x12375c,.48), glass=mat(0x8ed4e8,.32);
