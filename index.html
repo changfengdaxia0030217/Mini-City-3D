@@ -769,7 +769,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
   if(document.pointerLockElement!==renderer.domElement){if(renderer.domElement.requestPointerLock)renderer.domElement.requestPointerLock();return;}
   fireWeapon();
  });
- addEventListener('mousemove',e=>{if(!onFoot||document.pointerLockElement!==renderer.domElement)return;cameraYaw-=e.movementX*.0048;cameraPitch=Math.max(-.48,Math.min(.62,cameraPitch+e.movementY*.0035));});
+ addEventListener('mousemove',e=>{if(!onFoot||document.pointerLockElement!==renderer.domElement)return;cameraYaw-=e.movementX*.0048;cameraPitch=Math.max(-.48,Math.min(.62,cameraPitch-e.movementY*.0035));});
  renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 
 function releaseJoystick(){joystickPointer=null;footMoveX=0;footMoveY=0;keys.delete('ArrowUp');keys.delete('ArrowDown');keys.delete('ArrowLeft');keys.delete('ArrowRight');joystickKnob.style.transform='translate(0px,0px)';}
@@ -1305,9 +1305,9 @@ function updateOnFoot(dt,now){
  camera.fov=62;camera.updateProjectionMatrix();
  // Keep a clear third-person follow camera behind and above the character.
  // Restore a clearly visible GTA-style third-person camera: well behind and above the character.
- const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(cameraYaw)*9.2,5.2+cameraPitch*7,playerAvatar.position.z-Math.cos(cameraYaw)*9.2);
+ const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(cameraYaw)*9.2,5.2-cameraPitch*7,playerAvatar.position.z-Math.cos(cameraYaw)*9.2);
  camera.position.lerp(target,1-Math.exp(-5.2*dt));
- camera.lookAt(playerAvatar.position.x+Math.sin(cameraYaw)*1.1,1.45+cameraPitch*2.5,playerAvatar.position.z+Math.cos(cameraYaw)*1.1);
+ camera.lookAt(playerAvatar.position.x+Math.sin(cameraYaw)*1.1,1.45-cameraPitch*2.5,playerAvatar.position.z+Math.cos(cameraYaw)*1.1);
  speedEl.innerHTML='0<span>KM/H</span>';
 }
 function updateCarDamageEffects(now){
