@@ -15,8 +15,14 @@
 #speed{font-size:30px;font-weight:900;line-height:1}#speed span{font-size:11px;font-weight:700;opacity:.75;margin-left:5px}
 #help{position:absolute;left:16px;bottom:16px;font-size:12px;line-height:1.6;max-width:245px}
 #toast{position:absolute;top:90px;left:50%;transform:translateX(-50%);font-weight:700;font-size:13px;white-space:nowrap}
-#mobile{display:none;position:fixed;inset:auto 0 22px 0;padding:0 20px;justify-content:space-between;align-items:end;pointer-events:none}
-.pad{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px);gap:6px;pointer-events:auto}
+#mobile{display:none;position:fixed;inset:auto 0 18px 0;padding:0 16px;justify-content:space-between;align-items:end;pointer-events:none;gap:10px}
+#joystick{position:relative;width:142px;height:142px;flex:0 0 142px;border:1px solid #ffffff65;border-radius:50%;background:radial-gradient(circle,#263e55bb,#10203399);box-shadow:0 4px 18px #10203355;touch-action:none;pointer-events:auto;user-select:none;-webkit-user-select:none}
+#joystick:before{content:'移动 / 转向';position:absolute;inset:0;display:grid;place-items:center;color:#ffffff88;font-size:11px;font-weight:800;pointer-events:none}
+#joystick-knob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px;border-radius:50%;border:2px solid #ffffffa0;background:linear-gradient(145deg,#ffc95c,#e88d2c);box-shadow:0 4px 12px #0005;pointer-events:none;transform:translate(0,0)}
+#ui-toggles{position:absolute;top:62px;right:14px;display:flex;gap:5px;pointer-events:auto;z-index:4}
+.ui-toggle{border:1px solid #ffffff55;border-radius:9px;background:#102033d9;color:#fff;padding:7px 9px;font-size:11px;font-weight:900;box-shadow:0 3px 10px #10203330}
+.ui-toggle.active{background:#ffc04ddd;color:#172538}
+body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{display:none!important}
 .control{border:1px solid #ffffff65;background:#10203399;color:white;border-radius:14px;font-size:20px;font-weight:800;touch-action:none;user-select:none;-webkit-user-select:none;display:grid;place-items:center;box-shadow:0 4px 14px #10203330}
 .control:active,.control.active{background:#ffbd4a;color:#152235}
 #mode-toggle,#punch-button{border:1px solid #ffffff55;border-radius:8px;background:#20394ddd;color:#fff;padding:5px 8px;margin-top:5px;font-size:11px;font-weight:800;cursor:pointer}
@@ -44,8 +50,8 @@
 #nav-arrow{position:absolute;left:50%;bottom:18%;transform:translateX(-50%);font-size:36px;color:#7dffb0;text-shadow:0 0 14px #00ff8a,0 3px 8px #102033;display:none;line-height:1}
 @media(max-width:700px){#missions{top:72px;left:12px;width:min(235px,calc(100vw - 140px));padding:9px 10px}#missions h3{font-size:11px}#mission-options{gap:4px;margin-bottom:6px}.mission-choice{padding:7px 2px;font-size:10px}#mission-start{padding:7px;font-size:11px}#mission-status{font-size:10px;margin-top:5px}#mission-meta{font-size:10px}}
 #minimap{display:block;width:100%;aspect-ratio:1;border-radius:8px;background:#83b96a}
-@media(max-width:700px){#minimap-wrap{top:auto;bottom:154px;right:12px;width:96px;padding:4px;z-index:3}#minimap-title{font-size:9px;margin-bottom:3px}} 
-@media(max-width:700px){#mobile{display:flex}#help{bottom:165px;font-size:11px;max-width:190px}#brand{top:12px;left:12px}#stats{top:12px;right:12px}#toast{top:78px;font-size:12px}}
+@media(max-width:700px){#minimap-wrap{top:auto;bottom:172px;right:12px;width:96px;padding:4px;z-index:3}#minimap-title{font-size:9px;margin-bottom:3px}}
+@media(max-width:700px){#mobile{display:flex}#help{bottom:170px;font-size:11px;max-width:190px}#brand{top:10px;left:10px;font-size:12px;padding:8px 10px}#brand small{font-size:9px}#stats{top:10px;right:10px;min-width:105px;padding:8px 9px}#speed{font-size:24px}#traffic-status,#police-status,#police-call,#pickup-streak,#nitro-wrap{display:none}#garage-open{margin-top:3px;padding:5px 7px;font-size:10px}#toast{top:58px;font-size:11px;max-width:80vw;white-space:normal;text-align:center}#ui-toggles{top:57px;right:10px;gap:4px}.ui-toggle{padding:6px 7px;font-size:10px}#missions{top:95px;left:10px;width:min(225px,calc(100vw - 24px));max-height:42vh;overflow:auto}#mission-options{grid-template-columns:repeat(2,minmax(0,1fr))}#joystick{width:126px;height:126px;flex-basis:126px}#joystick-knob{width:52px;height:52px;margin:-26px}#mobile{padding:0 12px;bottom:12px}#brake{width:48px;height:48px}#gas{width:56px;height:56px}#foot-mode{height:45px;min-width:46px}#foot-punch{height:45px;width:42px;font-size:15px}}
 </style>
 </head>
 <body>
@@ -68,6 +74,7 @@
   </div>
   <div id="mission-toast"></div>
   <div id="nav-arrow">⬆</div>
+  <div id="ui-toggles" aria-label="显示设置"><button class="ui-toggle active" data-panel="map" type="button">地图</button><button class="ui-toggle active" data-panel="missions" type="button">任务</button><button class="ui-toggle active" data-panel="help" type="button">说明</button></div>
   <div id="garage" class="panel">
     <h3>🚘 城市车库</h3>
     <p id="garage-balance">金币：0 · 解锁车辆并立即试驾</p>
@@ -80,10 +87,7 @@
   <div id="help" class="panel">目标：自由驾驶并收集金币环，每个 +25 金币。<br>驾驶：WASD / 方向键，Shift 氮气，R 重置<br>按 E 下车/上车；下车后 WASD 走动，F 出拳。<br><button id="mode-toggle" type="button">🚶 下车（E）</button> <button id="punch-button" type="button">👊 出拳（F）</button></div>
 </div>
 <div id="mobile">
-  <div class="pad">
-    <div></div><button class="control" data-key="ArrowUp">▲</button><div></div>
-    <button class="control" data-key="ArrowLeft">◀</button><button class="control" data-key="ArrowDown">▼</button><button class="control" data-key="ArrowRight">▶</button>
-  </div>
+  <div id="joystick" role="application" aria-label="虚拟摇杆，向上加速，左右转向，向下倒车"><div id="joystick-knob"></div></div>
   <div style="display:flex;gap:9px;align-items:end;pointer-events:auto"><button class="control" id="brake" data-key="Space">刹车</button><button class="control" id="gas" data-key="KeyW">加速</button><button class="control" id="foot-mode" type="button">下车</button><button class="control" id="foot-punch" type="button">👊</button></div>
 </div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
@@ -699,10 +703,20 @@ addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>keys.clear());
 document.querySelectorAll('[data-key]').forEach(btn=>{
  const key=btn.dataset.key;
- const down=e=>{e.preventDefault();keys.add(key);btn.classList.add('active')};
+ const down=e=>{e.preventDefault();keys.add(key);btn.classList.add('active');if(btn.setPointerCapture)btn.setPointerCapture(e.pointerId)};
  const up=e=>{e.preventDefault();keys.delete(key);btn.classList.remove('active')};
- btn.addEventListener('pointerdown',down);btn.addEventListener('pointerup',up);btn.addEventListener('pointercancel',up);btn.addEventListener('pointerleave',up);
+ btn.addEventListener('pointerdown',down);btn.addEventListener('pointerup',up);btn.addEventListener('pointercancel',up);btn.addEventListener('lostpointercapture',up);
 });
+// Analog touch joystick: push forward/back to accelerate/reverse and left/right to steer or walk.
+const joystick=document.getElementById('joystick'),joystickKnob=document.getElementById('joystick-knob');
+let joystickPointer=null;
+function releaseJoystick(){joystickPointer=null;keys.delete('ArrowUp');keys.delete('ArrowDown');keys.delete('ArrowLeft');keys.delete('ArrowRight');joystickKnob.style.transform='translate(0px,0px)';}
+function moveJoystick(e){if(joystickPointer!==e.pointerId)return;const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.34,d=Math.hypot(dx,dy),scale=d>max?max/d:1,x=dx*scale,y=dy*scale;joystickKnob.style.transform=`translate(${x}px,${y}px)`;const nx=dx/max,ny=dy/max;for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);if(ny<-.24)keys.add('ArrowUp');if(ny>.3)keys.add('ArrowDown');if(nx<-.24)keys.add('ArrowLeft');if(nx>.24)keys.add('ArrowRight');}
+joystick.addEventListener('pointerdown',e=>{e.preventDefault();joystickPointer=e.pointerId;joystick.setPointerCapture(e.pointerId);moveJoystick(e)});
+joystick.addEventListener('pointermove',e=>{e.preventDefault();moveJoystick(e)});
+joystick.addEventListener('pointerup',e=>{if(joystickPointer===e.pointerId)releaseJoystick()});
+joystick.addEventListener('pointercancel',releaseJoystick);joystick.addEventListener('lostpointercapture',releaseJoystick);
+document.querySelectorAll('[data-panel]').forEach(btn=>btn.addEventListener('click',()=>{const name=btn.dataset.panel,hidden=document.body.classList.toggle('hide-'+name);btn.classList.toggle('active',!hidden);btn.setAttribute('aria-pressed',String(!hidden))}));
 function resetCar(){car.position.set(0,0,8);car.rotation.y=0;car.rotation.z=0;speed=0;steering=0;lateralSpeed=0;carDamage=0;carOnFire=false;forcedExit=false;car.visible=true;carSmoke.forEach(p=>p.visible=false);carFlames.forEach(p=>p.visible=false);lastSafeCarPosition.set(0,0,8);riverFallTimer=0}
 let speed=0, steering=0, lateralSpeed=0, last=performance.now(), nitro=100;
 const lastSafeCarPosition=new THREE.Vector3(0,0,8);let riverFallTimer=0,lastPedestrianImpact=0,lastLampImpact=0,lastDamageTime=0,carDamage=0,carOnFire=false,forcedExit=false;
