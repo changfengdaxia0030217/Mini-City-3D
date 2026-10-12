@@ -21,7 +21,7 @@
 .control:active,.control.active{background:#ffbd4a;color:#152235}
 #gas{width:62px;height:62px;border-radius:50%;font-size:14px;background:#1b8e68dd}
 #brake{width:54px;height:54px;border-radius:50%;font-size:12px;background:#b84747dd}
-#minimap-wrap{position:absolute;right:16px;top:112px;width:164px;padding:7px;border-radius:14px;background:#102033b8;border:1px solid #ffffff35;backdrop-filter:blur(8px);box-shadow:0 8px 28px #10203320}
+#minimap-wrap{position:absolute;right:16px;top:220px;width:150px;padding:7px;border-radius:14px;background:#102033b8;border:1px solid #ffffff35;backdrop-filter:blur(8px);box-shadow:0 8px 28px #10203320}
 #minimap-title{font-size:10px;font-weight:800;letter-spacing:.12em;opacity:.8;margin:0 0 5px 3px}
 #missions{position:absolute;top:100px;left:16px;width:min(290px,calc(100vw - 32px));pointer-events:auto}
 #missions h3{margin:0 0 8px;font-size:13px;letter-spacing:.04em}
@@ -650,7 +650,7 @@ buildCityTraffic();
 const policeStatus=document.getElementById('police-status');
 const policeCall=document.getElementById('police-call');
 const policeCars=[];
-let wantedActive=false, wantedElapsed=0, escapeElapsed=0, caughtElapsed=0, policeBlink=0;
+let wantedActive=false, wantedElapsed=0, escapeElapsed=0, caughtElapsed=0, policeBlink=0, wantedLevel=0, lastRoadblockToast=0;\nlet roadblock=null;
 function buildPoliceCar(index){
  const g=new THREE.Group();
  const white=mat(0xe9f1f7,.42), darkBlue=mat(0x12375c,.48), glass=mat(0x8ed4e8,.32);
@@ -671,15 +671,30 @@ function buildPoliceCar(index){
  const light=new THREE.Group();g.add(light);
  return {group:g,red,blue,light,index,speed:0};
 }
-for(let i=0;i<2;i++)policeCars.push(buildPoliceCar(i));
+for(let i=0;i<3;i++)policeCars.push(buildPoliceCar(i));
+function clearRoadblock(){
+ if(roadblock){scene.remove(roadblock);roadblock=null}
+}
+function deployRoadblock(){
+ if(roadblock||!wantedActive)return;
+ const g=new THREE.Group(),fx=-Math.sin(car.rotation.y),fz=-Math.cos(car.rotation.y);
+ const x=car.position.x+fx*25,z=car.position.z+fz*25;
+ g.position.set(x,0,z);g.rotation.y=car.rotation.y;scene.add(g);
+ const stripe=mat(0xf6d34b,.55),black=mat(0x27313a,.75),red=mat(0xff314e,.4);
+ box(5.8,.42,.32,stripe,0,1.05,0,g);
+ for(let i=-2;i<=2;i++)box(.42,.44,.35,black,i*1.05,1.06,.02,g);
+ for(const side of [-1,1]){box(.18,1.5,.18,black,side*2.6,.72,0,g);box(.45,.22,.22,red,side*2.6,1.58,0,g)}
+ roadblock=g;showMissionToast('🚧 三星通缉！前方出现警方路障！');
+}
 function setWanted(active){
  wantedActive=active;wantedElapsed=0;escapeElapsed=0;caughtElapsed=0;
+ if(!active){wantedLevel=0;clearRoadblock()}
  policeCars.forEach((p,i)=>{
   p.group.visible=active;
-  if(active){const back=car.rotation.y;p.group.position.set(car.position.x+Math.sin(back)*(i===0?9:-9)+Math.cos(back)*18,0,car.position.z+Math.cos(back)*(i===0?9:-9)-Math.sin(back)*18);p.speed=0}
+  if(active){const back=car.rotation.y;p.group.position.set(car.position.x+Math.sin(back)*(i-1)*9+Math.cos(back)*(i===2?25:18),0,car.position.z+Math.cos(back)*(i-1)*9-Math.sin(back)*(i===2?25:18));p.speed=0}
  });
  policeCall.textContent=active?'🚔 甩开警察即可逃脱':'🚨 触发警察追捕';
- policeStatus.textContent=active?'🚨 通缉中！警车正在追击':'🚓 警察系统：未通缉';
+ policeStatus.textContent=active?'🚨 ★☆☆☆☆ 通缉中！警车正在追击':'🚓 警察系统：未通缉';
  policeStatus.style.color=active?'#ff7373':'#bfe8ff';
 }
 policeCall.addEventListener('click',()=>{
@@ -703,7 +718,14 @@ function updatePolice(dt,now){
   const flash=Math.sin(policeBlink+p.index*Math.PI)>.0;
   p.red.emissiveIntensity=flash?2.6:.15;p.blue.emissiveIntensity=flash?.15:2.6;
  }
- policeStatus.textContent='🚨 通缉中 · 警车距离 '+Math.round(nearest)+'m · 逃脱计时 '+Math.max(0,Math.ceil(7-escapeElapsed))+'秒';
+ wantedLevel=Math.min(5,1+Math.floor(wantedElapsed/12));
+ if(wantedLevel>=3&&!roadblock)deployRoadblock();
+ policeStatus.textContent='🚨 '+'★'.repeat(wantedLevel)+'☆'.repeat(5-wantedLevel)+' · 警车 '+Math.round(nearest)+'m · 逃脱 '+Math.max(0,Math.ceil(7-escapeElapsed))+'秒';
+ if(roadblock&&Math.hypot(car.position.x-roadblock.position.x,car.position.z-roadblock.position.z)<3.8){
+  speed*=.42;lateralSpeed*=.35;
+  if(now-lastRoadblockToast>2200){showMissionToast('🚧 撞上警方路障！速度被大幅压低');lastRoadblockToast=now}
+  clearRoadblock();
+ }
  if(nearest<2.7&&Math.abs(speed)<4)caughtElapsed+=dt;else caughtElapsed=0;
  if(caughtElapsed>1.0){
   setWanted(false);resetCar();coins=Math.max(0,coins-35);saveProgress();applyVehicle();
