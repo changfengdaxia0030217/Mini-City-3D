@@ -84,11 +84,11 @@ body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{di
     <button id="garage-close">返回驾驶</button>
   </div>
   <div id="minimap-wrap"><div id="minimap-title">CITY MAP · N</div><canvas id="minimap" width="220" height="220" aria-label="城市小地图"></canvas></div>
-  <div id="help" class="panel">目标：自由驾驶并收集金币环，每个 +25 金币。<br>驾驶：WASD / 方向键，Shift 氮气，R 重置<br>按 E 下车/上车；下车后 WASD 走动，Shift 跑步，F/🔫 攻击。<br><button id="mode-toggle" type="button">🚶 下车（E）</button> <button id="punch-button" type="button">👊 出拳（F）</button></div>
+  <div id="help" class="panel">目标：自由驾驶并收集金币环，每个 +25 金币。<br>驾驶：WASD / 方向键，Shift 氮气，R 重置<br>按 E 下车/上车；下车后左摇杆移动，右侧滑动转镜头；按住「跑」加速，🔫 攻击。<br><button id="mode-toggle" type="button">🚶 下车（E）</button> <button id="punch-button" type="button">👊 出拳（F）</button></div>
 </div>
 <div id="look-zone" aria-label="滑动调整镜头"><div id="look-hint">右侧滑动：调整视角</div></div>
 <div id="mobile">
-  <div id="joystick" role="application" aria-label="虚拟摇杆，向上加速，左右转向，向下倒车"><div id="joystick-knob"></div></div>
+  <div id="joystick" role="application" aria-label="虚拟摇杆，向上前进，左右横移，向下后退"><div id="joystick-knob"></div></div>
   <div style="display:flex;gap:9px;align-items:end;pointer-events:auto"><button class="control" id="brake" data-key="Space">刹车</button><button class="control" id="gas" data-key="KeyW">加速</button><button class="control" id="foot-mode" type="button">下车</button><button class="control" id="foot-punch" type="button">🔫</button><button class="control" id="foot-run" type="button">跑</button></div>
 </div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
