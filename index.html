@@ -151,7 +151,7 @@ for(let i=0;i<18;i++){
 }
 // street lights along main roads
 for(const axis of ['x','z'])for(let p=-100;p<=100;p+=20)for(const side of [-1,1]){
- const x=axis==='x'?p:side*9,z=axis==='z'?p:side*9;
+ const x=axis==='x'?p:side*10,z=axis==='z'?p:side*10;
  box(.16,3,.16,mat(0x475563),x,1.5,z);
  box(.9,.16,.35,mat(0xfff1b3),x+(axis==='x'?.3:0),3,z+(axis==='z'?.3:0));
 }
@@ -549,7 +549,8 @@ const signalGreenMat=new THREE.MeshStandardMaterial({color:0x48ff9a,emissive:0x1
 function createTrafficSignals(){
  let n=0;
  for(const x of [-60,0,60])for(const z of [-60,0,60]){
-  const poleX=x+7.2,poleZ=z-7.2;
+  // Keep signal poles on the outer sidewalk corner, clear of the drivable lanes.
+  const poleX=x+10,poleZ=z-10;
   box(.16,3.8,.16,mat(0x3d4b56,.7),poleX,1.9,poleZ);
   box(.72,.92,.36,mat(0x202a34,.5),poleX,3.45,poleZ);
   const bulbs=[];
@@ -709,10 +710,16 @@ function updatePolice(dt,now){
  for(const p of policeCars){
   const g=p.group;g.visible=true;
   const dx=car.position.x-g.position.x,dz=car.position.z-g.position.z,d=Math.hypot(dx,dz);nearest=Math.min(nearest,d);
-  const targetAngle=Math.atan2(-dx,-dz);
+  // Patrol 0 pursues directly; patrols 1 and 2 spread out to attempt a side interception.
+  const fx=-Math.sin(car.rotation.y),fz=-Math.cos(car.rotation.y),rx=Math.cos(car.rotation.y),rz=-Math.sin(car.rotation.y);
+  const ahead=p.index===0?0:(wantedLevel>=3?9:5);
+  const flank=p.index===1?-5:(p.index===2?5:0);
+  const targetX=car.position.x+fx*ahead+rx*flank,targetZ=car.position.z+fz*ahead+rz*flank;
+  const tx=targetX-g.position.x,tz=targetZ-g.position.z;
+  const targetAngle=Math.atan2(-tx,-tz);
   const diff=Math.atan2(Math.sin(targetAngle-g.rotation.y),Math.cos(targetAngle-g.rotation.y));
   g.rotation.y+=THREE.MathUtils.clamp(diff,-2.1*dt,2.1*dt);
-  const desired=d<2.7?0:Math.min(17,7.5+d*.23);
+  const desired=d<2.7?0:Math.min(p.index===0?17:18,7.5+Math.hypot(tx,tz)*.23);
   p.speed=THREE.MathUtils.damp(p.speed,desired,2.2,dt);
   g.position.x-=Math.sin(g.rotation.y)*p.speed*dt;
   g.position.z-=Math.cos(g.rotation.y)*p.speed*dt;
