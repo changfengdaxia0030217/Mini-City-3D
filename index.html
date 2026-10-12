@@ -215,10 +215,22 @@ for(const x of [-.34,.34])box(.12,.025,.48,mat(0x303943),x,1.11,-1.32,car);
 box(.72,.15,.08,mat(0xffffff),-.65,.85,-2.07,car);box(.72,.15,.08,mat(0xffffff),.65,.85,-2.07,car);
 box(.65,.18,.08,mat(0xe85a4f),-.65,.82,2.07,car);box(.65,.18,.08,mat(0xe85a4f),.65,.82,2.07,car);
 const wheels=[];
+const rimMat=mat(0xdce3e9,.35),rimDark=mat(0x303943,.55);
 for(const x of [-1.08,1.08])for(const z of [-1.32,1.32]){
- const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.28,12),tireMat);
+ const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.28,16),tireMat);
  wheel.rotation.z=Math.PI/2;wheel.position.set(x,.42,z);wheel.castShadow=true;car.add(wheel);wheels.push(wheel);
- const hub=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,.29,10),mat(0xcbd2d9));hub.rotation.z=Math.PI/2;hub.position.set(x,.42,z);car.add(hub);
+ // Metallic rim face and six visible spokes on both sides of each wheel.
+ const hub=new THREE.Mesh(new THREE.CylinderGeometry(.245,.245,.30,12),rimMat);
+ hub.rotation.z=Math.PI/2;hub.position.set(x,.42,z);car.add(hub);
+ const cap=new THREE.Mesh(new THREE.CylinderGeometry(.105,.105,.315,12),rimDark);
+ cap.rotation.z=Math.PI/2;cap.position.set(x,.42,z);car.add(cap);
+ for(const side of [-1,1]){
+  const faceX=x+side*.158;
+  for(let n=0;n<6;n++){
+   const spoke=box(.035,.045,.27,rimMat,faceX,.42,z);
+   spoke.rotation.x=n*Math.PI/3;car.add(spoke);
+  }
+ }
 }
 // Distinct body kits for the unlocked cars.
 const sportKit=new THREE.Group();car.add(sportKit);
