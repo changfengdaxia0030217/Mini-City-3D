@@ -84,7 +84,7 @@ body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{di
     <button id="garage-close">返回驾驶</button>
   </div>
   <div id="minimap-wrap"><div id="minimap-title">CITY MAP · N</div><canvas id="minimap" width="220" height="220" aria-label="城市小地图"></canvas></div>
-  <div id="help" class="panel">目标：自由驾驶并收集金币环，每个 +25 金币。<br>驾驶：WASD / 方向键，Shift 氮气，R 重置<br>下车：WASD 移动，空格跳跃，按住 Shift 跑步；鼠标移动控制上下左右镜头，左键攻击。首次点击画面会锁定鼠标，按 Esc 释放；靠近金币或现金自动拾取。<br><button id="mode-toggle" type="button">🚶 下车（E）</button> <button id="punch-button" type="button">👊 攻击（F）</button></div>
+  <div id="help" class="panel">目标：自由驾驶并收集金币环，每个 +25 金币。<br>驾驶：WASD / 方向键，Shift 氮气，R 重置<br>下车：WASD 移动，空格跳跃，按住 Shift 跑步；按住鼠标右键并移动可旋转镜头，滚轮调整远近，左键攻击/拾取。靠近金币或现金自动拾取。<br><button id="mode-toggle" type="button">🚶 下车（E）</button> <button id="punch-button" type="button">👊 攻击（F）</button></div>
 </div>
 <div id="look-zone" aria-label="滑动调整镜头"><div id="look-hint">右侧滑动：调整视角</div></div>
 <div id="mobile">
@@ -735,15 +735,40 @@ document.querySelectorAll('[data-key]').forEach(btn=>{
 // Analog touch joystick: push forward/back to accelerate/reverse and left/right to steer or walk.
 const joystick=document.getElementById('joystick'),joystickKnob=document.getElementById('joystick-knob');
 let joystickPointer=null,footMoveX=0,footMoveY=0;
-let cameraYaw=playerAvatar.rotation.y,lookPointer=null,lastLookX=0;const lookZone=document.getElementById('look-zone');
-function beginLook(e){if(!onFoot||lookPointer!==null)return;e.preventDefault();lookPointer=e.pointerId;lastLookX=e.clientX;lookZone.setPointerCapture(e.pointerId);}
-function moveLook(e){if(lookPointer!==e.pointerId||!onFoot)return;e.preventDefault();const dx=e.clientX-lastLookX;lastLookX=e.clientX;cameraYaw-=dx*.0048;}
+let cameraYaw=playerAvatar.rotation.y,lookPointer=null,lastLookX=0,lastLookY=0;const lookZone=document.getElementById('look-zone');
+function beginLook(e){if(!onFoot||lookPointer!==null)return;e.preventDefault();lookPointer=e.pointerId;lastLookX=e.clientX;lastLookY=e.clientY;lookZone.setPointerCapture(e.pointerId);}
+function moveLook(e){if(lookPointer!==e.pointerId||!onFoot)return;e.preventDefault();const dx=e.clientX-lastLookX,dy=e.clientY-lastLookY;lastLookX=e.clientX;lastLookY=e.clientY;cameraYaw-=dx*.0048;cameraPitch=THREE.MathUtils.clamp(cameraPitch-dy*.0035,-.55,.35);}
 function endLook(e){if(lookPointer===e.pointerId)lookPointer=null;}
 lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('pointermove',moveLook);lookZone.addEventListener('pointerup',endLook);lookZone.addEventListener('pointercancel',endLook);lookZone.addEventListener('lostpointercapture',endLook);
  // PC controls: center-reticle raycast shooting; mouse movement freely controls the camera.
- let cameraPitch=0;
- const weaponRaycaster=new THREE.Raycaster(),weaponScreenCenter=new THREE.Vector2(0,0);
+ let cameraPitch=-.22;
+ let cameraDistance=5.0;
+ let cameraRotating=false;
+ const cameraCollisionRaycaster=new THREE.Raycaster();
+ const cameraAimTarget=new THREE.Vector3(),cameraPivot=new THREE.Vector3(),cameraDesiredPosition=new THREE.Vector3(),cameraDirection=new THREE.Vector3(),cameraRight=new THREE.Vector3();
+ const weaponRaycaster=new THREE.Raycaster(),lineOfSightRaycaster=new THREE.Raycaster(),weaponScreenCenter=new THREE.Vector2(0,0);
+ const shotOrigin=new THREE.Vector3(),shotDirection=new THREE.Vector3();
  const aimAssistWorld=new THREE.Vector3(),aimAssistScreen=new THREE.Vector3();
+ function hasClearShotToPoint(point){
+  camera.updateMatrixWorld(true);
+  camera.getWorldPosition(shotOrigin);
+  shotDirection.copy(point).sub(shotOrigin);
+  const distance=shotDirection.length();
+  if(distance<.01)return true;
+  shotDirection.normalize();
+  lineOfSightRaycaster.set(shotOrigin,shotDirection);
+  lineOfSightRaycaster.near=.08;
+  lineOfSightRaycaster.far=Math.max(.08,distance-.18);
+  const blockers=lineOfSightRaycaster.intersectObjects(scene.children,true);
+  return !blockers.some(hit=>{
+   let node=hit.object;
+   while(node){
+    if(node===playerAvatar||node===car)return false;
+    node=node.parent;
+   }
+   return hit.object!==ground&&hit.object.visible;
+  });
+ }
  function findAimedPedestrian(){
   camera.updateMatrixWorld(true);
   weaponRaycaster.setFromCamera(weaponScreenCenter,camera);
@@ -753,7 +778,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
   for(const hit of intersections){
    let obj=hit.object,found=null;
    while(obj&&!found){found=available.find(p=>p.group===obj);obj=obj.parent;}
-   if(found&&hit.distance<65)return {pedestrian:found,point:hit.point,distance:hit.distance,assisted:false};
+   if(found&&hit.distance<65&&hasClearShotToPoint(hit.point))return {pedestrian:found,point:hit.point,distance:hit.distance,assisted:false};
   }
   // Gentle screen-space aim assist: a small NPC can be hard to hit with a strict mesh ray.
   // If its torso is close to the reticle, snap the shot to that torso instead of requiring pixel-perfect aim.
@@ -770,7 +795,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
    if(distance>65)continue;
    // Favor the NPC nearest the reticle, with a slight preference for nearer targets.
    const score=screenDistance+distance*.00012;
-   if(score<bestScore){bestScore=score;best={pedestrian:p,point:aimAssistWorld.clone(),distance,assisted:true};}
+   if(score<bestScore&&hasClearShotToPoint(aimAssistWorld)){bestScore=score;best={pedestrian:p,point:aimAssistWorld.clone(),distance,assisted:true};}
   }
   return best;
  }
@@ -785,8 +810,9 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
   weaponRaycaster.setFromCamera(weaponScreenCenter,camera);
   const aim=findAimedPedestrian();
   const hitPed=aim?.pedestrian||null,hitPoint=aim?.point||null;
-  const origin=new THREE.Vector3();camera.getWorldPosition(origin);
-  const end=hitPoint||origin.clone().add(weaponRaycaster.ray.direction.clone().multiplyScalar(45));
+  const origin=new THREE.Vector3();
+  if(pistolVisual)pistolVisual.getWorldPosition(origin);else camera.getWorldPosition(origin);
+  const end=hitPoint||camera.position.clone().add(weaponRaycaster.ray.direction.clone().multiplyScalar(45));
   const beamGeometry=new THREE.BufferGeometry().setFromPoints([origin,end]);
   const beam=new THREE.Line(beamGeometry,new THREE.LineBasicMaterial({color:hitPed?0xffd45b:0xfff0b5,transparent:true,opacity:.95}));
   scene.add(beam);setTimeout(()=>{scene.remove(beam);beamGeometry.dispose();beam.material.dispose();},75);
@@ -801,11 +827,22 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
   }else showMissionToast(hitPed.hostile?'命中敌对 NPC！':'命中 NPC！');
  }
  renderer.domElement.addEventListener('mousedown',e=>{
-  if(!onFoot||e.button!==0)return;e.preventDefault();
-  if(document.pointerLockElement!==renderer.domElement){if(renderer.domElement.requestPointerLock)renderer.domElement.requestPointerLock();return;}
-  fireWeapon();
+  if(!onFoot)return;
+  if(e.button===2){e.preventDefault();cameraRotating=true;return;}
+  if(e.button===0){e.preventDefault();fireWeapon();}
  });
- addEventListener('mousemove',e=>{if(!onFoot||document.pointerLockElement!==renderer.domElement)return;cameraYaw-=e.movementX*.0048;cameraPitch=Math.max(-.48,Math.min(.62,cameraPitch-e.movementY*.0035));});
+ addEventListener('mousemove',e=>{
+  if(!onFoot||!cameraRotating||!(e.buttons&2))return;
+  cameraYaw-=e.movementX*.0048;
+  cameraPitch=THREE.MathUtils.clamp(cameraPitch-e.movementY*.0035,-.55,.35);
+ });
+ addEventListener('mouseup',e=>{if(e.button===2)cameraRotating=false;});
+ addEventListener('blur',()=>{cameraRotating=false;lookPointer=null;keys.clear();});
+ renderer.domElement.addEventListener('wheel',e=>{
+  if(!onFoot)return;
+  e.preventDefault();
+  cameraDistance=THREE.MathUtils.clamp(cameraDistance+Math.sign(e.deltaY)*.65,2,10);
+ },{passive:false});
  renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 
 function releaseJoystick(){joystickPointer=null;footMoveX=0;footMoveY=0;keys.delete('ArrowUp');keys.delete('ArrowDown');keys.delete('ArrowLeft');keys.delete('ArrowRight');joystickKnob.style.transform='translate(0px,0px)';}
@@ -1273,12 +1310,11 @@ function updateOnFoot(dt,now){
  const fx=Math.sin(cameraYaw),fz=Math.cos(cameraYaw),rx=Math.cos(cameraYaw),rz=-Math.sin(cameraYaw);
  let moveX=fx*fwd+rx*side,moveZ=fz*fwd+rz*side;const moveLen=Math.hypot(moveX,moveZ);if(moveLen>1){moveX/=moveLen;moveZ/=moveLen;}
  if(moving){
-  // Keep the character facing the camera's forward direction while strafing left/right;
-  // only reverse-facing movement turns the character around. This avoids the sideways joystick
-  // input unexpectedly spinning the avatar 90 degrees.
-  const desiredYaw=fwd<-.28&&Math.abs(fwd)>Math.abs(side)*1.15?cameraYaw+Math.PI:cameraYaw;
+  // In shoulder-aim mode (right mouse held), face the camera aim direction while allowing strafing.
+  // In exploration mode, face the direction of travel.
+  const desiredYaw=cameraRotating?cameraYaw:Math.atan2(moveX,moveZ);
   let delta=((desiredYaw-playerAvatar.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;
-  playerAvatar.rotation.y+=delta*(1-Math.exp(-5.5*dt));
+  playerAvatar.rotation.y+=delta*(1-Math.exp(-(cameraRotating?8.5:6.0)*dt));
  }
  turnBlend=0;
  const footOldX=playerAvatar.position.x,footOldZ=playerAvatar.position.z;
@@ -1339,13 +1375,39 @@ function updateOnFoot(dt,now){
  // Small shoulder roll and forward lean sell the running/jumping motion.
  avatarBody.rotation.x=running?-.12:(airborne?-.09:Math.sin(cycle*2)*.018*playerWalkSpeed);
  camera.fov=62;camera.updateProjectionMatrix();
- // Keep a clear third-person follow camera behind and above the character.
- // Restore a clearly visible GTA-style third-person camera: well behind and above the character.
- const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(cameraYaw)*8.6,4.65-cameraPitch*5.2,playerAvatar.position.z-Math.cos(cameraYaw)*8.6);
- camera.position.lerp(target,1-Math.exp(-5.2*dt));
- // Aim the camera farther down the street, not at the character's feet, so the center reticle tracks NPC torso height.
- camera.lookAt(playerAvatar.position.x+Math.sin(cameraYaw)*3.8,1.55-cameraPitch*2.2,playerAvatar.position.z+Math.cos(cameraYaw)*3.8);
- // Raise/lower the visible pistol with the camera pitch to make aiming direction readable.
+ // GTA-style third-person orbit camera; right mouse also activates the shoulder-aim offset.
+ cameraPivot.set(playerAvatar.position.x,playerAvatar.position.y+1.35,playerAvatar.position.z);
+ const horizontal=Math.cos(cameraPitch),vertical=Math.sin(cameraPitch);
+ cameraRight.set(Math.cos(cameraYaw),0,-Math.sin(cameraYaw));
+ cameraDesiredPosition.set(
+  cameraPivot.x-Math.sin(cameraYaw)*horizontal*cameraDistance+cameraRight.x*(cameraRotating?.58:0),
+  cameraPivot.y-vertical*cameraDistance+cameraDistance*.24,
+  cameraPivot.z-Math.cos(cameraYaw)*horizontal*cameraDistance+cameraRight.z*(cameraRotating?.58:0)
+ );
+ // Pull the camera in when buildings or props block the desired orbit position.
+ cameraDirection.copy(cameraDesiredPosition).sub(cameraPivot);
+ const desiredLength=cameraDirection.length();
+ cameraDirection.normalize();
+ cameraCollisionRaycaster.set(cameraPivot,cameraDirection);
+ cameraCollisionRaycaster.near=.15;
+ cameraCollisionRaycaster.far=desiredLength;
+ const cameraHits=cameraCollisionRaycaster.intersectObjects(scene.children,true);
+ const blockingHit=cameraHits.find(hit=>{
+  let node=hit.object;
+  while(node){
+   if(node===playerAvatar||node===car)return false;
+   node=node.parent;
+  }
+  return hit.object!==ground&&hit.object.visible;
+ });
+ if(blockingHit)cameraDesiredPosition.copy(cameraPivot).addScaledVector(cameraDirection,Math.max(.55,blockingHit.distance-.22));
+ camera.position.lerp(cameraDesiredPosition,1-Math.exp(-9.0*dt));
+ cameraAimTarget.set(
+  playerAvatar.position.x+Math.sin(cameraYaw)*4.2,
+  playerAvatar.position.y+1.25+Math.sin(cameraPitch)*1.3,
+  playerAvatar.position.z+Math.cos(cameraYaw)*4.2
+ );
+ camera.lookAt(cameraAimTarget);
  pistolVisual.rotation.x=THREE.MathUtils.clamp(cameraPitch,-.45,.55);
  camera.updateMatrixWorld(true);
  updateAimReticle();
