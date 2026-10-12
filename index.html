@@ -253,12 +253,13 @@ for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
    if(Math.random()>.45)box(1.1,.8,1.1,roofMat,x+(Math.random()-.5)*w*.35,h+.62,z+(Math.random()-.5)*d*.35);
   }
  }
-// park near one corner
+// Park trees are grouped to support knock-down collisions.
 const park=box(25,.08,25,mat(0x91d47a),-91,.02,-91);
 for(let i=0;i<18;i++){
- const x=-101+Math.random()*20,z=-101+Math.random()*20;
- const trunk=box(.7,2,.7,mat(0x8b5b3e),x,1,z);
- const crown=new THREE.Mesh(new THREE.ConeGeometry(2.3,5,6),mat([0x39845b,0x4d995e,0x65aa62][i%3]));crown.position.set(x,4,z);crown.castShadow=true;scene.add(crown);
+ const x=-101+Math.random()*20,z=-101+Math.random()*20,tree=new THREE.Group();tree.position.set(x,0,z);scene.add(tree);
+ box(.7,2,.7,mat(0x8b5b3e),0,1,0,tree);
+ const crown=new THREE.Mesh(new THREE.ConeGeometry(2.3,5,6),mat([0x39845b,0x4d995e,0x65aa62][i%3]));crown.position.set(0,4,0);crown.castShadow=true;tree.add(crown);
+ destructibleProps.push({kind:'tree',group:tree,x,z,radius:2.1,fallen:false});
 }
 // Shared red tire material is needed by the roadside service-van wheels before the player car is built.
 const tireMat=mat(0xff202f,.28);
@@ -266,6 +267,7 @@ const tireMat=mat(0xff202f,.28);
 const suburbWallMats=[mat(0xe8d7bd),mat(0xd8c6a6),mat(0xe5e0d3),mat(0xc9d8d2)];
 const suburbRoofMats=[mat(0x8c5145),mat(0x555d68),mat(0x9a6b4b)];
 const yardMat=mat(0x76ad63),driveMat=mat(0xb8b5a8),fenceMat=mat(0xe7e1d4);
+const destructibleProps=[];
 function createSuburbanHouse(x,z,rot=0){
  const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rot;scene.add(g);
  const wall=suburbWallMats[Math.floor(Math.random()*suburbWallMats.length)];
@@ -289,9 +291,11 @@ function createSuburbanHouse(x,z,rot=0){
  }
  box(7,.12,.12,fenceMat,0,.62,4.05,g);
  for(const tx of [-3.4,3.4]){
-  box(.22,1.3,.22,mat(0x79543a),tx,.65,-2.8,g);
-  const crown=new THREE.Mesh(new THREE.ConeGeometry(1.35,2.8,6),mat(0x438653));
-  crown.position.set(tx,2.5,-2.8);crown.castShadow=true;g.add(crown);
+  const tree=new THREE.Group();tree.position.set(tx,0,-2.8);g.add(tree);
+  box(.22,1.3,.22,mat(0x79543a),0,.65,0,tree);
+  const crown=new THREE.Mesh(new THREE.ConeGeometry(1.35,2.8,6),mat(0x438653));crown.position.set(0,2.5,0);crown.castShadow=true;tree.add(crown);
+  const worldX=x+Math.cos(rot)*tx+Math.sin(rot)*(-2.8),worldZ=z-Math.sin(rot)*tx+Math.cos(rot)*(-2.8);
+  destructibleProps.push({kind:'tree',group:tree,x:worldX,z:worldZ,radius:1.5,fallen:false});
  }
 }
 for(const side of [-1,1])for(const x of [-82,-42,42,82]){
@@ -352,11 +356,12 @@ function createRepairGarage(){
 }
 createRepairGarage();
 
-// street lights along main roads
+// Street lights pivot and fall when hit by a vehicle.
 for(const axis of ['x','z'])for(let p=-100;p<=100;p+=20)for(const side of [-1,1]){
- const x=axis==='x'?p:side*10,z=axis==='z'?p:side*10;
- box(.16,3,.16,mat(0x475563),x,1.5,z);
- box(.9,.16,.35,mat(0xfff1b3),x+(axis==='x'?.3:0),3,z+(axis==='z'?.3:0));
+ const x=axis==='x'?p:side*10,z=axis==='z'?p:side*10,group=new THREE.Group();group.position.set(x,0,z);scene.add(group);
+ box(.16,3,.16,mat(0x475563),0,1.5,0,group);
+ box(.9,.16,.35,mat(0xfff1b3),axis==='x'?.3:0,3,axis==='z'?.3:0,group);
+ destructibleProps.push({kind:'lamp',group,x,z,radius:1.25,fallen:false});
 }
 
 // car group: local forward is negative Z
@@ -484,6 +489,11 @@ for(const x of [-.58,.58]){
 box(1.72,.065,.28,aeroDark,0,1.34,1.88,car);
 box(.16,.20,.12,aeroDark,0,1.88,.12,car);
 const wheels=[];
+const smokeMaterial=new THREE.MeshBasicMaterial({color:0x555b62,transparent:true,opacity:.52,depthWrite:false});
+const flameMaterial=new THREE.MeshBasicMaterial({color:0xff5b12,transparent:true,opacity:.9,depthWrite:false});
+const carSmoke=[],carFlames=[];
+for(let i=0;i<9;i++){const puff=new THREE.Mesh(new THREE.SphereGeometry(.22+(i%3)*.06,8,7),smokeMaterial.clone());puff.position.set((i%3-1)*.25,1.25+(i%4)*.22,-.9-Math.floor(i/3)*.22);puff.visible=false;car.add(puff);carSmoke.push(puff);}
+for(let i=0;i<5;i++){const flame=new THREE.Mesh(new THREE.ConeGeometry(.16+(i%2)*.07,.55+(i%3)*.1,7),flameMaterial.clone());flame.position.set((i-2)*.25,1.25,-1.1+(i%2)*.4);flame.visible=false;car.add(flame);carFlames.push(flame);}
 const rimMat=mat(0xdce3e9,.35),rimDark=mat(0x303943,.55);
 for(const x of [-1.08,1.08])for(const z of [-1.32,1.32]){
  const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.28,16),tireMat);
@@ -640,7 +650,8 @@ const mobileModeButton=document.getElementById('foot-mode');
 const punchButton=document.getElementById('punch-button');
 document.getElementById('foot-punch').addEventListener('click',punchNearby);
 function setMode(walking){
- if(walking&&Math.abs(speed)>1.4){showMissionToast('请先停车，再下车');return}
+ if(walking&&Math.abs(speed)>1.4&&!forcedExit){showMissionToast('请先停车，再下车');return}
+ if(!walking&&carDamage>=1.8){showMissionToast('车辆已报废，请按 R 救援修复后再上车');return}
  onFoot=walking;speed=0;lateralSpeed=0;steering=0;
  if(walking){
   playerAvatar.position.set(car.position.x+Math.cos(car.rotation.y)*2.1,0,car.position.z+Math.sin(car.rotation.y)*2.1);
@@ -688,10 +699,13 @@ document.querySelectorAll('[data-key]').forEach(btn=>{
  const up=e=>{e.preventDefault();keys.delete(key);btn.classList.remove('active')};
  btn.addEventListener('pointerdown',down);btn.addEventListener('pointerup',up);btn.addEventListener('pointercancel',up);btn.addEventListener('pointerleave',up);
 });
-function resetCar(){car.position.set(0,0,8);car.rotation.y=0;car.rotation.z=0;speed=0;steering=0;lateralSpeed=0}
+function resetCar(){car.position.set(0,0,8);car.rotation.y=0;car.rotation.z=0;speed=0;steering=0;lateralSpeed=0;carDamage=0;carOnFire=false;forcedExit=false;car.visible=true;carSmoke.forEach(p=>p.visible=false);carFlames.forEach(p=>p.visible=false);lastSafeCarPosition.set(0,0,8);riverFallTimer=0}
 let speed=0, steering=0, lateralSpeed=0, last=performance.now(), nitro=100;
-const lastSafeCarPosition=new THREE.Vector3(0,0,8);let riverFallTimer=0,lastPedestrianImpact=0,lastLampImpact=0;
-function hitsStreetLamp(x,z){for(let p=-100;p<=100;p+=20)for(const side of [-1,1])if(Math.hypot(x-p,z-side*10)<1.35||Math.hypot(x-side*10,z-p)<1.35)return true;return false;}
+const lastSafeCarPosition=new THREE.Vector3(0,0,8);let riverFallTimer=0,lastPedestrianImpact=0,lastLampImpact=0,carDamage=0,carOnFire=false,forcedExit=false;
+const bridgeXs=[-100,-60,0,60,100];
+function isOnBridge(x,z){return bridgeXs.some(bx=>Math.abs(x-bx)<6.7&&Math.abs(z-riverCenterZ(x))<7.4)}
+function hitDestructible(x,z){return destructibleProps.find(p=>!p.fallen&&Math.hypot(x-p.x,z-p.z)<p.radius+1.15)||null}
+function applyCarDamage(amount,now,reason){carDamage=Math.min(2.4,carDamage+amount);if(carDamage>=1.05)carOnFire=true;if(now-lastLampImpact>650){showMissionToast(carDamage>=1.05?'🔥 车辆严重受损，开始起火！':reason+' · 车辆受损 '+Math.round(carDamage/2.4*100)+'%');lastLampImpact=now;}if(carDamage>=1.8&&!forcedExit&&!onFoot){forcedExit=true;speed=0;lateralSpeed=0;setMode(true);showMissionToast('🚨 车辆报废！驾驶员被迫下车，按 R 可救援修复车辆');}}
 const speedEl=document.getElementById('speed');
 const cameraTarget=new THREE.Vector3();
 const missionConfigs=[
@@ -1179,15 +1193,22 @@ function updateOnFoot(dt,now){
  camera.lookAt(playerAvatar.position.x,1.15,playerAvatar.position.z);
  speedEl.innerHTML='0<span>KM/H</span>';
 }
+function updateCarDamageEffects(now){
+ const smokeOn=carDamage>.12,fireOn=carOnFire;
+ carSmoke.forEach((p,i)=>{p.visible=smokeOn;if(smokeOn){const phase=now*.0014+i*1.7;p.position.x=Math.sin(phase)*(.12+i*.025);p.position.y=1.15+((now*.001+i*.17)%1.3)+i*.025;p.position.z=-.95+Math.cos(phase)*.16;p.scale.setScalar(.65+((now*.001+i*.11)%1.5)*(0.7+carDamage*.45));p.material.opacity=Math.min(.76,.25+carDamage*.18);}});
+ carFlames.forEach((p,i)=>{p.visible=fireOn;if(fireOn){p.position.y=1.1+Math.abs(Math.sin(now*.009+i*2))*.55;p.scale.y=.7+Math.abs(Math.sin(now*.013+i))*1.2;p.material.opacity=.65+Math.abs(Math.sin(now*.012+i))*.3;}});
+}
 function update(dt, now){
  // Keep signal phases live; without this call the lamps and right-of-way would freeze.
  updateTrafficSignals(now);
  updatePedestrians(dt);
+  updateCarDamageEffects(now);
+  destructibleProps.forEach(p=>{if(p.fallen&&p.group.position.y>.05)p.group.position.y=Math.max(.05,p.group.position.y-dt*1.5)});
  if(onFoot){updateTraffic(dt,now);updatePolice(dt,now);updateOnFoot(dt,now);return;}
- if(riverFallTimer>0){riverFallTimer=Math.max(0,riverFallTimer-dt);car.position.y=-Math.min(2.4,(2.2-riverFallTimer)*1.35);speed=0;lateralSpeed=0;if(riverFallTimer===0){car.position.copy(lastSafeCarPosition);car.position.y=0;showMissionToast('🌊 车辆掉进河里！救援已将车辆拖回岸边');}updateTraffic(dt,now);updatePolice(dt,now);cameraTarget.set(car.position.x+Math.sin(car.rotation.y)*9,4.8,car.position.z+Math.cos(car.rotation.y)*9);camera.position.lerp(cameraTarget,1-Math.exp(-5.5*dt));camera.lookAt(car.position.x,1.0,car.position.z);speedEl.innerHTML='0<span>KM/H</span>';return;}
+ if(riverFallTimer>0){updateCarDamageEffects(now);riverFallTimer=Math.max(0,riverFallTimer-dt);car.position.y=-Math.min(2.4,(2.2-riverFallTimer)*1.35);speed=0;lateralSpeed=0;if(riverFallTimer===0){car.position.copy(lastSafeCarPosition);car.position.y=0;showMissionToast('🌊 车辆掉进河里！救援已将车辆拖回岸边');}updateTraffic(dt,now);updatePolice(dt,now);cameraTarget.set(car.position.x+Math.sin(car.rotation.y)*9,4.8,car.position.z+Math.cos(car.rotation.y)*9);camera.position.lerp(cameraTarget,1-Math.exp(-5.5*dt));camera.lookAt(car.position.x,1.0,car.position.z);speedEl.innerHTML='0<span>KM/H</span>';return;}
  if(now-lastPickupTime>12000&&pickupStreak>0){pickupStreak=0;pickupStreakEl.textContent='🪙 金币连击：—'}
- const forward=keys.has('KeyW')||keys.has('ArrowUp');
- const reverse=keys.has('KeyS')||keys.has('ArrowDown');
+ const forward=carDamage<1.8&&(keys.has('KeyW')||keys.has('ArrowUp'));
+ const reverse=carDamage<1.8&&(keys.has('KeyS')||keys.has('ArrowDown'));
  const left=keys.has('KeyA')||keys.has('ArrowLeft');
  const right=keys.has('KeyD')||keys.has('ArrowRight');
  const handbrake=keys.has('Space');
@@ -1226,9 +1247,11 @@ function update(dt, now){
  const oldX=car.position.x,oldZ=car.position.z;
   car.position.x+=(-Math.sin(car.rotation.y)*speed+Math.cos(car.rotation.y)*lateralSpeed)*dt;
   car.position.z+=(-Math.cos(car.rotation.y)*speed-Math.sin(car.rotation.y)*lateralSpeed)*dt;
-  const inRiver=Math.abs(car.position.z-riverCenterZ(car.position.x))<riverHalfWidth+1.2;
-  if(inRiver){riverFallTimer=2.2;speed=0;lateralSpeed=0;showMissionToast('🌊 冲进河里了！车辆正在下沉');}
-  else if(collides(car.position.x,car.position.z)||hitsStreetLamp(car.position.x,car.position.z)){car.position.x=oldX;car.position.z=oldZ;speed*=-.24;lateralSpeed*=-.25;if(now-lastLampImpact>900){showMissionToast('💥 撞到路灯或障碍物了！车辆受阻');lastLampImpact=now;}}
+  const inRiver=Math.abs(car.position.z-riverCenterZ(car.position.x))<riverHalfWidth+1.2&&!isOnBridge(car.position.x,car.position.z);
+  const propHit=hitDestructible(car.position.x,car.position.z);
+  if(inRiver){riverFallTimer=2.2;speed=0;lateralSpeed=0;applyCarDamage(.12,now,'冲入河道');showMissionToast('🌊 没有桥的河段不能通行！车辆正在下沉');}
+  else if(propHit){propHit.fallen=true;propHit.group.rotation.z=(car.position.x-propHit.x)>=0?Math.PI/2:-Math.PI/2;propHit.group.rotation.x=(car.position.z-propHit.z)>=0?-Math.PI/2:Math.PI/2;applyCarDamage(propHit.kind==='tree'?.22:.16,now,propHit.kind==='tree'?'撞倒树木':'撞倒路灯');car.position.x=oldX;car.position.z=oldZ;speed*=-.28;lateralSpeed*=-.25;}
+  else if(collides(car.position.x,car.position.z)){car.position.x=oldX;car.position.z=oldZ;speed*=-.25;lateralSpeed*=-.25;applyCarDamage(.08,now,'撞上建筑物');}
   else lastSafeCarPosition.set(car.position.x,0,car.position.z);
  car.position.x=THREE.MathUtils.clamp(car.position.x,-119,119);car.position.z=THREE.MathUtils.clamp(car.position.z,-119,119);
  updateTraffic(dt,now);
@@ -1239,7 +1262,7 @@ function update(dt, now){
   if(d<2.35){
    car.position.x=oldX;car.position.z=oldZ;
    speed*=-.28;lateralSpeed*=-.2;
-   ai.speed=Math.min(ai.speed,1.0);
+   ai.speed=Math.min(ai.speed,1.0);applyCarDamage(.14,now,'与车辆相撞');
    if(now-lastTrafficImpact>1250){
     showMissionToast('🚧 车辆碰撞！注意与车流保持距离');
     lastTrafficImpact=now;
@@ -1247,7 +1270,7 @@ function update(dt, now){
    break;
   }
  }
- for(const p of pedestrians){const dx=car.position.x-p.group.position.x,dz=car.position.z-p.group.position.z,d=Math.hypot(dx,dz);if(d<2.15&&d>.01&&Math.abs(car.position.y)<.2){p.group.position.x-=dx/d*2.4;p.group.position.z-=dz/d*2.4;p.stun=.25;p.fleeTime=9;p.reportTimer=2.2;p.reported=false;if(now-lastPedestrianImpact>1000){showMissionToast('🚗 撞到行人！行人逃跑并可能报警');lastPedestrianImpact=now;}if(Math.abs(speed)>5)speed*=.82;}}
+ for(const p of pedestrians){const dx=car.position.x-p.group.position.x,dz=car.position.z-p.group.position.z,d=Math.hypot(dx,dz);if(d<2.15&&d>.01&&Math.abs(car.position.y)<.2){applyCarDamage(.12,now,'撞到行人');p.group.position.x-=dx/d*2.4;p.group.position.z-=dz/d*2.4;p.stun=.25;p.fleeTime=9;p.reportTimer=2.2;p.reported=false;if(now-lastPedestrianImpact>1000){showMissionToast('🚗 撞到行人！行人逃跑并可能报警');lastPedestrianImpact=now;}if(Math.abs(speed)>5)speed*=.82;}}
  if(missionRunning&&activeMission){
   const navTarget=activeMission.points[checkpointIndex];
   const navAngle=Math.atan2(navTarget.x-car.position.x,-(navTarget.z-car.position.z))+car.rotation.y;
