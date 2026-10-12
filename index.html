@@ -49,7 +49,7 @@
 <body>
 <div id="hud">
   <div id="brand" class="panel">MINI CITY <small>3D DRIVE · ALPHA 0.1</small></div>
-  <div id="stats" class="panel"><div id="speed">0<span>KM/H</span></div><div style="font-size:11px;opacity:.75;margin-top:6px">城市驾驶 · 任务挑战</div><div id="nitro-wrap" style="margin-top:9px;text-align:left"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;margin-bottom:4px"><span>⚡ 氮气加速 SHIFT</span><span id="nitro-value">100%</span></div><div style="height:6px;background:#ffffff30;border-radius:99px;overflow:hidden"><div id="nitro-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#38e8ff,#7b8cff);border-radius:99px;box-shadow:0 0 10px #38e8ff88"></div></div></div><button id="garage-open">🚘 车库</button></div>
+  <div id="stats" class="panel"><div id="speed">0<span>KM/H</span></div><div id="traffic-status" style="font-size:11px;opacity:.75;margin-top:6px">城市驾驶 · AI 交通加载中</div><div id="nitro-wrap" style="margin-top:9px;text-align:left"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;margin-bottom:4px"><span>⚡ 氮气加速 SHIFT</span><span id="nitro-value">100%</span></div><div style="height:6px;background:#ffffff30;border-radius:99px;overflow:hidden"><div id="nitro-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#38e8ff,#7b8cff);border-radius:99px;box-shadow:0 0 10px #38e8ff88"></div></div></div><button id="garage-open">🚘 车库</button></div>
   <div id="toast" class="panel">WASD / 方向键驾驶 · 手机使用屏幕按键</div>
   <div id="missions" class="panel">
     <h3>🏁 城市驾驶挑战</h3>
@@ -457,6 +457,89 @@ pickupPositions.forEach((p,i)=>{
 });
 const navArrow=document.getElementById('nav-arrow');
 function collides(x,z){return occupied.some(b=>Math.abs(x-b.x)<b.hw+1.15&&Math.abs(z-b.z)<b.hd+2.1)}
+// AI city traffic: compact autonomous cars circulate on road loops, steer through turns,
+// keep following distance, and yield when the player is directly ahead.
+const trafficStatus=document.getElementById('traffic-status');
+const trafficCars=[];
+const trafficRoutes=[
+ [{x:-60,z:-60},{x:60,z:-60},{x:60,z:60},{x:-60,z:60}],
+ [{x:0,z:0},{x:0,z:-60},{x:-60,z:-60},{x:-60,z:0}],
+ [{x:0,z:0},{x:60,z:0},{x:60,z:60},{x:0,z:60}],
+ [{x:-60,z:0},{x:-60,z:60},{x:0,z:60},{x:0,z:0}]
+];
+const trafficPaints=[0x39a6ff,0xef5b58,0xf1f1e8,0x52bd83,0xb18be8,0xffc24b,0x4d657c];
+function buildTrafficCar(color,index){
+ const g=new THREE.Group();
+ const paint=new THREE.MeshStandardMaterial({color,roughness:.48,metalness:.08});
+ const windowMaterial=new THREE.MeshStandardMaterial({color:0x9dd8e8,roughness:.32,metalness:.08});
+ const dark=mat(0x29323b,.65), tire=mat(0x252a30,.9), rim=mat(0xc4cdd4,.45);
+ box(1.55,.52,3.05,paint,0,.63,0,g);
+ box(1.25,.52,1.52,windowMaterial,0,1.08,-.18,g);
+ box(1.35,.10,.58,paint,0,.96,-1.05,g);
+ box(1.35,.10,.42,paint,0,.95,1.13,g);
+ box(1.58,.13,.14,dark,0,.42,-1.58,g);box(1.58,.13,.14,dark,0,.42,1.58,g);
+ const head=new THREE.MeshStandardMaterial({color:0xfff3c0,emissive:0x6b5720,emissiveIntensity:.45});
+ const tail=new THREE.MeshStandardMaterial({color:0xff3344,emissive:0x8c0712,emissiveIntensity:.65});
+ for(const side of [-1,1]){
+  box(.25,.11,.035,head,side*.48,.76,-1.555,g);
+  box(.28,.10,.035,tail,side*.48,.76,1.555,g);
+  for(const z of [-1.02,1.02]){
+   const w=new THREE.Mesh(new THREE.CylinderGeometry(.29,.29,.18,12),tire);
+   w.rotation.z=Math.PI/2;w.position.set(side*.78,.32,z);g.add(w);
+   const hub=new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,.19,10),rim);
+   hub.rotation.z=Math.PI/2;hub.position.set(side*.78,.32,z);g.add(hub);
+  }
+ }
+ g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+ g.userData.trafficId=index;scene.add(g);return g;
+}
+function buildCityTraffic(){
+ // Stagger vehicles so traffic starts moving without a pile-up at an intersection.
+ const starts=[
+  {route:0,segment:0,t:.08},{route:0,segment:1,t:.62},
+  {route:0,segment:2,t:.18},{route:1,segment:0,t:.38},
+  {route:2,segment:1,t:.68},{route:3,segment:2,t:.32},
+  {route:1,segment:2,t:.72}
+ ];
+ starts.forEach((s,i)=>{
+  const route=trafficRoutes[s.route],a=route[s.segment],b=route[(s.segment+1)%route.length];
+  const g=buildTrafficCar(trafficPaints[i%trafficPaints.length],i);
+  g.position.set(THREE.MathUtils.lerp(a.x,b.x,s.t),0,THREE.MathUtils.lerp(a.z,b.z,s.t));
+  g.rotation.y=Math.atan2(b.x-a.x,-(b.z-a.z));
+  trafficCars.push({group:g,route:s.route,target:(s.segment+1)%route.length,speed:7.2+(i%3)*1.15,baseSpeed:7.2+(i%3)*1.15,wait:0});
+ });
+ if(trafficStatus)trafficStatus.textContent='城市驾驶 · AI 车辆 '+trafficCars.length+' 辆';
+}
+function updateTraffic(dt){
+ for(let i=0;i<trafficCars.length;i++){
+  const ai=trafficCars[i],g=ai.group,route=trafficRoutes[ai.route],target=route[ai.target];
+  const dx=target.x-g.position.x,dz=target.z-g.position.z,dist=Math.hypot(dx,dz);
+  if(dist<2.8)ai.target=(ai.target+1)%route.length;
+  let desired=ai.baseSpeed;
+  // Soft following-distance control prevents AI cars from bunching up.
+  for(let j=0;j<trafficCars.length;j++)if(i!==j){
+   const other=trafficCars[j].group,ox=other.position.x-g.position.x,oz=other.position.z-g.position.z,d=Math.hypot(ox,oz);
+   if(d<6.5&&d>.01){
+    const forwardX=-Math.sin(g.rotation.y),forwardZ=-Math.cos(g.rotation.y);
+    if((ox*forwardX+oz*forwardZ)>0&&Math.abs(ox*forwardZ-oz*forwardX)<3.2)desired=Math.min(desired,ai.baseSpeed*THREE.MathUtils.clamp((d-2.4)/4.1,.12,1));
+   }
+  }
+  // Yield to the player if a traffic car approaches the player's immediate path.
+  const px=car.position.x-g.position.x,pz=car.position.z-g.position.z,pd=Math.hypot(px,pz);
+  if(pd<7&&pd>.01){
+   const fx=-Math.sin(g.rotation.y),fz=-Math.cos(g.rotation.y);
+   if(px*fx+pz*fz>0&&Math.abs(px*fz-pz*fx)<3.5)desired=Math.min(desired,ai.baseSpeed*.22);
+  }
+  ai.speed=THREE.MathUtils.damp(ai.speed,desired,2.8,dt);
+  const angle=Math.atan2(target.x-g.position.x,-(target.z-g.position.z));
+  const diff=Math.atan2(Math.sin(angle-g.rotation.y),Math.cos(angle-g.rotation.y));
+  g.rotation.y+=THREE.MathUtils.clamp(diff,-1.7*dt,1.7*dt);
+  g.position.x-=Math.sin(g.rotation.y)*ai.speed*dt;
+  g.position.z-=Math.cos(g.rotation.y)*ai.speed*dt;
+ }
+}
+buildCityTraffic();
+
 function update(dt, now){
  const forward=keys.has('KeyW')||keys.has('ArrowUp');
  const reverse=keys.has('KeyS')||keys.has('ArrowDown');
@@ -500,6 +583,7 @@ function update(dt, now){
   car.position.z+=(-Math.cos(car.rotation.y)*speed-Math.sin(car.rotation.y)*lateralSpeed)*dt;
   if(collides(car.position.x,car.position.z)){car.position.x=oldX;car.position.z=oldZ;speed*=-.22;lateralSpeed*=-.25}
  car.position.x=THREE.MathUtils.clamp(car.position.x,-119,119);car.position.z=THREE.MathUtils.clamp(car.position.z,-119,119);
+ updateTraffic(dt);
  if(missionRunning&&activeMission){
   const navTarget=activeMission.points[checkpointIndex];
   const navAngle=Math.atan2(navTarget.x-car.position.x,-(navTarget.z-car.position.z))+car.rotation.y;
