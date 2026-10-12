@@ -60,6 +60,7 @@
       <button class="mission-choice" data-mission="3">金币寻宝</button>
     </div>
     <button id="mission-start">开始挑战</button>
+    <button id="job-start" style="width:100%;margin-top:6px;border:1px solid #ffd34f;border-radius:9px;background:#ffd34f18;color:#ffe29a;padding:9px;font-weight:900;cursor:pointer">📦 接取随机城市工作</button>
     <div id="mission-status">选择难度，穿过城市里的发光检查点。</div>
     <div id="mission-meta"><span id="mission-progress">进度 0/0</span><span id="mission-reward">金币 0</span></div>
   </div>
@@ -400,8 +401,8 @@ function refreshMissionPanel(){
  document.querySelectorAll('[data-mission]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.mission)===selectedMission));
  missionProgress.textContent=missionRunning?`进度 ${checkpointIndex}/${activeMission.points.length}`:`进度 0/${cfg.points.length}`;
  missionReward.textContent=`金币 ${coins}`;
- if(missionRunning){missionStatus.textContent=`${activeMission.name}：${activeMission.desc}\n剩余时间：${Math.max(0,missionTimeLeft).toFixed(1)} 秒\n驶入下一个绿色发光圈！`;missionStart.textContent='重新开始挑战'}
- else {missionStart.textContent='开始挑战';missionStatus.textContent=`${cfg.desc}\n限时 ${cfg.time} 秒 · 完成奖励 ${cfg.reward} 金币。`}
+ if(missionRunning){missionStatus.textContent=`${activeMission.name}：${activeMission.desc}\n剩余时间：${Math.max(0,missionTimeLeft).toFixed(1)} 秒\n驶入下一个发光圈！`;missionStart.textContent='重新开始挑战';jobStart.textContent=activeMission.isCityJob?'🔄 换一份城市工作':'📦 接取随机城市工作'}
+ else {missionStart.textContent='开始挑战';jobStart.textContent='📦 接取随机城市工作';missionStatus.textContent=`${cfg.desc}\n限时 ${cfg.time} 秒 · 完成奖励 ${cfg.reward} 金币。`}
 }
 function buildMissionMarkers(){
  clearMissionMarkers();if(!activeMission)return;
@@ -420,12 +421,34 @@ function startMission(){
 }
 function finishMission(success){
  missionRunning=false;clearMissionMarkers();navArrow.style.display='none';
- if(success){coins+=activeMission.reward;saveProgress();applyVehicle();missionStatus.textContent=`挑战成功！获得 ${activeMission.reward} 金币。\n可以选择其他难度继续挑战。`;showMissionToast(`🏆 挑战成功！ +${activeMission.reward} 金币`)}
- else {missionStatus.textContent='时间到！别放弃，重新开始再试一次。';showMissionToast('时间到！挑战失败')}
+ if(success){coins+=activeMission.reward;saveProgress();applyVehicle();missionStatus.textContent=activeMission.isCityJob?`工作完成！获得 ${activeMission.reward} 金币。\n可以继续接取下一份城市工作。`:`挑战成功！获得 ${activeMission.reward} 金币。\n可以选择其他难度继续挑战。`;showMissionToast(activeMission.isCityJob?`💼 工作完成！ +${activeMission.reward} 金币`:`🏆 挑战成功！ +${activeMission.reward} 金币`)}
+ else {missionStatus.textContent=activeMission.isCityJob?'工作超时！重新接取一份工作再试试。':'时间到！别放弃，重新开始再试一次。';showMissionToast(activeMission.isCityJob?'工作超时！任务失败':'时间到！挑战失败')}
  missionProgress.textContent=`进度 ${success?activeMission.points.length:checkpointIndex}/${activeMission.points.length}`;missionReward.textContent=`金币 ${coins}`;missionStart.textContent='再次挑战';activeMission=null;
 }
 document.querySelectorAll('[data-mission]').forEach(b=>b.addEventListener('click',()=>{if(missionRunning){missionRunning=false;activeMission=null;clearMissionMarkers();navArrow.style.display='none'}selectedMission=Number(b.dataset.mission);refreshMissionPanel()}));
 missionStart.addEventListener('click',startMission);
+const jobStart=document.getElementById('job-start');
+const cityJobStops=[
+ {x:0,z:-42},{x:0,z:42},{x:60,z:-24},{x:60,z:42},
+ {x:-60,z:-24},{x:-60,z:42},{x:-24,z:60},{x:24,z:60},
+ {x:24,z:-60},{x:-24,z:-60},{x:42,z:0},{x:-42,z:0}
+];
+function startCityJob(){
+ if(missionRunning){missionRunning=false;activeMission=null;clearMissionMarkers();navArrow.style.display='none'}
+ const shuffled=cityJobStops.slice().sort(()=>Math.random()-.5);
+ const roll=Math.random();
+ let name,desc,time,reward,count;
+ if(roll<.34){name='乘客接送';desc='先到上车点接乘客，再送到目的地。';time=55;reward=120;count=2}
+ else if(roll<.68){name='限时送货';desc='按路线取件并送达，尽量节省时间。';time=72;reward=165;count=3}
+ else{name='城市巡逻';desc='依次巡查多个街区检查点。';time=85;reward=210;count=4}
+ const points=shuffled.slice(0,count).map(p=>({x:p.x,z:p.z}));
+ activeMission={name,time,reward,desc,points,isCityJob:true};
+ checkpointIndex=0;missionTimeLeft=time;missionRunning=true;
+ resetCar();buildMissionMarkers();refreshMissionPanel();
+ jobStart.textContent='🔄 换一份城市工作';
+ showMissionToast('📋 新工作：'+name+' · 奖励 '+reward+' 金币');
+}
+jobStart.addEventListener('click',startCityJob);
 refreshMissionPanel();
 const garage=document.getElementById('garage');
 document.getElementById('garage-open').addEventListener('click',()=>{garage.style.display='block';applyVehicle()});
