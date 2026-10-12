@@ -1222,9 +1222,10 @@ function updateOnFoot(dt,now){
  avatarBody.rotation.x=running?-.12:(airborne?-.09:Math.sin(cycle*2)*.018*playerWalkSpeed);
  camera.fov=62;camera.updateProjectionMatrix();
  // Keep a clear third-person follow camera behind and above the character.
- const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(playerAvatar.rotation.y)*8.2,5.2,playerAvatar.position.z-Math.cos(playerAvatar.rotation.y)*8.2);
- camera.position.lerp(target,1-Math.exp(-5*dt));
- camera.lookAt(playerAvatar.position.x,1.25,playerAvatar.position.z);
+ // Restore a clearly visible GTA-style third-person camera: well behind and above the character.
+ const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(playerAvatar.rotation.y)*10.5,6.4,playerAvatar.position.z-Math.cos(playerAvatar.rotation.y)*10.5);
+ camera.position.lerp(target,1-Math.exp(-6*dt));
+ camera.lookAt(playerAvatar.position.x,1.35,playerAvatar.position.z);
  speedEl.innerHTML='0<span>KM/H</span>';
 }
 function updateCarDamageEffects(now){
