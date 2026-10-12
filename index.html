@@ -119,6 +119,25 @@ road(0,0,240,13);road(0,0,13,240);
 for(const p of [-60,60]){road(0,p,240,11);road(p,0,11,240)}
 // Outer ring roads add more routes around the expanded city.
 for(const p of [-100,100]){road(0,p,280,8);road(p,0,8,280)}
+// Raised pedestrian sidewalks on both sides of every road. Gaps keep junctions open for traffic.
+function addSidewalkRun(axis,fixed,extent,offset,depth,crossings){
+ const cuts=crossings.filter(v=>Math.abs(v)<extent+1).map(v=>({a:v-4.2,b:v+4.2})).sort((a,b)=>a.a-b.a);
+ let cursor=-extent;
+ const addSegment=(a,b)=>{
+  if(b-a<1)return;
+  if(axis==='x')box(b-a,.14,depth,(sidewalkMat), (a+b)/2,.015,fixed+offset);
+  else box(depth,.14,b-a,sidewalkMat,fixed+offset,.015,(a+b)/2);
+ };
+ for(const cut of cuts){if(cut.a>cursor)addSegment(cursor,Math.min(cut.a,extent));cursor=Math.max(cursor,cut.b)}
+ if(cursor<extent)addSegment(cursor,extent);
+}
+const roadCrossings=[-100,-60,0,60,100];
+for(const z of [0])for(const side of [-1,1])addSidewalkRun('x',z,120,side*8.15,2.1,roadCrossings.filter(x=>Math.abs(x)<120));
+for(const x of [0])for(const side of [-1,1])addSidewalkRun('z',x,120,side*8.15,2.1,roadCrossings.filter(z=>Math.abs(z)<120));
+for(const z of [-60,60])for(const side of [-1,1])addSidewalkRun('x',z,120,side*7.15,1.9,roadCrossings.filter(x=>Math.abs(x)<120));
+for(const x of [-60,60])for(const side of [-1,1])addSidewalkRun('z',x,120,side*7.15,1.9,roadCrossings.filter(z=>Math.abs(z)<120));
+for(const z of [-100,100])for(const side of [-1,1])addSidewalkRun('x',z,140,side*5.25,1.7,roadCrossings.filter(x=>Math.abs(x)<140));
+for(const x of [-100,100])for(const side of [-1,1])addSidewalkRun('z',x,140,side*5.25,1.7,roadCrossings.filter(z=>Math.abs(z)<140));
 // A winding river cuts across the city; shallow banks and moving highlights make the water read as flowing.
 const riverCenterZ=x=>16+1.8*Math.sin(x*.028)+.65*Math.sin(x*.071);
 const riverHalfWidth=4.1;
@@ -554,7 +573,7 @@ function createPedestrian(x,z,index){
  }
  g.rotation.y=Math.random()*Math.PI*2;
  const route=index%4;
- pedestrians.push({group:g,homeX:x,homeZ:z,route,phase:Math.random()*Math.PI*2,baseX:x,baseZ:z,stun:0,walkSpeed:.65+Math.random()*.45});
+ pedestrians.push({group:g,homeX:x,homeZ:z,route,phase:Math.random()*Math.PI*2,baseX:x,baseZ:z,stun:0,walkSpeed:.65+Math.random()*.45,fleeTime:0,reportTimer:0,reported:false});
 }
 for(let i=0;i<28;i++){
  const row=Math.floor(i/7),col=i%7;
@@ -607,8 +626,8 @@ function punchNearby(){
  }
  if(hit){
   const dx=hit.group.position.x-playerAvatar.position.x,dz=hit.group.position.z-playerAvatar.position.z,d=Math.max(.01,Math.hypot(dx,dz));
-  hit.group.position.x+=dx/d*1.5;hit.group.position.z+=dz/d*1.5;hit.stun=1.8;
-  showMissionToast('👊 命中！路人踉跄了一下');
+  hit.group.position.x+=dx/d*1.5;hit.group.position.z+=dz/d*1.5;hit.stun=.45;hit.fleeTime=9;hit.reportTimer=2.2;hit.reported=false;
+  showMissionToast('👊 路人受惊逃跑！他可能会报警');
  }else showMissionToast('👊 出拳！靠近路人再试试');
 }
 modeButton.addEventListener('click',()=>setMode(!onFoot));
@@ -616,8 +635,9 @@ mobileModeButton.addEventListener('click',()=>setMode(!onFoot));
 punchButton.addEventListener('click',punchNearby);
 
 const keys=new Set();
-addEventListener('keydown',e=>{keys.add(e.code);if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.code==='KeyR'&&!onFoot)resetCar();if(e.code==='KeyE'&&!e.repeat){if(onFoot)setMode(false);else if(Math.abs(speed)<1.4)setMode(true)}if(e.code==='KeyF'&&!e.repeat)punchNearby()});
+addEventListener('keydown',e=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();keys.add(e.code);if(e.code==='KeyR'&&!onFoot)resetCar();if(e.code==='KeyE'&&!e.repeat){if(onFoot)setMode(false);else if(Math.abs(speed)<1.4)setMode(true)}if(e.code==='KeyF'&&!e.repeat)punchNearby()});
 addEventListener('keyup',e=>keys.delete(e.code));
+addEventListener('blur',()=>keys.clear());
 document.querySelectorAll('[data-key]').forEach(btn=>{
  const key=btn.dataset.key;
  const down=e=>{e.preventDefault();keys.add(key);btn.classList.add('active')};
@@ -951,9 +971,11 @@ function deployRoadblock(){
 function setWanted(active){
  wantedActive=active;wantedElapsed=0;escapeElapsed=0;caughtElapsed=0;
  if(!active){wantedLevel=0;clearRoadblock()}
+ const target=onFoot?playerAvatar.position:car.position;
+ const heading=onFoot?playerAvatar.rotation.y:car.rotation.y;
  policeCars.forEach((p,i)=>{
   p.group.visible=active;
-  if(active){const back=car.rotation.y;p.group.position.set(car.position.x+Math.sin(back)*(i-1)*9+Math.cos(back)*(i===2?25:18),0,car.position.z+Math.cos(back)*(i-1)*9-Math.sin(back)*(i===2?25:18));p.speed=0}
+  if(active){const back=heading;p.group.position.set(target.x+Math.sin(back)*(i-1)*9+Math.cos(back)*(i===2?25:18),0,target.z+Math.cos(back)*(i-1)*9-Math.sin(back)*(i===2?25:18));p.speed=0}
  });
  policeCall.textContent=active?'🚔 甩开警察即可逃脱':'🚨 触发警察追捕';
  policeStatus.textContent=active?'🚨 ★☆☆☆☆ 通缉中！警车正在追击':'🚓 警察系统：未通缉';
@@ -967,14 +989,16 @@ function updatePolice(dt,now){
  if(!wantedActive)return;
  wantedElapsed+=dt;policeBlink+=dt*10;
  let nearest=Infinity;
+ const target=onFoot?playerAvatar.position:car.position;
+ const heading=onFoot?playerAvatar.rotation.y:car.rotation.y;
  for(const p of policeCars){
   const g=p.group;g.visible=true;
-  const dx=car.position.x-g.position.x,dz=car.position.z-g.position.z,d=Math.hypot(dx,dz);nearest=Math.min(nearest,d);
+  const dx=target.x-g.position.x,dz=target.z-g.position.z,d=Math.hypot(dx,dz);nearest=Math.min(nearest,d);
   // Patrol 0 pursues directly; patrols 1 and 2 spread out to attempt a side interception.
-  const fx=-Math.sin(car.rotation.y),fz=-Math.cos(car.rotation.y),rx=Math.cos(car.rotation.y),rz=-Math.sin(car.rotation.y);
+  const fx=-Math.sin(heading),fz=-Math.cos(heading),rx=Math.cos(heading),rz=-Math.sin(heading);
   const ahead=p.index===0?0:(wantedLevel>=3?9:5);
   const flank=p.index===1?-5:(p.index===2?5:0);
-  const targetX=car.position.x+fx*ahead+rx*flank,targetZ=car.position.z+fz*ahead+rz*flank;
+  const targetX=target.x+fx*ahead+rx*flank,targetZ=target.z+fz*ahead+rz*flank;
   const tx=targetX-g.position.x,tz=targetZ-g.position.z;
   const targetAngle=Math.atan2(-tx,-tz);
   const diff=Math.atan2(Math.sin(targetAngle-g.rotation.y),Math.cos(targetAngle-g.rotation.y));
@@ -987,20 +1011,23 @@ function updatePolice(dt,now){
   p.red.emissiveIntensity=flash?2.6:.15;p.blue.emissiveIntensity=flash?.15:2.6;
  }
  wantedLevel=Math.min(5,1+Math.floor(wantedElapsed/12));
- if(wantedLevel>=3&&!roadblock)deployRoadblock();
+ if(wantedLevel>=3&&!roadblock&&!onFoot)deployRoadblock();
  policeStatus.textContent='🚨 '+'★'.repeat(wantedLevel)+'☆'.repeat(5-wantedLevel)+' · 警车 '+Math.round(nearest)+'m · 逃脱 '+Math.max(0,Math.ceil(7-escapeElapsed))+'秒';
- if(roadblock&&Math.hypot(car.position.x-roadblock.position.x,car.position.z-roadblock.position.z)<3.8){
+ if(!onFoot&&roadblock&&Math.hypot(car.position.x-roadblock.position.x,car.position.z-roadblock.position.z)<3.8){
   speed*=.42;lateralSpeed*=.35;
   if(now-lastRoadblockToast>2200){showMissionToast('🚧 撞上警方路障！速度被大幅压低');lastRoadblockToast=now}
   clearRoadblock();
  }
  if(nearest<2.7&&Math.abs(speed)<4)caughtElapsed+=dt;else caughtElapsed=0;
  if(caughtElapsed>1.0){
-  setWanted(false);resetCar();coins=Math.max(0,coins-35);saveProgress();applyVehicle();
+  setWanted(false);
+  if(onFoot){playerAvatar.position.copy(car.position);playerAvatar.position.x+=2.5;setMode(false)}
+  resetCar();coins=Math.max(0,coins-35);saveProgress();applyVehicle();
   policeStatus.textContent='🚓 你被警方抓获！扣除 35 金币';
-  policeStatus.style.color='#ffb36b';showMissionToast('🚓 被警察抓获！车辆已送回起点，罚款 35 金币');return;
+  policeStatus.style.color='#ffb36b';showMissionToast('🚓 被警察抓获！扣除 35 金币');return;
  }
- if(nearest>24&&Math.abs(speed)>18)escapeElapsed+=dt;else escapeElapsed=Math.max(0,escapeElapsed-dt*.65);
+ const isEscaping=onFoot?playerWalkSpeed>0.5:Math.abs(speed)>18;
+ if(nearest>24&&isEscaping)escapeElapsed+=dt;else escapeElapsed=Math.max(0,escapeElapsed-dt*.65);
  if(escapeElapsed>=7){
   setWanted(false);coins+=60;saveProgress();applyVehicle();
   policeStatus.textContent='✅ 成功逃脱 · 奖励 60 金币';policeStatus.style.color='#7dffb0';
@@ -1013,7 +1040,23 @@ function updatePolice(dt,now){
 let lastTrafficImpact=0;
 function updatePedestrians(dt){
  for(const p of pedestrians){
-  if(p.stun>0){p.stun-=dt;continue}
+  if(p.stun>0){p.stun=Math.max(0,p.stun-dt);continue}
+  if(p.fleeTime>0){
+   p.fleeTime=Math.max(0,p.fleeTime-dt);
+   const source=onFoot?playerAvatar.position:car.position;
+   const dx=p.group.position.x-source.x,dz=p.group.position.z-source.z,d=Math.max(.01,Math.hypot(dx,dz));
+   p.group.position.x+=dx/d*4.8*dt;p.group.position.z+=dz/d*4.8*dt;
+   p.group.rotation.y=Math.atan2(dx,dz);
+   if(p.reportTimer>0){
+    p.reportTimer=Math.max(0,p.reportTimer-dt);
+    if(p.reportTimer===0&&!p.reported){
+     p.reported=true;
+     if(!wantedActive){setWanted(true);showMissionToast('📱 路人报警了！警察正在赶来');}
+     else showMissionToast('📱 路人向警方补充了你的线索');
+    }
+   }
+   continue;
+  }
   p.phase+=dt*p.walkSpeed*.55;
   const radius=2.2;
   if(p.route===0){p.group.position.x=p.baseX+Math.sin(p.phase)*radius;p.group.position.z=p.baseZ}
@@ -1027,12 +1070,16 @@ function updateOnFoot(dt,now){
  punchCooldown=Math.max(0,punchCooldown-dt);
  const forward=keys.has('KeyW')||keys.has('ArrowUp'),back=keys.has('KeyS')||keys.has('ArrowDown');
  const left=keys.has('KeyA')||keys.has('ArrowLeft'),right=keys.has('KeyD')||keys.has('ArrowRight');
- const ix=(right?1:0)-(left?1:0),iz=(back?1:0)-(forward?1:0);
- const moving=Math.hypot(ix,iz)>0;
+ const fwd=(forward?1:0)-(back?1:0),strafe=(right?1:0)-(left?1:0);
+ const moving=fwd!==0||strafe!==0;
  if(moving){
-  const len=Math.hypot(ix,iz),dx=ix/len,dz=iz/len;
+  const yaw=playerAvatar.rotation.y;
+  let dx=-Math.sin(yaw)*fwd+Math.cos(yaw)*strafe;
+  let dz=-Math.cos(yaw)*fwd-Math.sin(yaw)*strafe;
+  const len=Math.hypot(dx,dz);dx/=len;dz/=len;
   playerAvatar.position.x+=dx*4.4*dt;playerAvatar.position.z+=dz*4.4*dt;
-  playerAvatar.rotation.y=Math.atan2(-dx,-dz);
+  // Face the travel direction while moving forward; S backs up without spinning the camera around.
+  if(fwd>0)playerAvatar.rotation.y=Math.atan2(-dx,-dz);
   playerWalkSpeed=Math.min(1,playerWalkSpeed+dt*5);
  }else playerWalkSpeed=Math.max(0,playerWalkSpeed-dt*4);
  playerAvatar.position.x=THREE.MathUtils.clamp(playerAvatar.position.x,-136,136);
@@ -1054,7 +1101,7 @@ function update(dt, now){
  // Keep signal phases live; without this call the lamps and right-of-way would freeze.
  updateTrafficSignals(now);
  updatePedestrians(dt);
- if(onFoot){updateTraffic(dt,now);updateOnFoot(dt,now);return;}
+ if(onFoot){updateTraffic(dt,now);updatePolice(dt,now);updateOnFoot(dt,now);return;}
  if(now-lastPickupTime>12000&&pickupStreak>0){pickupStreak=0;pickupStreakEl.textContent='🪙 金币连击：—'}
  const forward=keys.has('KeyW')||keys.has('ArrowUp');
  const reverse=keys.has('KeyS')||keys.has('ArrowDown');
