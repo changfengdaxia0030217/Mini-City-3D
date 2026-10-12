@@ -643,11 +643,12 @@ const punchArm=new THREE.Group();punchArm.position.set(.39,1.48,0);fallbackAvata
 addLimbSegment(punchArm,shirtMat,.11,.34,-.18);
 addLimbSegment(punchArm,skinMat,.08,.34,-.49);
 addHand(punchArm,-.69);
-// A simple low-poly pistol model held in the character's right hand.
+// Keep the pistol visible with either the fallback or animated character model.
 const pistolMat=mat(0x252a30,.55),pistolGripMat=mat(0x111820,.8);
-box(.13,.13,.34,pistolMat,0,-.63,-.19,punchArm);
-box(.105,.22,.12,pistolGripMat,0,-.76,-.08,punchArm);
-box(.07,.07,.19,mat(0x080b0f,.4),0,-.61,-.42,punchArm);
+const pistolVisual=new THREE.Group();pistolVisual.position.set(.4,1.12,-.42);avatarVisual.add(pistolVisual);
+box(.13,.13,.34,pistolMat,0,0,-.08,pistolVisual);
+box(.105,.22,.12,pistolGripMat,0,-.12,.03,pistolVisual);
+box(.07,.07,.19,mat(0x080b0f,.4),0,.02,-.29,pistolVisual);
 function makeLeg(x){
  const leg=new THREE.Group();leg.position.set(x,.76,0);fallbackAvatar.add(leg);
  addLimbSegment(leg,pantsMat,.13,.36,-.18);
@@ -1152,6 +1153,8 @@ let lastTrafficImpact=0;
 function updatePedestrians(dt){
  for(const p of pedestrians){
   if(p.stun>0){p.stun=Math.max(0,p.stun-dt);continue}
+  // Hostile NPCs near the player are steered by the combat AI instead of their patrol route.
+  if(p.hostile&&onFoot&&Math.hypot(p.group.position.x-playerAvatar.position.x,p.group.position.z-playerAvatar.position.z)<15)continue;
   if(p.fleeTime>0){
    p.fleeTime=Math.max(0,p.fleeTime-dt);
    const source=onFoot?playerAvatar.position:car.position;
