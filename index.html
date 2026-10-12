@@ -1070,16 +1070,14 @@ function updateOnFoot(dt,now){
  punchCooldown=Math.max(0,punchCooldown-dt);
  const forward=keys.has('KeyW')||keys.has('ArrowUp'),back=keys.has('KeyS')||keys.has('ArrowDown');
  const left=keys.has('KeyA')||keys.has('ArrowLeft'),right=keys.has('KeyD')||keys.has('ArrowRight');
- const fwd=(forward?1:0)-(back?1:0),strafe=(right?1:0)-(left?1:0);
- const moving=fwd!==0||strafe!==0;
+ const fwd=(forward?1:0)-(back?1:0);
+ const turn=(left?1:0)-(right?1:0);
+ // Third-person controls: W/S walk forward/back; A/D turn the character and camera.
+ playerAvatar.rotation.y+=turn*2.35*dt;
+ const moving=fwd!==0;
  if(moving){
-  const yaw=playerAvatar.rotation.y;
-  let dx=-Math.sin(yaw)*fwd+Math.cos(yaw)*strafe;
-  let dz=-Math.cos(yaw)*fwd-Math.sin(yaw)*strafe;
-  const len=Math.hypot(dx,dz);dx/=len;dz/=len;
-  playerAvatar.position.x+=dx*4.4*dt;playerAvatar.position.z+=dz*4.4*dt;
-  // Face the travel direction while moving forward; S backs up without spinning the camera around.
-  if(fwd>0)playerAvatar.rotation.y=Math.atan2(-dx,-dz);
+  playerAvatar.position.x+=-Math.sin(playerAvatar.rotation.y)*fwd*4.4*dt;
+  playerAvatar.position.z+=-Math.cos(playerAvatar.rotation.y)*fwd*4.4*dt;
   playerWalkSpeed=Math.min(1,playerWalkSpeed+dt*5);
  }else playerWalkSpeed=Math.max(0,playerWalkSpeed-dt*4);
  playerAvatar.position.x=THREE.MathUtils.clamp(playerAvatar.position.x,-136,136);
