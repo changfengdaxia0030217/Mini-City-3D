@@ -701,11 +701,11 @@ document.querySelectorAll('[data-key]').forEach(btn=>{
 });
 function resetCar(){car.position.set(0,0,8);car.rotation.y=0;car.rotation.z=0;speed=0;steering=0;lateralSpeed=0;carDamage=0;carOnFire=false;forcedExit=false;car.visible=true;carSmoke.forEach(p=>p.visible=false);carFlames.forEach(p=>p.visible=false);lastSafeCarPosition.set(0,0,8);riverFallTimer=0}
 let speed=0, steering=0, lateralSpeed=0, last=performance.now(), nitro=100;
-const lastSafeCarPosition=new THREE.Vector3(0,0,8);let riverFallTimer=0,lastPedestrianImpact=0,lastLampImpact=0,carDamage=0,carOnFire=false,forcedExit=false;
+const lastSafeCarPosition=new THREE.Vector3(0,0,8);let riverFallTimer=0,lastPedestrianImpact=0,lastLampImpact=0,lastDamageTime=0,carDamage=0,carOnFire=false,forcedExit=false;
 const bridgeXs=[-100,-60,0,60,100];
 function isOnBridge(x,z){return bridgeXs.some(bx=>Math.abs(x-bx)<6.7&&Math.abs(z-riverCenterZ(x))<7.4)}
 function hitDestructible(x,z){return destructibleProps.find(p=>!p.fallen&&Math.hypot(x-p.x,z-p.z)<p.radius+1.15)||null}
-function applyCarDamage(amount,now,reason){carDamage=Math.min(2.4,carDamage+amount);if(carDamage>=1.05)carOnFire=true;if(now-lastLampImpact>650){showMissionToast(carDamage>=1.05?'🔥 车辆严重受损，开始起火！':reason+' · 车辆受损 '+Math.round(carDamage/2.4*100)+'%');lastLampImpact=now;}if(carDamage>=1.8&&!forcedExit&&!onFoot){forcedExit=true;speed=0;lateralSpeed=0;setMode(true);showMissionToast('🚨 车辆报废！驾驶员被迫下车，按 R 可救援修复车辆');}}
+function applyCarDamage(amount,now,reason){if(now-lastDamageTime<550)return;lastDamageTime=now;carDamage=Math.min(2.4,carDamage+amount);if(carDamage>=1.05)carOnFire=true;if(now-lastLampImpact>650){showMissionToast(carDamage>=1.05?'🔥 车辆严重受损，开始起火！':reason+' · 车辆受损 '+Math.round(carDamage/2.4*100)+'%');lastLampImpact=now;}if(carDamage>=1.8&&!forcedExit&&!onFoot){forcedExit=true;speed=0;lateralSpeed=0;setMode(true);showMissionToast('🚨 车辆报废！驾驶员被迫下车，按 R 可救援修复车辆');}}
 const speedEl=document.getElementById('speed');
 const cameraTarget=new THREE.Vector3();
 const missionConfigs=[
