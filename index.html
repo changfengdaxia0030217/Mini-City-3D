@@ -1221,9 +1221,10 @@ function updateOnFoot(dt,now){
  // Small shoulder roll and forward lean sell the running/jumping motion.
  avatarBody.rotation.x=running?-.12:(airborne?-.09:Math.sin(cycle*2)*.018*playerWalkSpeed);
  camera.fov=62;camera.updateProjectionMatrix();
- const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(playerAvatar.rotation.y)*5.8,4.1,playerAvatar.position.z-Math.cos(playerAvatar.rotation.y)*5.8);
- camera.position.lerp(target,1-Math.exp(-7*dt));
- camera.lookAt(playerAvatar.position.x,1.15,playerAvatar.position.z);
+ // Keep a clear third-person follow camera behind and above the character.
+ const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(playerAvatar.rotation.y)*8.2,5.2,playerAvatar.position.z-Math.cos(playerAvatar.rotation.y)*8.2);
+ camera.position.lerp(target,1-Math.exp(-5*dt));
+ camera.lookAt(playerAvatar.position.x,1.25,playerAvatar.position.z);
  speedEl.innerHTML='0<span>KM/H</span>';
 }
 function updateCarDamageEffects(now){
