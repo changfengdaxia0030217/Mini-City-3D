@@ -714,7 +714,7 @@ document.querySelectorAll('[data-key]').forEach(btn=>{
 const joystick=document.getElementById('joystick'),joystickKnob=document.getElementById('joystick-knob');
 let joystickPointer=null;
 function releaseJoystick(){joystickPointer=null;keys.delete('ArrowUp');keys.delete('ArrowDown');keys.delete('ArrowLeft');keys.delete('ArrowRight');joystickKnob.style.transform='translate(0px,0px)';}
-function moveJoystick(e){if(joystickPointer!==e.pointerId)return;const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.34,d=Math.hypot(dx,dy),scale=d>max?max/d:1,x=dx*scale,y=dy*scale;joystickKnob.style.transform=`translate(${x}px,${y}px)`;const nx=dx/max,ny=dy/max;for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);/* Add a wider dead zone and hysteresis so tiny thumb movements don't repeatedly toggle steering. */const dead=.38,release=.25;if(nx<-(keys.has('ArrowLeft')?release:dead))keys.add('ArrowLeft');if(nx>(keys.has('ArrowRight')?release:dead))keys.add('ArrowRight');if(ny<-(keys.has('ArrowUp')?release:dead))keys.add('ArrowUp');if(ny>(keys.has('ArrowDown')?release:dead))keys.add('ArrowDown');}
+function moveJoystick(e){if(joystickPointer!==e.pointerId)return;const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.34,d=Math.hypot(dx,dy),scale=d>max?max/d:1,x=dx*scale,y=dy*scale;joystickKnob.style.transform=`translate(${x}px,${y}px)`;const nx=dx/max,ny=dy/max;const wasLeft=keys.has('ArrowLeft'),wasRight=keys.has('ArrowRight'),wasUp=keys.has('ArrowUp'),wasDown=keys.has('ArrowDown');for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);/* On foot, prioritize the direction of travel: small sideways thumb drift while pushing forward must not turn the character. */const dead=onFoot?.48:.42,release=onFoot?.34:.30;const allowTurn=!onFoot||Math.abs(nx)>Math.abs(ny)*.88;if(allowTurn&&nx<-(wasLeft?release:dead))keys.add('ArrowLeft');if(allowTurn&&nx>(wasRight?release:dead))keys.add('ArrowRight');if(ny<-(wasUp?release:dead))keys.add('ArrowUp');if(ny>(wasDown?release:dead))keys.add('ArrowDown');}
 joystick.addEventListener('pointerdown',e=>{e.preventDefault();joystickPointer=e.pointerId;joystick.setPointerCapture(e.pointerId);moveJoystick(e)});
 joystick.addEventListener('pointermove',e=>{e.preventDefault();moveJoystick(e)});
 joystick.addEventListener('pointerup',e=>{if(joystickPointer===e.pointerId)releaseJoystick()});
@@ -1167,8 +1167,8 @@ function updateOnFoot(dt,now){
  const fwd=(forward?1:0)-(back?1:0);
  const turn=(left?1:0)-(right?1:0);
  // Third-person controls: W/S walk forward/back; A/D turn the character and camera.
- turnBlend=THREE.MathUtils.damp(turnBlend,turn,5.0,dt);
-  playerAvatar.rotation.y+=turnBlend*1.05*dt;
+ turnBlend=THREE.MathUtils.damp(turnBlend,turn,4.0,dt);
+  playerAvatar.rotation.y+=turnBlend*.72*dt;
  const moving=fwd!==0;
  const footOldX=playerAvatar.position.x,footOldZ=playerAvatar.position.z;
  const running=(keys.has('ShiftLeft')||keys.has('ShiftRight'))&&moving;
