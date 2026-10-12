@@ -763,7 +763,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
    if(bounds.isEmpty())continue;
    bounds.getCenter(aimAssistWorld);
    aimAssistScreen.copy(aimAssistWorld).project(camera);
-   if(aimAssistScreen.z<0||aimAssistScreen.z>1||Math.abs(aimAssistScreen.x)>1||Math.abs(aimAssistScreen.y)>1)continue;
+   if(aimAssistScreen.z< -1||aimAssistScreen.z>1||Math.abs(aimAssistScreen.x)>1||Math.abs(aimAssistScreen.y)>1)continue;
    const screenDistance=Math.hypot(aimAssistScreen.x,aimAssistScreen.y);
    if(screenDistance>.115)continue;
    const distance=camera.position.distanceTo(aimAssistWorld);
