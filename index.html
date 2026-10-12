@@ -84,7 +84,7 @@ body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{di
     <button id="garage-close">返回驾驶</button>
   </div>
   <div id="minimap-wrap"><div id="minimap-title">CITY MAP · N</div><canvas id="minimap" width="220" height="220" aria-label="城市小地图"></canvas></div>
-  <div id="help" class="panel">目标：自由驾驶并收集金币环，每个 +25 金币。<br>驾驶：WASD / 方向键，Shift 氮气，R 重置<br>下车：WASD 移动，空格跳跃，按住 Shift 跑步；鼠标左键攻击，右键拖动转镜头，准星辅助瞄准。<br><button id="mode-toggle" type="button">🚶 下车（E）</button> <button id="punch-button" type="button">👊 攻击（F）</button></div>
+  <div id="help" class="panel">目标：自由驾驶并收集金币环，每个 +25 金币。<br>驾驶：WASD / 方向键，Shift 氮气，R 重置<br>下车：WASD 移动，空格跳跃，按住 Shift 跑步；鼠标移动控制上下左右镜头，左键攻击。首次点击画面会锁定鼠标，按 Esc 释放；靠近金币或现金自动拾取。<br><button id="mode-toggle" type="button">🚶 下车（E）</button> <button id="punch-button" type="button">👊 攻击（F）</button></div>
 </div>
 <div id="look-zone" aria-label="滑动调整镜头"><div id="look-hint">右侧滑动：调整视角</div></div>
 <div id="mobile">
@@ -739,12 +739,22 @@ function beginLook(e){if(!onFoot||lookPointer!==null)return;e.preventDefault();l
 function moveLook(e){if(lookPointer!==e.pointerId||!onFoot)return;e.preventDefault();const dx=e.clientX-lastLookX;lastLookX=e.clientX;cameraYaw-=dx*.0048;}
 function endLook(e){if(lookPointer===e.pointerId)lookPointer=null;}
 lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('pointermove',moveLook);lookZone.addEventListener('pointerup',endLook);lookZone.addEventListener('pointercancel',endLook);lookZone.addEventListener('lostpointercapture',endLook);
- // PC mouse look: drag on the game canvas to rotate the camera while walking.
- let mouseLookActive=false,lastMouseLookX=0;
- renderer.domElement.addEventListener('mousedown',e=>{if(!onFoot)return;if(e.button===0){e.preventDefault();punchNearby();}else if(e.button===2){e.preventDefault();mouseLookActive=true;lastMouseLookX=e.clientX;}});
- addEventListener('mousemove',e=>{if(!mouseLookActive||!onFoot)return;const dx=e.clientX-lastMouseLookX;lastMouseLookX=e.clientX;cameraYaw-=dx*.0048;});
- addEventListener('mouseup',()=>{mouseLookActive=false;});
- addEventListener('blur',()=>{mouseLookActive=false;});renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
+ // PC controls: left click attacks; first click captures the mouse, then mouse movement freely controls the camera.
+ let cameraPitch=0;
+ renderer.domElement.addEventListener('mousedown',e=>{
+  if(!onFoot)return;
+  if(e.button===0){
+   e.preventDefault();
+   punchNearby();
+   if(document.pointerLockElement!==renderer.domElement&&renderer.domElement.requestPointerLock)renderer.domElement.requestPointerLock();
+  }
+ });
+ addEventListener('mousemove',e=>{
+  if(!onFoot||document.pointerLockElement!==renderer.domElement)return;
+  cameraYaw-=e.movementX*.0048;
+  cameraPitch=Math.max(-.48,Math.min(.62,cameraPitch+e.movementY*.0035));
+ });
+ renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 
 function releaseJoystick(){joystickPointer=null;footMoveX=0;footMoveY=0;keys.delete('ArrowUp');keys.delete('ArrowDown');keys.delete('ArrowLeft');keys.delete('ArrowRight');joystickKnob.style.transform='translate(0px,0px)';}
 function moveJoystick(e){if(joystickPointer!==e.pointerId)return;const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.34,d=Math.hypot(dx,dy),scale=d>max?max/d:1,x=dx*scale,y=dy*scale;joystickKnob.style.transform=`translate(${x}px,${y}px)`;const nx=dx/max,ny=dy/max;if(onFoot){const mag=Math.min(1,Math.hypot(nx,ny)),dead=.16,power=mag<=dead?0:Math.pow((mag-dead)/(1-dead),1.35);footMoveX=mag?nx/mag*power:0;footMoveY=mag?ny/mag*power:0;for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);return;}footMoveX=0;footMoveY=0;const wasLeft=keys.has('ArrowLeft'),wasRight=keys.has('ArrowRight'),wasUp=keys.has('ArrowUp'),wasDown=keys.has('ArrowDown');for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);const dead=.42,release=.30;if(nx<-(wasLeft?release:dead))keys.add('ArrowLeft');if(nx>(wasRight?release:dead))keys.add('ArrowRight');if(ny<-(wasUp?release:dead))keys.add('ArrowUp');if(ny>(wasDown?release:dead))keys.add('ArrowDown');}
@@ -1279,9 +1289,9 @@ function updateOnFoot(dt,now){
  camera.fov=62;camera.updateProjectionMatrix();
  // Keep a clear third-person follow camera behind and above the character.
  // Restore a clearly visible GTA-style third-person camera: well behind and above the character.
- const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(cameraYaw)*9.2,5.2,playerAvatar.position.z-Math.cos(cameraYaw)*9.2);
+ const target=new THREE.Vector3(playerAvatar.position.x-Math.sin(cameraYaw)*9.2,5.2+cameraPitch*7,playerAvatar.position.z-Math.cos(cameraYaw)*9.2);
  camera.position.lerp(target,1-Math.exp(-5.2*dt));
- camera.lookAt(playerAvatar.position.x+Math.sin(cameraYaw)*1.1,1.45,playerAvatar.position.z+Math.cos(cameraYaw)*1.1);
+ camera.lookAt(playerAvatar.position.x+Math.sin(cameraYaw)*1.1,1.45+cameraPitch*2.5,playerAvatar.position.z+Math.cos(cameraYaw)*1.1);
  speedEl.innerHTML='0<span>KM/H</span>';
 }
 function updateCarDamageEffects(now){
