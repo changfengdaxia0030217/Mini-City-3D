@@ -1048,6 +1048,8 @@ function updateOnFoot(dt,now){
 function update(dt, now){
  // Keep signal phases live; without this call the lamps and right-of-way would freeze.
  updateTrafficSignals(now);
+ updatePedestrians(dt);
+ if(onFoot){updateTraffic(dt,now);updateOnFoot(dt,now);return;}
  if(now-lastPickupTime>12000&&pickupStreak>0){pickupStreak=0;pickupStreakEl.textContent='🪙 金币连击：—'}
  const forward=keys.has('KeyW')||keys.has('ArrowUp');
  const reverse=keys.has('KeyS')||keys.has('ArrowDown');
