@@ -573,7 +573,8 @@ for(const side of [-1,1]){
 let onFoot=false, punchCooldown=0, playerWalkSpeed=0;
 const modeButton=document.getElementById('mode-toggle');
 const mobileModeButton=document.getElementById('foot-mode');
-const punchButton=document.getElementById('punch-button');\ndocument.getElementById('foot-punch').addEventListener('click',punchNearby);
+const punchButton=document.getElementById('punch-button');
+document.getElementById('foot-punch').addEventListener('click',punchNearby);
 function setMode(walking){
  if(walking&&Math.abs(speed)>1.4){showMissionToast('请先停车，再下车');return}
  onFoot=walking;speed=0;lateralSpeed=0;steering=0;
@@ -611,7 +612,8 @@ function punchNearby(){
 modeButton.addEventListener('click',()=>setMode(!onFoot));
 mobileModeButton.addEventListener('click',()=>setMode(!onFoot));
 punchButton.addEventListener('click',punchNearby);
-\nconst keys=new Set();
+
+const keys=new Set();
 addEventListener('keydown',e=>{keys.add(e.code);if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.code==='KeyR'&&!onFoot)resetCar();if(e.code==='KeyE'&&!e.repeat){if(onFoot)setMode(false);else if(Math.abs(speed)<1.4)setMode(true)}if(e.code==='KeyF'&&!e.repeat)punchNearby()});
 addEventListener('keyup',e=>keys.delete(e.code));
 document.querySelectorAll('[data-key]').forEach(btn=>{
