@@ -604,7 +604,7 @@ function setMode(walking){
  onFoot=walking;speed=0;lateralSpeed=0;steering=0;
  if(walking){
   playerAvatar.position.set(car.position.x+Math.cos(car.rotation.y)*2.1,0,car.position.z+Math.sin(car.rotation.y)*2.1);
-  playerAvatar.rotation.y=car.rotation.y;playerAvatar.visible=true;car.visible=false;
+  playerAvatar.rotation.y=car.rotation.y;playerAvatar.visible=true;car.visible=true;
   modeButton.textContent='🚗 上车（E）';mobileModeButton.textContent='上车';showMissionToast('已下车：WASD 走动，F 出拳');
  }else{
   const d=Math.hypot(playerAvatar.position.x-car.position.x,playerAvatar.position.z-car.position.z);
