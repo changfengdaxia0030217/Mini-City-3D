@@ -954,6 +954,12 @@ function buildPoliceCar(index){
  return {group:g,red,blue,light,index,speed:0};
 }
 for(let i=0;i<3;i++)policeCars.push(buildPoliceCar(i));
+// Publish live world objects for the minimap overlay.
+window.miniCityAvatar=playerAvatar;
+window.miniCityPedestrians=pedestrians;
+window.miniCityTraffic=trafficCars;
+window.miniCityPolice=policeCars;
+Object.defineProperty(window,'miniCityOnFoot',{configurable:true,get:()=>onFoot});
 function clearRoadblock(){
  if(roadblock){scene.remove(roadblock);roadblock=null}
 }
