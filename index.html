@@ -627,7 +627,7 @@ function makeLeg(x){
 }
 const leftLeg=makeLeg(-.19),rightLeg=makeLeg(.19);
 let punchAnim=0;
-let onFoot=false, punchCooldown=0, playerWalkSpeed=0;
+let onFoot=false, punchCooldown=0, playerWalkSpeed=0, jumpVelocity=0;
 const modeButton=document.getElementById('mode-toggle');
 const mobileModeButton=document.getElementById('foot-mode');
 const punchButton=document.getElementById('punch-button');
@@ -638,7 +638,7 @@ function setMode(walking){
  if(walking){
   playerAvatar.position.set(car.position.x+Math.cos(car.rotation.y)*2.1,0,car.position.z+Math.sin(car.rotation.y)*2.1);
   playerAvatar.rotation.y=car.rotation.y;playerAvatar.visible=true;car.visible=true;
-  modeButton.textContent='🚗 上车（E）';mobileModeButton.textContent='上车';showMissionToast('已下车：WASD 走动，F 出拳');
+  modeButton.textContent='🚗 上车（E）';mobileModeButton.textContent='上车';showMissionToast('已下车：WASD 移动，Shift 跑步，Space 跳跃，F 出拳');
  }else{
   const d=Math.hypot(playerAvatar.position.x-car.position.x,playerAvatar.position.z-car.position.z);
   if(d>4.2){showMissionToast('靠近车辆后才能上车');return}
@@ -672,7 +672,7 @@ mobileModeButton.addEventListener('click',()=>setMode(!onFoot));
 punchButton.addEventListener('click',punchNearby);
 
 const keys=new Set();
-addEventListener('keydown',e=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();keys.add(e.code);if(e.code==='KeyR'&&!onFoot)resetCar();if(e.code==='KeyE'&&!e.repeat){if(onFoot)setMode(false);else if(Math.abs(speed)<1.4)setMode(true)}if(e.code==='KeyF'&&!e.repeat)punchNearby()});
+addEventListener('keydown',e=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();keys.add(e.code);if(e.code==='Space'&&!e.repeat&&onFoot&&playerAvatar.position.y<=0.001)jumpVelocity=7.2;if(e.code==='KeyR'&&!onFoot)resetCar();if(e.code==='KeyE'&&!e.repeat){if(onFoot)setMode(false);else if(Math.abs(speed)<1.4)setMode(true)}if(e.code==='KeyF'&&!e.repeat)punchNearby()});
 addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>keys.clear());
 document.querySelectorAll('[data-key]').forEach(btn=>{
@@ -1120,11 +1120,17 @@ function updateOnFoot(dt,now){
  // Third-person controls: W/S walk forward/back; A/D turn the character and camera.
  playerAvatar.rotation.y+=turn*2.35*dt;
  const moving=fwd!==0;
+ const running=(keys.has('ShiftLeft')||keys.has('ShiftRight'))&&moving;
+ const moveSpeed=running?8.2:4.4;
  if(moving){
-  playerAvatar.position.x+=-Math.sin(playerAvatar.rotation.y)*fwd*4.4*dt;
-  playerAvatar.position.z+=-Math.cos(playerAvatar.rotation.y)*fwd*4.4*dt;
-  playerWalkSpeed=Math.min(1,playerWalkSpeed+dt*5);
+  playerAvatar.position.x+=-Math.sin(playerAvatar.rotation.y)*fwd*moveSpeed*dt;
+  playerAvatar.position.z+=-Math.cos(playerAvatar.rotation.y)*fwd*moveSpeed*dt;
+  playerWalkSpeed=Math.min(1,playerWalkSpeed+dt*(running?8:5));
  }else playerWalkSpeed=Math.max(0,playerWalkSpeed-dt*4);
+ // Jump arc: Space starts an upward impulse; gravity brings the character back to the ground.
+ jumpVelocity-=18*dt;
+ playerAvatar.position.y+=jumpVelocity*dt;
+ if(playerAvatar.position.y<=0){playerAvatar.position.y=0;jumpVelocity=0;}
  playerAvatar.position.x=THREE.MathUtils.clamp(playerAvatar.position.x,-136,136);
  playerAvatar.position.z=THREE.MathUtils.clamp(playerAvatar.position.z,-136,136);
  // Keep pedestrians on their route and prevent the avatar walking straight through them.
@@ -1132,11 +1138,13 @@ function updateOnFoot(dt,now){
   const dx=playerAvatar.position.x-p.group.position.x,dz=playerAvatar.position.z-p.group.position.z,d=Math.hypot(dx,dz);
   if(d<.95&&d>.01){playerAvatar.position.x+=dx/d*(.95-d);playerAvatar.position.z+=dz/d*(.95-d)}
  }
+ const gait=Math.sin(now*.014*(running?1.65:1))*.48*playerWalkSpeed;
  avatarBody.position.y=1.17+Math.sin(now*.012)*.025*playerWalkSpeed;
- const walkSwing=Math.sin(now*.014)*.48*playerWalkSpeed;
+ const walkSwing=gait;
  leftLeg.rotation.x=walkSwing;rightLeg.rotation.x=-walkSwing;leftArm.rotation.x=-walkSwing*.65;
  punchArm.rotation.x=Math.sin((1-punchAnim)*Math.PI)*1.18*punchAnim;
- playerAvatar.position.y=0;
+ // Slight forward lean while running; keep it independent of the jump height.
+ avatarBody.rotation.x=running?-.09:0;
  camera.fov=62;camera.updateProjectionMatrix();
  const target=new THREE.Vector3(playerAvatar.position.x+Math.sin(playerAvatar.rotation.y)*5.8,4.1,playerAvatar.position.z+Math.cos(playerAvatar.rotation.y)*5.8);
  camera.position.lerp(target,1-Math.exp(-7*dt));
