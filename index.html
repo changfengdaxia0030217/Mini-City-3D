@@ -297,6 +297,8 @@ function createSuburbanHouse(x,z,rot=0){
   const worldX=x+Math.cos(rot)*tx+Math.sin(rot)*(-2.8),worldZ=z-Math.sin(rot)*tx+Math.cos(rot)*(-2.8);
   destructibleProps.push({kind:'tree',group:tree,x:worldX,z:worldZ,radius:1.5,fallen:false});
  }
+ // House footprint is a rotated rectangle, approximated by its world-axis-aligned bounds.
+ occupied.push({x,z,hw:Math.abs(Math.cos(rot))*3.0+Math.abs(Math.sin(rot))*3.0,hd:Math.abs(Math.sin(rot))*3.0+Math.abs(Math.cos(rot))*3.0});
 }
 for(const side of [-1,1])for(const x of [-82,-42,42,82]){
  createSuburbanHouse(x,side*120,side<0?Math.PI:0);
@@ -310,7 +312,9 @@ function createFuelStop(){
  box(23,.1,18,driveMat,x,.04,z);
  box(10,3.6,6.5,mat(0xf0e8d8),x+5,1.85,z-3.5);
  box(10,.35,6.8,mat(0x2c8f73),x+5,3.85,z-3.5);
+ occupied.push({x:x+5,z:z-3.5,hw:5.5,hd:3.7});
  box(7,.12,2.8,mat(0x9ba5ad),x-3,.12,z+1);
+ occupied.push({x:x-3,z:z+1,hw:3.8,hd:1.6});
  for(const px of [x-5.2,x-1.2]){
   box(.16,2.6,.16,mat(0xe8e9e7),px,1.45,z+1);
   box(2.6,.16,3.1,mat(0xe8e9e7),px,2.7,z+1);
@@ -826,6 +830,11 @@ pickupPositions.forEach((p,i)=>{
 });
 const navArrow=document.getElementById('nav-arrow');
 function collides(x,z){return occupied.some(b=>Math.abs(x-b.x)<b.hw+1.15&&Math.abs(z-b.z)<b.hd+2.1)}
+// Shared collision volumes: static buildings use AABBs; actors and props use ground-plane circles.
+function pointHitsProp(x,z,pad=.45){return destructibleProps.some(p=>!p.fallen&&Math.hypot(x-p.x,z-p.z)<p.radius+pad)}
+function pointHitsTraffic(x,z,pad=1.15,ignore=null){return trafficCars.some(a=>a!==ignore&&Math.hypot(x-a.group.position.x,z-a.group.position.z)<pad+1.05)}
+function pointHitsBuilding(x,z,pad=.45){return occupied.some(b=>Math.abs(x-b.x)<b.hw+pad&&Math.abs(z-b.z)<b.hd+pad)}
+function footBlocked(x,z){return pointHitsBuilding(x,z,.38)||pointHitsProp(x,z,.38)||pointHitsTraffic(x,z,.55)||(!onFoot&&Math.hypot(x-car.position.x,z-car.position.z)<1.55)}
 // AI city traffic: compact autonomous cars circulate on road loops, steer through turns,
 // keep following distance, and yield when the player is directly ahead.
 const trafficStatus=document.getElementById('traffic-status');
@@ -1143,6 +1152,7 @@ function updateOnFoot(dt,now){
  // Third-person controls: W/S walk forward/back; A/D turn the character and camera.
  playerAvatar.rotation.y+=turn*2.35*dt;
  const moving=fwd!==0;
+ const footOldX=playerAvatar.position.x,footOldZ=playerAvatar.position.z;
  const running=(keys.has('ShiftLeft')||keys.has('ShiftRight'))&&moving;
  const moveSpeed=running?8.2:4.4;
  if(moving){
@@ -1156,6 +1166,14 @@ function updateOnFoot(dt,now){
  if(playerAvatar.position.y<=0){playerAvatar.position.y=0;jumpVelocity=0;}
  playerAvatar.position.x=THREE.MathUtils.clamp(playerAvatar.position.x,-136,136);
  playerAvatar.position.z=THREE.MathUtils.clamp(playerAvatar.position.z,-136,136);
+ // Resolve collisions on each axis separately so the avatar can slide along walls.
+ if(footBlocked(playerAvatar.position.x,playerAvatar.position.z)){
+  const nx=playerAvatar.position.x,nz=playerAvatar.position.z;
+  playerAvatar.position.set(nx,playerAvatar.position.y,footOldZ);
+  if(footBlocked(nx,footOldZ))playerAvatar.position.x=footOldX;
+  playerAvatar.position.set(footOldX,playerAvatar.position.y,nz);
+  if(footBlocked(footOldX,nz))playerAvatar.position.z=footOldZ;
+ }
  // Keep pedestrians on their route and prevent the avatar walking straight through them.
  for(const p of pedestrians){
   const dx=playerAvatar.position.x-p.group.position.x,dz=playerAvatar.position.z-p.group.position.z,d=Math.hypot(dx,dz);
