@@ -693,7 +693,7 @@ function updatePolice(dt,now){
  for(const p of policeCars){
   const g=p.group;g.visible=true;
   const dx=car.position.x-g.position.x,dz=car.position.z-g.position.z,d=Math.hypot(dx,dz);nearest=Math.min(nearest,d);
-  const targetAngle=Math.atan2(dx,-dz);
+  const targetAngle=Math.atan2(-dx,-dz);
   const diff=Math.atan2(Math.sin(targetAngle-g.rotation.y),Math.cos(targetAngle-g.rotation.y));
   g.rotation.y+=THREE.MathUtils.clamp(diff,-2.1*dt,2.1*dt);
   const desired=d<2.7?0:Math.min(17,7.5+d*.23);
