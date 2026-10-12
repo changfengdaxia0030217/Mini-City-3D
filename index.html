@@ -239,6 +239,8 @@ for(let i=0;i<18;i++){
  const trunk=box(.7,2,.7,mat(0x8b5b3e),x,1,z);
  const crown=new THREE.Mesh(new THREE.ConeGeometry(2.3,5,6),mat([0x39845b,0x4d995e,0x65aa62][i%3]));crown.position.set(x,4,z);crown.castShadow=true;scene.add(crown);
 }
+// Shared red tire material is needed by the roadside service-van wheels before the player car is built.
+const tireMat=mat(0xff202f,.28);
 // Suburban ring: low houses, yards, driveways and trees soften the edge of the downtown grid.
 const suburbWallMats=[mat(0xe8d7bd),mat(0xd8c6a6),mat(0xe5e0d3),mat(0xc9d8d2)];
 const suburbRoofMats=[mat(0x8c5145),mat(0x555d68),mat(0x9a6b4b)];
@@ -338,7 +340,7 @@ for(const axis of ['x','z'])for(let p=-100;p<=100;p+=20)for(const side of [-1,1]
 
 // car group: local forward is negative Z
 const car=new THREE.Group();scene.add(car);
-const carPaint=mat(0xf5a623,.45), glass=mat(0x8ed4e8,.35), tireMat=mat(0xff202f,.28);
+const carPaint=mat(0xf5a623,.45), glass=mat(0x8ed4e8,.35);
 // Safe fallback body mesh: keep the vehicle visible while retaining a shaped silhouette.
 const bodyGeometry=new THREE.BoxGeometry(1.95,.62,3.85,2,1,4);
 const pos=bodyGeometry.attributes.position;
