@@ -254,6 +254,7 @@ for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
   }
  }
 // Park trees are grouped to support knock-down collisions.
+const destructibleProps=[];
 const park=box(25,.08,25,mat(0x91d47a),-91,.02,-91);
 for(let i=0;i<18;i++){
  const x=-101+Math.random()*20,z=-101+Math.random()*20,tree=new THREE.Group();tree.position.set(x,0,z);scene.add(tree);
@@ -267,7 +268,6 @@ const tireMat=mat(0xff202f,.28);
 const suburbWallMats=[mat(0xe8d7bd),mat(0xd8c6a6),mat(0xe5e0d3),mat(0xc9d8d2)];
 const suburbRoofMats=[mat(0x8c5145),mat(0x555d68),mat(0x9a6b4b)];
 const yardMat=mat(0x76ad63),driveMat=mat(0xb8b5a8),fenceMat=mat(0xe7e1d4);
-const destructibleProps=[];
 function createSuburbanHouse(x,z,rot=0){
  const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rot;scene.add(g);
  const wall=suburbWallMats[Math.floor(Math.random()*suburbWallMats.length)];
