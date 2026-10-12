@@ -19,6 +19,8 @@
 .pad{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px);gap:6px;pointer-events:auto}
 .control{border:1px solid #ffffff65;background:#10203399;color:white;border-radius:14px;font-size:20px;font-weight:800;touch-action:none;user-select:none;-webkit-user-select:none;display:grid;place-items:center;box-shadow:0 4px 14px #10203330}
 .control:active,.control.active{background:#ffbd4a;color:#152235}
+#mode-toggle,#punch-button{border:1px solid #ffffff55;border-radius:8px;background:#20394ddd;color:#fff;padding:5px 8px;margin-top:5px;font-size:11px;font-weight:800;cursor:pointer}
+#foot-mode{font-size:11px;padding:0 7px;min-width:52px;height:54px}
 #gas{width:62px;height:62px;border-radius:50%;font-size:14px;background:#1b8e68dd}
 #brake{width:54px;height:54px;border-radius:50%;font-size:12px;background:#b84747dd}
 #minimap-wrap{position:absolute;right:16px;bottom:16px;top:auto;width:150px;padding:7px;border-radius:14px;background:#102033e8;border:1px solid #ffffff45;backdrop-filter:blur(8px);box-shadow:0 8px 28px #10203330;z-index:3}
@@ -82,7 +84,7 @@
     <div></div><button class="control" data-key="ArrowUp">▲</button><div></div>
     <button class="control" data-key="ArrowLeft">◀</button><button class="control" data-key="ArrowDown">▼</button><button class="control" data-key="ArrowRight">▶</button>
   </div>
-  <div style="display:flex;gap:9px;align-items:end;pointer-events:auto"><button class="control" id="brake" data-key="Space">刹车</button><button class="control" id="gas" data-key="KeyW">加速</button><button class="control" id="foot-punch" type="button">👊</button></div>
+  <div style="display:flex;gap:9px;align-items:end;pointer-events:auto"><button class="control" id="brake" data-key="Space">刹车</button><button class="control" id="gas" data-key="KeyW">加速</button><button class="control" id="foot-mode" type="button">下车</button><button class="control" id="foot-punch" type="button">👊</button></div>
 </div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
@@ -570,19 +572,20 @@ for(const side of [-1,1]){
 }
 let onFoot=false, punchCooldown=0, playerWalkSpeed=0;
 const modeButton=document.getElementById('mode-toggle');
+const mobileModeButton=document.getElementById('foot-mode');
 const punchButton=document.getElementById('punch-button');\ndocument.getElementById('foot-punch').addEventListener('click',punchNearby);
 function setMode(walking){
  onFoot=walking;speed=0;lateralSpeed=0;steering=0;
  if(walking){
   playerAvatar.position.set(car.position.x+Math.cos(car.rotation.y)*2.1,0,car.position.z+Math.sin(car.rotation.y)*2.1);
   playerAvatar.rotation.y=car.rotation.y;playerAvatar.visible=true;car.visible=false;
-  modeButton.textContent='🚗 上车（E）';showMissionToast('已下车：WASD 走动，F 出拳');
+  modeButton.textContent='🚗 上车（E）';mobileModeButton.textContent='上车';showMissionToast('已下车：WASD 走动，F 出拳');
  }else{
   const d=Math.hypot(playerAvatar.position.x-car.position.x,playerAvatar.position.z-car.position.z);
   if(d>4.2){showMissionToast('靠近车辆后才能上车');return}
   car.position.x=playerAvatar.position.x-Math.cos(car.rotation.y)*2.1;
   car.position.z=playerAvatar.position.z-Math.sin(car.rotation.y)*2.1;
-  playerAvatar.visible=false;car.visible=true;modeButton.textContent='🚶 下车（E）';
+  playerAvatar.visible=false;car.visible=true;modeButton.textContent='🚶 下车（E）';mobileModeButton.textContent='下车';
   showMissionToast('已上车，继续驾驶');
  }
 }
@@ -605,6 +608,7 @@ function punchNearby(){
  }else showMissionToast('👊 出拳！靠近路人再试试');
 }
 modeButton.addEventListener('click',()=>setMode(!onFoot));
+mobileModeButton.addEventListener('click',()=>setMode(!onFoot));
 punchButton.addEventListener('click',punchNearby);
 \nconst keys=new Set();
 addEventListener('keydown',e=>{keys.add(e.code);if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.code==='KeyR'&&!onFoot)resetCar();if(e.code==='KeyE'&&!e.repeat){if(onFoot)setMode(false);else if(Math.abs(speed)<1.4)setMode(true)}if(e.code==='KeyF'&&!e.repeat)punchNearby()});
@@ -1015,7 +1019,7 @@ function updatePedestrians(dt){
  }
 }
 function updateOnFoot(dt,now){
- updatePedestrians(dt);punchCooldown=Math.max(0,punchCooldown-dt);
+ punchCooldown=Math.max(0,punchCooldown-dt);
  const forward=keys.has('KeyW')||keys.has('ArrowUp'),back=keys.has('KeyS')||keys.has('ArrowDown');
  const left=keys.has('KeyA')||keys.has('ArrowLeft'),right=keys.has('KeyD')||keys.has('ArrowRight');
  const ix=(right?1:0)-(left?1:0),iz=(back?1:0)-(forward?1:0);
