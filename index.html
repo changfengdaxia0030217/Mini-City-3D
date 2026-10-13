@@ -745,7 +745,8 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  let cameraDistance=5.0;
  let cameraRotating=false;
  const cameraCollisionRaycaster=new THREE.Raycaster();
- const cameraAimTarget=new THREE.Vector3(),cameraPivot=new THREE.Vector3(),cameraDesiredPosition=new THREE.Vector3(),cameraDirection=new THREE.Vector3(),cameraRight=new THREE.Vector3();
+ const cameraAimTarget=new THREE.Vector3(),cameraPivot=new THREE.Vector3(),cameraDesiredPosition=new THREE.Vector3(),cameraCollisionPosition=new THREE.Vector3(),cameraDirection=new THREE.Vector3(),cameraRight=new THREE.Vector3();
+ let cameraCollisionCheckTimer=0,lastAimReticleCheck=0;
  const weaponRaycaster=new THREE.Raycaster(),lineOfSightRaycaster=new THREE.Raycaster(),weaponScreenCenter=new THREE.Vector2(0,0);
  const shotOrigin=new THREE.Vector3(),shotDirection=new THREE.Vector3();
  const aimAssistWorld=new THREE.Vector3(),aimAssistScreen=new THREE.Vector3();
@@ -822,6 +823,11 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  }
  function updateAimReticle(){
   if(!onFoot){document.body.classList.remove('aiming-target');return;}
+  // Raycasting every render frame is wasteful in the dense city scene; refresh the
+  // visual target hint at 8–10 Hz while shots still perform a fresh check on click.
+  const now=performance.now();
+  if(now-lastAimReticleCheck<120)return;
+  lastAimReticleCheck=now;
   document.body.classList.toggle('aiming-target',!!findAimedPedestrian());
  }
  function fireWeapon(){
@@ -1410,23 +1416,29 @@ function updateOnFoot(dt,now){
   cameraPivot.z-Math.cos(cameraYaw)*horizontal*cameraDistance+cameraRight.z*(cameraRotating ? .58 : 0)
  );
  // Pull the camera in when buildings or props block the desired orbit position.
- cameraDirection.copy(cameraDesiredPosition).sub(cameraPivot);
- const desiredLength=cameraDirection.length();
- cameraDirection.normalize();
- cameraCollisionRaycaster.set(cameraPivot,cameraDirection);
- cameraCollisionRaycaster.near=.15;
- cameraCollisionRaycaster.far=desiredLength;
- const cameraHits=cameraCollisionRaycaster.intersectObjects(scene.children,true);
- const blockingHit=cameraHits.find(hit=>{
-  let node=hit.object;
-  while(node){
-   if(node===playerAvatar||node===car)return false;
-   node=node.parent;
-  }
-  return hit.object!==ground&&hit.object.visible;
- });
- if(blockingHit)cameraDesiredPosition.copy(cameraPivot).addScaledVector(cameraDirection,Math.max(.55,blockingHit.distance-.22));
- camera.position.lerp(cameraDesiredPosition,1-Math.exp(-9.0*dt));
+ // Recheck at 20 Hz instead of traversing every city mesh on every render frame.
+ cameraCollisionCheckTimer-=dt;
+ if(cameraCollisionCheckTimer<=0){
+  cameraCollisionCheckTimer=.05;
+  cameraDirection.copy(cameraDesiredPosition).sub(cameraPivot);
+  const desiredLength=cameraDirection.length();
+  cameraDirection.normalize();
+  cameraCollisionRaycaster.set(cameraPivot,cameraDirection);
+  cameraCollisionRaycaster.near=.15;
+  cameraCollisionRaycaster.far=desiredLength;
+  const cameraHits=cameraCollisionRaycaster.intersectObjects(scene.children,true);
+  const blockingHit=cameraHits.find(hit=>{
+   let node=hit.object;
+   while(node){
+    if(node===playerAvatar||node===car)return false;
+    node=node.parent;
+   }
+   return hit.object!==ground&&hit.object.visible;
+  });
+  cameraCollisionPosition.copy(cameraDesiredPosition);
+  if(blockingHit)cameraCollisionPosition.copy(cameraPivot).addScaledVector(cameraDirection,Math.max(.55,blockingHit.distance-.22));
+ }
+ camera.position.lerp(cameraCollisionPosition,1-Math.exp(-9.0*dt));
  cameraAimTarget.set(
   playerAvatar.position.x+Math.sin(cameraYaw)*4.2,
   playerAvatar.position.y+1.25+Math.sin(cameraPitch)*1.3,
