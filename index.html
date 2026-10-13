@@ -869,11 +869,14 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  });
  addEventListener('mouseup',e=>{if(e.button===2)cameraRotating=false;});
  addEventListener('blur',()=>{cameraRotating=false;lookPointer=null;keys.clear();});
- renderer.domElement.addEventListener('wheel',e=>{
+ // Listen in capture phase on window so overlays/UI layers cannot swallow the wheel event.
+ // Only zoom while on foot; clamp to keep the camera at a usable distance.
+ window.addEventListener('wheel',e=>{
   if(!onFoot)return;
   e.preventDefault();
-  cameraDistance=THREE.MathUtils.clamp(cameraDistance+Math.sign(e.deltaY)*.65,2,10);
- },{passive:false});
+  const delta=Math.sign(e.deltaY);
+  if(delta)cameraDistance=THREE.MathUtils.clamp(cameraDistance+delta*.85,2,10);
+ },{passive:false,capture:true});
  renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 
 function releaseJoystick(){joystickPointer=null;footMoveX=0;footMoveY=0;keys.delete('ArrowUp');keys.delete('ArrowDown');keys.delete('ArrowLeft');keys.delete('ArrowRight');joystickKnob.style.transform='translate(0px,0px)';}
