@@ -769,6 +769,27 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
    return hit.object!==ground&&hit.object.visible;
   });
  }
+ // The camera ray chooses the reticle target, but the projectile must also clear the
+ // space between the visible pistol muzzle and that target (important around corners).
+ function getMuzzleBlocker(point,targetPed,origin){
+  shotDirection.copy(point).sub(origin);
+  const distance=shotDirection.length();
+  if(distance<.05)return null;
+  shotDirection.normalize();
+  lineOfSightRaycaster.set(origin,shotDirection);
+  lineOfSightRaycaster.near=.04;
+  lineOfSightRaycaster.far=Math.max(.04,distance-.12);
+  const blockers=lineOfSightRaycaster.intersectObjects(scene.children,true);
+  for(const hit of blockers){
+   let node=hit.object,ignored=false;
+   while(node){
+    if(node===playerAvatar||node===car||(targetPed&&node===targetPed.group)){ignored=true;break;}
+    node=node.parent;
+   }
+   if(!ignored&&hit.object!==ground&&hit.object.visible)return hit.point.clone();
+  }
+  return null;
+ }
  function findAimedPedestrian(){
   camera.updateMatrixWorld(true);
   weaponRaycaster.setFromCamera(weaponScreenCenter,camera);
@@ -809,14 +830,18 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
   camera.updateMatrixWorld(true);
   weaponRaycaster.setFromCamera(weaponScreenCenter,camera);
   const aim=findAimedPedestrian();
-  const hitPed=aim?.pedestrian||null,hitPoint=aim?.point||null;
+  let hitPed=aim?.pedestrian||null,hitPoint=aim?.point||null;
   const origin=new THREE.Vector3();
   if(pistolVisual)pistolVisual.getWorldPosition(origin);else camera.getWorldPosition(origin);
+  if(hitPed&&hitPoint){
+   const muzzleBlocker=getMuzzleBlocker(hitPoint,hitPed,origin);
+   if(muzzleBlocker){hitPed=null;hitPoint=muzzleBlocker;}
+  }
   const end=hitPoint||camera.position.clone().add(weaponRaycaster.ray.direction.clone().multiplyScalar(45));
   const beamGeometry=new THREE.BufferGeometry().setFromPoints([origin,end]);
   const beam=new THREE.Line(beamGeometry,new THREE.LineBasicMaterial({color:hitPed?0xffd45b:0xfff0b5,transparent:true,opacity:.95}));
   scene.add(beam);setTimeout(()=>{scene.remove(beam);beamGeometry.dispose();beam.material.dispose();},75);
-  if(!hitPed){showMissionToast('🔫 未命中：把准星对准 NPC');return;}
+  if(!hitPed){showMissionToast('🔫 未命中：检查准星与枪口之间是否有障碍物');return;}
   hitPed.health=(hitPed.health??(hitPed.hostile?55:100))-34;hitPed.stun=.45;hitPed.fleeTime=hitPed.hostile?0:7;hitPed.reportTimer=1.6;hitPed.reported=false;
   if(hitPed.health<=0){
    const px=hitPed.group.position.x,pz=hitPed.group.position.z;scene.remove(hitPed.group);const idx=pedestrians.indexOf(hitPed);if(idx>=0)pedestrians.splice(idx,1);
