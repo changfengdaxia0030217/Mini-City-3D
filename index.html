@@ -812,7 +812,8 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
    aimAssistScreen.copy(aimAssistWorld).project(camera);
    if(aimAssistScreen.z< -1||aimAssistScreen.z>1||Math.abs(aimAssistScreen.x)>1||Math.abs(aimAssistScreen.y)>1)continue;
    const screenDistance=Math.hypot(aimAssistScreen.x,aimAssistScreen.y);
-   if(screenDistance>.115)continue;
+   // Tight assist radius prevents the reticle turning red for an NPC noticeably away from center.
+   if(screenDistance>.065)continue;
    const distance=camera.position.distanceTo(aimAssistWorld);
    if(distance>65)continue;
    // Favor the NPC nearest the reticle, with a slight preference for nearer targets.
@@ -1413,9 +1414,11 @@ function updateOnFoot(dt,now){
  cameraPivot.set(playerAvatar.position.x,playerAvatar.position.y+1.35,playerAvatar.position.z);
  const horizontal=Math.cos(cameraPitch),vertical=Math.sin(cameraPitch);
  cameraRight.set(Math.cos(cameraYaw),0,-Math.sin(cameraYaw));
+ // Keep the orbit camera on the same yaw/pitch ray used by the reticle.
+// The extra height offset made the view tilt too far down at default zoom.
  cameraDesiredPosition.set(
   cameraPivot.x-Math.sin(cameraYaw)*horizontal*cameraDistance+cameraRight.x*(cameraRotating ? .58 : 0),
-  cameraPivot.y-vertical*cameraDistance+cameraDistance*.24,
+  cameraPivot.y-vertical*cameraDistance,
   cameraPivot.z-Math.cos(cameraYaw)*horizontal*cameraDistance+cameraRight.z*(cameraRotating ? .58 : 0)
  );
  // Pull the camera in when buildings or props block the desired orbit position.
@@ -1442,10 +1445,12 @@ function updateOnFoot(dt,now){
   if(blockingHit)cameraCollisionPosition.copy(cameraPivot).addScaledVector(cameraDirection,Math.max(.55,blockingHit.distance-.22));
  }
  camera.position.lerp(cameraCollisionPosition,1-Math.exp(-9.0*dt));
+ // Aim at a point projected along the current yaw/pitch direction, rather than a fixed low point near the avatar.
+ const aimReach=12;
  cameraAimTarget.set(
-  playerAvatar.position.x+Math.sin(cameraYaw)*4.2,
-  playerAvatar.position.y+1.25+Math.sin(cameraPitch)*1.3,
-  playerAvatar.position.z+Math.cos(cameraYaw)*4.2
+  cameraPivot.x+Math.sin(cameraYaw)*horizontal*aimReach+cameraRight.x*(cameraRotating ? .58 : 0),
+  cameraPivot.y+Math.sin(cameraPitch)*aimReach,
+  cameraPivot.z+Math.cos(cameraYaw)*horizontal*aimReach+cameraRight.z*(cameraRotating ? .58 : 0)
  );
  camera.lookAt(cameraAimTarget);
  pistolVisual.rotation.x=THREE.MathUtils.clamp(cameraPitch,-.45,.55);
