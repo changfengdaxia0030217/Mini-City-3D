@@ -750,6 +750,8 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  const weaponRaycaster=new THREE.Raycaster(),lineOfSightRaycaster=new THREE.Raycaster(),weaponScreenCenter=new THREE.Vector2(0,0);
  const shotOrigin=new THREE.Vector3(),shotDirection=new THREE.Vector3();
  const aimAssistWorld=new THREE.Vector3(),aimAssistScreen=new THREE.Vector3();
+ // Keep target detection consistent at medium/far ranges without changing camera controls.
+ const MAX_AIM_DISTANCE=120;
  function hasClearShotToPoint(point,targetPed=null){
   camera.updateMatrixWorld(true);
   camera.getWorldPosition(shotOrigin);
@@ -800,7 +802,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
   for(const hit of intersections){
    let obj=hit.object,found=null;
    while(obj&&!found){found=available.find(p=>p.group===obj);obj=obj.parent;}
-   if(found&&hit.distance<65&&hasClearShotToPoint(hit.point,found))return {pedestrian:found,point:hit.point,distance:hit.distance,assisted:false};
+   if(found&&hit.distance<MAX_AIM_DISTANCE&&hasClearShotToPoint(hit.point,found))return {pedestrian:found,point:hit.point,distance:hit.distance,assisted:false};
   }
   // Gentle screen-space aim assist: a small NPC can be hard to hit with a strict mesh ray.
   // If its torso is close to the reticle, snap the shot to that torso instead of requiring pixel-perfect aim.
@@ -813,9 +815,10 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
    if(aimAssistScreen.z< -1||aimAssistScreen.z>1||Math.abs(aimAssistScreen.x)>1||Math.abs(aimAssistScreen.y)>1)continue;
    const screenDistance=Math.hypot(aimAssistScreen.x,aimAssistScreen.y);
    // Tight assist radius prevents the reticle turning red for an NPC noticeably away from center.
-   if(screenDistance>.065)continue;
+   // Slightly forgiving for small/far NPCs, while keeping the assist close to the reticle.
+   if(screenDistance>.075)continue;
    const distance=camera.position.distanceTo(aimAssistWorld);
-   if(distance>65)continue;
+   if(distance>MAX_AIM_DISTANCE)continue;
    // Favor the NPC nearest the reticle, with a slight preference for nearer targets.
    const score=screenDistance+distance*.00012;
    if(score<bestScore&&hasClearShotToPoint(aimAssistWorld,p)){bestScore=score;best={pedestrian:p,point:aimAssistWorld.clone(),distance,assisted:true};}
