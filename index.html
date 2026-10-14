@@ -1445,11 +1445,13 @@ function updateOnFoot(dt,now){
   if(blockingHit)cameraCollisionPosition.copy(cameraPivot).addScaledVector(cameraDirection,Math.max(.55,blockingHit.distance-.22));
  }
  camera.position.lerp(cameraCollisionPosition,1-Math.exp(-9.0*dt));
- // Aim at a point projected along the current yaw/pitch direction, rather than a fixed low point near the avatar.
+ // Aim above the avatar's back: the screen-center ray must clear the character
+ // before extending into the world. Keep the target at head height while the orbit
+ // camera position follows cameraPitch, so pitch input still controls the view.
  const aimReach=12;
  cameraAimTarget.set(
   cameraPivot.x+Math.sin(cameraYaw)*horizontal*aimReach+cameraRight.x*(cameraRotating ? .58 : 0),
-  cameraPivot.y+Math.sin(cameraPitch)*aimReach,
+  cameraPivot.y+1.0,
   cameraPivot.z+Math.cos(cameraYaw)*horizontal*aimReach+cameraRight.z*(cameraRotating ? .58 : 0)
  );
  camera.lookAt(cameraAimTarget);
