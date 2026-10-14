@@ -1432,39 +1432,72 @@ function updatePedestrians(dt){
   p.group.rotation.y=Math.atan2(p.group.position.x-p.homeX,p.group.position.z-p.homeZ);
  }
 }
-// Building-aware combat movement: hostiles must route around city blocks and cannot hit through walls.
+// Building-aware combat movement: hostile NPCs choose waypoints around blocking buildings.
 function combatPointBlocked(x,z){
  for(const b of occupied){if(Math.abs(x-b.x)<b.hw&&Math.abs(z-b.z)<b.hd)return true;}
  return false;
 }
-function combatLineBlocked(x1,z1,x2,z2){
+function combatSegmentHitsBuilding(x1,z1,x2,z2,b){
  const dx=x2-x1,dz=z2-z1;
- for(const b of occupied){
-  const tx1=(b.x-b.hw-x1)/(Math.abs(dx)<1e-6?1e-6:dx),tx2=(b.x+b.hw-x1)/(Math.abs(dx)<1e-6?1e-6:dx);
-  const tz1=(b.z-b.hd-z1)/(Math.abs(dz)<1e-6?1e-6:dz),tz2=(b.z+b.hd-z1)/(Math.abs(dz)<1e-6?1e-6:dz);
-  const enter=Math.max(Math.min(tx1,tx2),Math.min(tz1,tz2)),leave=Math.min(Math.max(tx1,tx2),Math.max(tz1,tz2));
-  if(leave>=Math.max(0,enter)&&enter<=1&&leave>=0)return true;
+ let tMin=0,tMax=1;
+ for(const axis of [{p:x1,d:dx,min:b.x-b.hw,max:b.x+b.hw},{p:z1,d:dz,min:b.z-b.hd,max:b.z+b.hd}]){
+  if(Math.abs(axis.d)<1e-7){if(axis.p<axis.min||axis.p>axis.max)return false;continue;}
+  let a=(axis.min-axis.p)/axis.d,c=(axis.max-axis.p)/axis.d;
+  if(a>c){const swap=a;a=c;c=swap;}
+  tMin=Math.max(tMin,a);tMax=Math.min(tMax,c);
+  if(tMin>tMax)return false;
  }
- return false;
+ return tMax>=0&&tMin<=1;
+}
+function combatBlockingBuildings(x1,z1,x2,z2){
+ return occupied.filter(b=>combatSegmentHitsBuilding(x1,z1,x2,z2,b));
+}
+function combatLineBlocked(x1,z1,x2,z2){
+ return combatBlockingBuildings(x1,z1,x2,z2).length>0;
+}
+function combatChooseWaypoint(px,pz,tx,tz,blockers){
+ let best=null,bestScore=Infinity;
+ for(const b of blockers){
+  const pad=1.35;
+  const corners=[[b.x-b.hw-pad,b.z-b.hd-pad],[b.x-b.hw-pad,b.z+b.hd+pad],[b.x+b.hw+pad,b.z-b.hd-pad],[b.x+b.hw+pad,b.z+b.hd+pad]];
+  for(const c of corners){
+   if(combatPointBlocked(c[0],c[1]))continue;
+   if(combatLineBlocked(px,pz,c[0],c[1]))continue;
+   const remaining=Math.hypot(tx-c[0],tz-c[1]);
+   const targetStillBlocked=combatLineBlocked(c[0],c[1],tx,tz);
+   const score=Math.hypot(c[0]-px,c[1]-pz)+remaining+(targetStillBlocked?18:0);
+   if(score<bestScore){bestScore=score;best={x:c[0],z:c[1]};}
+  }
+ }
+ return best;
 }
 function updateCombatAI(dt,now){
  if(onFoot&&playerHealth>0){
   for(const p of pedestrians){
    if(!p.hostile||p.stun>0||p.knockdownTimer>0)continue;
    p.attackCooldown=Math.max(0,(p.attackCooldown||0)-dt);
-   const px=p.group.position.x,pz=p.group.position.z,dx=playerAvatar.position.x-px,dz=playerAvatar.position.z-pz,d=Math.max(.01,Math.hypot(dx,dz));
+   const px=p.group.position.x,pz=p.group.position.z,tx=playerAvatar.position.x,tz=playerAvatar.position.z,dx=tx-px,dz=tz-pz,d=Math.max(.01,Math.hypot(dx,dz));
    if(d>=15)continue;
-   p.group.rotation.y=Math.atan2(dx,dz);
-   const blocked=combatLineBlocked(px,pz,playerAvatar.position.x,playerAvatar.position.z);
-   if(d>1.65){
-    const step=2.1*dt, nx=px+dx/d*step,nz=pz+dz/d*step;
-    if(!blocked&&!combatPointBlocked(nx,nz)){p.group.position.x=nx;p.group.position.z=nz;}
+   const blockers=combatBlockingBuildings(px,pz,tx,tz);
+   let moveX=dx/d,moveZ=dz/d;
+   if(blockers.length){
+    const waypoint=combatChooseWaypoint(px,pz,tx,tz,blockers);
+    if(!waypoint)continue;
+    const wx=waypoint.x-px,wz=waypoint.z-pz,wd=Math.max(.01,Math.hypot(wx,wz));
+    if(wd>1.1){moveX=wx/wd;moveZ=wz/wd;}
+    else if(combatLineBlocked(px,pz,tx,tz))continue;
+   }
+   p.group.rotation.y=Math.atan2(moveX,moveZ);
+   if(d>1.65||blockers.length){
+    const step=2.1*dt,nx=px+moveX*step,nz=pz+moveZ*step;
+    if(!combatPointBlocked(nx,nz)&&!combatLineBlocked(px,pz,nx,nz)){p.group.position.x=nx;p.group.position.z=nz;}
     else{
-     const xFirst=Math.abs(dx)>=Math.abs(dz);
-     const candidates=xFirst?[[px+dx/d*step,pz],[px,pz+dz/d*step]]:[[px,pz+dz/d*step],[px+dx/d*step,pz]];
-     for(const c of candidates){if(!combatPointBlocked(c[0],c[1])){p.group.position.x=c[0];p.group.position.z=c[1];break;}}
+     const sides=[{x:-moveZ,z:moveX},{x:moveZ,z:-moveX}];
+     let moved=false;
+     for(const side of sides){const sx=px+side.x*step,sz=pz+side.z*step;if(!combatPointBlocked(sx,sz)&&!combatLineBlocked(px,pz,sx,sz)){p.group.position.x=sx;p.group.position.z=sz;moved=true;break;}}
+     if(!moved&&blockers.length){const waypoint=combatChooseWaypoint(px,pz,tx,tz,blockers);if(waypoint){const wx=waypoint.x-px,wz=waypoint.z-pz,wd=Math.max(.01,Math.hypot(wx,wz)),sx=px+wx/wd*step,sz=pz+wz/wd*step;if(!combatPointBlocked(sx,sz)){p.group.position.x=sx;p.group.position.z=sz;}}}
     }
-   }else if(!blocked&&p.attackCooldown<=0){
+   }else if(!combatLineBlocked(px,pz,tx,tz)&&p.attackCooldown<=0){
     p.attackCooldown=1.25;playerHealth=Math.max(0,playerHealth-8);refreshCombatHud();
     showMissionToast(playerHealth<=0?"💀 你被击倒了！":"⚠️ 敌对 NPC 攻击你！生命 -8");
    }
