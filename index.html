@@ -1625,7 +1625,7 @@ function updateOnFoot(dt,now){
  const aimReach=8.5;
  cameraAimTarget.set(
   cameraPivot.x+Math.sin(cameraYaw)*horizontal*aimReach+cameraRight.x*(precisionAimMode?-.92:-.72),
-  cameraPivot.y+vertical*aimReach+0.65,
+  cameraPivot.y+vertical*aimReach+2.0,
   cameraPivot.z+Math.cos(cameraYaw)*horizontal*aimReach+cameraRight.z*(precisionAimMode?-.92:-.72)
  );
  camera.lookAt(cameraAimTarget);
