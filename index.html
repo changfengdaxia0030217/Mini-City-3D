@@ -53,7 +53,7 @@ body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{di
 @media(max-width:700px){#missions{top:72px;left:12px;width:min(235px,calc(100vw - 140px));padding:9px 10px}#missions h3{font-size:11px}#mission-options{gap:4px;margin-bottom:6px}.mission-choice{padding:7px 2px;font-size:10px}#mission-start{padding:7px;font-size:11px}#mission-status{font-size:10px;margin-top:5px}#mission-meta{font-size:10px}}
 #minimap{display:block;width:100%;aspect-ratio:1;border-radius:8px;background:#83b96a}
 @media(max-width:700px){#minimap-wrap{top:auto;bottom:172px;right:12px;width:96px;padding:4px;z-index:3}#minimap-title{font-size:9px;margin-bottom:3px}}
-@media(max-width:700px){#mobile{display:flex}#help{bottom:170px;font-size:11px;max-width:190px}#brand{top:10px;left:10px;font-size:12px;padding:8px 10px}#brand small{font-size:9px}#stats{top:10px;right:10px;min-width:105px;padding:8px 9px}#speed{font-size:24px}#traffic-status,#police-status,#police-call,#pickup-streak,#nitro-wrap{display:none}#garage-open{margin-top:3px;padding:5px 7px;font-size:10px}#toast{top:58px;font-size:11px;max-width:80vw;white-space:normal;text-align:center}#ui-toggles{top:57px;right:10px;gap:4px}.ui-toggle{padding:6px 7px;font-size:10px}#missions{top:95px;left:10px;width:min(225px,calc(100vw - 24px));max-height:42vh;overflow:auto}#mission-options{grid-template-columns:repeat(2,minmax(0,1fr))}#joystick{width:126px;height:126px;flex-basis:126px}#joystick-knob{width:52px;height:52px;margin:-26px}#mobile{padding:0 12px;bottom:12px}#brake{width:48px;height:48px}#gas{width:56px;height:56px}#foot-mode{height:45px;min-width:46px}#foot-punch{height:45px;width:42px;font-size:15px}}
+#police-call,#nitro-wrap{display:none!important}#mission-options,#mission-start,#job-start,#mission-status,#mission-meta{display:none!important}#missions>h3{font-size:13px;margin:0 0 8px} @media(max-width:700px){#mobile{display:flex}#help{bottom:170px;font-size:11px;max-width:190px}#brand{top:10px;left:10px;font-size:12px;padding:8px 10px}#brand small{font-size:9px}#stats{top:10px;right:10px;min-width:105px;padding:8px 9px}#speed{font-size:24px}#traffic-status,#police-status,#police-call,#pickup-streak,#nitro-wrap{display:none}#garage-open{margin-top:3px;padding:5px 7px;font-size:10px}#toast{top:58px;font-size:11px;max-width:80vw;white-space:normal;text-align:center}#ui-toggles{top:57px;right:10px;gap:4px}.ui-toggle{padding:6px 7px;font-size:10px}#missions{top:95px;left:10px;width:min(225px,calc(100vw - 24px));max-height:42vh;overflow:auto}#mission-options{grid-template-columns:repeat(2,minmax(0,1fr))}#joystick{width:126px;height:126px;flex-basis:126px}#joystick-knob{width:52px;height:52px;margin:-26px}#mobile{padding:0 12px;bottom:12px}#brake{width:48px;height:48px}#gas{width:56px;height:56px}#foot-mode{height:45px;min-width:46px}#foot-punch{height:45px;width:42px;font-size:15px}}
 </style>
 </head>
 <body>
@@ -62,7 +62,7 @@ body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{di
   <div id="stats" class="panel"><div id="speed">0<span>KM/H</span></div><div id="combat-hud" style="margin-top:8px;text-align:left"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:900"><span>❤️ 生命</span><span id="health-value">100 / 100</span></div><div style="height:7px;background:#ffffff30;border-radius:99px;overflow:hidden;margin-top:3px"><div id="health-fill" style="height:100%;width:100%;background:#ef4444"></div></div><div id="cash-value" style="font-size:12px;color:#8dffb0;font-weight:900;margin-top:5px">💵 现金 $0</div><div id="weapon-status" style="font-size:10px;margin-top:3px;color:#ffd98a">🔫 简易手枪 · 点击攻击</div></div><div id="traffic-status" style="font-size:11px;opacity:.75;margin-top:6px">城市驾驶 · AI 交通加载中</div><div id="police-status" style="font-size:11px;color:#bfe8ff;margin-top:5px">🚓 警察系统：未通缉</div><button id="police-call" style="margin-top:7px;width:100%;padding:7px 9px;border:1px solid #8acbff;border-radius:8px;background:#17466c;color:#fff;font-weight:900;cursor:pointer">🚨 触发警察追捕</button><div id="pickup-streak" style="font-size:11px;color:#ffd34f;margin-top:4px">🪙 金币连击：—</div><div id="nitro-wrap" style="margin-top:9px;text-align:left"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;margin-bottom:4px"><span>⚡ 氮气加速 SHIFT</span><span id="nitro-value">100%</span></div><div style="height:6px;background:#ffffff30;border-radius:99px;overflow:hidden"><div id="nitro-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#38e8ff,#7b8cff);border-radius:99px;box-shadow:0 0 10px #38e8ff88"></div></div></div><button id="garage-open">🚘 车库</button></div>
   <div id="toast" class="panel">WASD / 方向键驾驶 · 手机使用屏幕按键</div><div id="crosshair" aria-label="瞄准准星"><span class="dot"></span></div><div id="aim-target-info" aria-live="polite"><div id="aim-target-name">目标</div><div id="aim-target-track"><div id="aim-target-health"></div></div><div id="aim-target-detail"></div></div>
   <div id="missions" class="panel">
-    <h3>🏁 城市驾驶挑战</h3>
+    <h3>🎯 战斗任务</h3>
     <div id="mission-options">
       <button class="mission-choice selected" data-mission="0">新手赛</button>
       <button class="mission-choice" data-mission="1">街区赛</button>
@@ -761,7 +761,7 @@ const joystick=document.getElementById('joystick'),joystickKnob=document.getElem
 let joystickPointer=null,footMoveX=0,footMoveY=0;
 let cameraYaw=playerAvatar.rotation.y,lookPointer=null,lastLookX=0,lastLookY=0;const lookZone=document.getElementById('look-zone');
 function beginLook(e){if(!onFoot||lookPointer!==null)return;e.preventDefault();lookPointer=e.pointerId;lastLookX=e.clientX;lastLookY=e.clientY;lookZone.setPointerCapture(e.pointerId);}
-function moveLook(e){if(lookPointer!==e.pointerId||!onFoot)return;e.preventDefault();const dx=e.clientX-lastLookX,dy=e.clientY-lastLookY;lastLookX=e.clientX;lastLookY=e.clientY;cameraYaw-=dx*.0048;cameraPitch=THREE.MathUtils.clamp(cameraPitch-dy*.0035,-.55,.35);}
+function moveLook(e){if(lookPointer!==e.pointerId||!onFoot)return;e.preventDefault();const dx=e.clientX-lastLookX,dy=e.clientY-lastLookY;lastLookX=e.clientX;lastLookY=e.clientY;cameraYaw-=dx*.0048;cameraPitch=THREE.MathUtils.clamp(cameraPitch-dy*.0035,-1.15,.35);}
 function endLook(e){if(lookPointer===e.pointerId)lookPointer=null;}
 lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('pointermove',moveLook);lookZone.addEventListener('pointerup',endLook);lookZone.addEventListener('pointercancel',endLook);lookZone.addEventListener('lostpointercapture',endLook);
  // PC controls: center-reticle raycast shooting; mouse movement freely controls the camera.
@@ -920,7 +920,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  addEventListener('mousemove',e=>{
   if(!onFoot||document.pointerLockElement!==renderer.domElement)return;
   cameraYaw-=e.movementX*.0048;
-  cameraPitch=THREE.MathUtils.clamp(cameraPitch-e.movementY*.0035,-.55,.35);
+  cameraPitch=THREE.MathUtils.clamp(cameraPitch-e.movementY*.0035,-1.15,.35);
  });
  addEventListener('blur',()=>{lookPointer=null;keys.clear();});
  document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement){precisionAimMode=false;document.body.classList.remove('precision-aiming');}});
@@ -942,7 +942,7 @@ joystick.addEventListener('pointerup',e=>{if(joystickPointer===e.pointerId)relea
 joystick.addEventListener('pointercancel',releaseJoystick);joystick.addEventListener('lostpointercapture',releaseJoystick);
 document.querySelectorAll('[data-panel]').forEach(btn=>btn.addEventListener('click',()=>{const name=btn.dataset.panel,hidden=document.body.classList.toggle('hide-'+name);btn.classList.toggle('active',!hidden);btn.setAttribute('aria-pressed',String(!hidden))}));
 function resetCar(){car.position.set(0,0,-8);car.rotation.y=0;car.rotation.z=0;speed=0;steering=0;lateralSpeed=0;carDamage=0;carOnFire=false;forcedExit=false;car.visible=true;carSmoke.forEach(p=>p.visible=false);carFlames.forEach(p=>p.visible=false);lastSafeCarPosition.set(0,0,8);riverFallTimer=0}
-let speed=0, steering=0, lateralSpeed=0, last=performance.now(), nitro=100;
+let speed=0, steering=0, lateralSpeed=0, last=performance.now();
 const lastSafeCarPosition=new THREE.Vector3(0,0,-8);let riverFallTimer=0,lastPedestrianImpact=0,lastLampImpact=0,lastDamageTime=0,carDamage=0,carOnFire=false,forcedExit=false;
 const bridgeXs=[-100,-60,0,60,100];
 function isOnBridge(x,z){return bridgeXs.some(bx=>Math.abs(x-bx)<6.7&&Math.abs(z-riverCenterZ(x))<7.4)}
@@ -1657,18 +1657,12 @@ function update(dt, now){
  // Rear LED lamps brighten while reversing or using the handbrake.
  ledTailMat.emissiveIntensity=(reverse||handbrake)?1.8:.55;
  const steerInput=(left?1:0)-(right?1:0);
-  const boostRequested=keys.has('ShiftLeft')||keys.has('ShiftRight');
-  const boostActive=boostRequested&&nitro>0.5&&!reverse;
-  if(boostActive)nitro=Math.max(0,nitro-34*dt);else nitro=Math.min(100,nitro+13*dt);
-  const nitroFill=document.getElementById('nitro-fill');
-  const nitroValue=document.getElementById('nitro-value');
-  nitroFill.style.width=nitro.toFixed(1)+'%';nitroValue.textContent=Math.round(nitro)+'%';
-  nitroFill.style.background=boostActive?'linear-gradient(90deg,#fff16a,#ff8b36)':'linear-gradient(90deg,#38e8ff,#7b8cff)';
-  if(forward)speed+=vehicleStats[selectedVehicle].acceleration*(boostActive?1.85:1)*dt;
+  const boostActive=false;
+  if(forward)speed+=vehicleStats[selectedVehicle].acceleration*dt;
   else if(reverse)speed-=19*dt;
   else speed*=Math.pow(handbrake?.985:.992,dt*60);
   if(handbrake)speed*=Math.pow(.965,dt*60);
-  speed=THREE.MathUtils.clamp(speed,-8,vehicleStats[selectedVehicle].maxSpeed*(boostActive?1.38:1));
+  speed=THREE.MathUtils.clamp(speed,-8,vehicleStats[selectedVehicle].maxSpeed);
   steering=THREE.MathUtils.damp(steering,steerInput,14,dt);
   const speedAbs=Math.abs(speed);
   const speedFactor=THREE.MathUtils.clamp(speedAbs/4,0,1);
