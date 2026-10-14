@@ -1620,14 +1620,13 @@ function updateOnFoot(dt,now){
   if(blockingHit)cameraCollisionPosition.copy(cameraPivot).addScaledVector(cameraDirection,Math.max(.55,blockingHit.distance-.22));
  }
  camera.position.lerp(cameraCollisionPosition,1-Math.exp(-9.0*dt));
- // Aim above the avatar's back: the screen-center ray must clear the character
- // before extending into the world. Keep the target at head height while the orbit
- // camera position follows cameraPitch, so pitch input still controls the view.
+ // Keep camera pitch, screen-center reticle, and shot ray on one consistent
+ // direction; a fixed target height made vertical mouse movement disagree with aim.
  const aimReach=8.5;
  cameraAimTarget.set(
-  cameraPivot.x+Math.sin(cameraYaw)*horizontal*aimReach-cameraRight.x*.24+cameraRight.x*(precisionAimMode ? .58 : 0),
-  cameraPivot.y+1.0,
-  cameraPivot.z+Math.cos(cameraYaw)*horizontal*aimReach-cameraRight.z*.24+cameraRight.z*(precisionAimMode ? .58 : 0)
+  cameraPivot.x+Math.sin(cameraYaw)*horizontal*aimReach,
+  cameraPivot.y+vertical*aimReach,
+  cameraPivot.z+Math.cos(cameraYaw)*horizontal*aimReach
  );
  camera.lookAt(cameraAimTarget);
  pistolVisual.rotation.x=THREE.MathUtils.clamp(cameraPitch,-.45,.55);
