@@ -717,13 +717,14 @@ function setMode(walking){
 function punchNearby(){
  if(!onFoot||punchCooldown>0)return;
  punchCooldown=.42;punchAnim=1;
- let hit=null,best=18;
+ // Melee attacks should only connect at arm's reach, and only in front of the player.
+ let hit=null,best=2.3;
  for(const p of pedestrians){
-  if(p.stun>0)continue;
-  const d=Math.hypot(p.group.position.x-playerAvatar.position.x,p.group.position.z-playerAvatar.position.z);
+  if(p.stun>0||!p.group||!p.group.parent)continue;
   const dx=p.group.position.x-playerAvatar.position.x,dz=p.group.position.z-playerAvatar.position.z;
+  const d=Math.hypot(dx,dz);
   const facing=dx*Math.sin(playerAvatar.rotation.y)+dz*Math.cos(playerAvatar.rotation.y);
-  if(d<best&&facing>-.35){best=d;hit=p}
+  if(d<best&&facing>0.15){best=d;hit=p}
  }
  if(hit){
   hit.health=(hit.health??(hit.hostile?55:100))-34;hit.stun=.85;
