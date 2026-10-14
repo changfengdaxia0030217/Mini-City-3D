@@ -761,7 +761,8 @@ const joystick=document.getElementById('joystick'),joystickKnob=document.getElem
 let joystickPointer=null,footMoveX=0,footMoveY=0;
 let cameraYaw=playerAvatar.rotation.y,lookPointer=null,lastLookX=0,lastLookY=0;const lookZone=document.getElementById('look-zone');
 function beginLook(e){if(!onFoot||lookPointer!==null)return;e.preventDefault();lookPointer=e.pointerId;lastLookX=e.clientX;lastLookY=e.clientY;lookZone.setPointerCapture(e.pointerId);}
-function moveLook(e){if(lookPointer!==e.pointerId||!onFoot)return;e.preventDefault();const dx=e.clientX-lastLookX,dy=e.clientY-lastLookY;lastLookX=e.clientX;lastLookY=e.clientY;cameraYaw-=dx*.0048;cameraPitch=THREE.MathUtils.clamp(cameraPitch-dy*.0035,-1.15,.35);}
+function clampCameraYawToFront(yaw){const facing=playerAvatar.rotation.y;let delta=((yaw-facing+Math.PI*3)%(Math.PI*2))-Math.PI;delta=THREE.MathUtils.clamp(delta,-Math.PI/2,Math.PI/2);return facing+delta;}
+ function moveLook(e){if(lookPointer!==e.pointerId||!onFoot)return;e.preventDefault();const dx=e.clientX-lastLookX,dy=e.clientY-lastLookY;lastLookX=e.clientX;lastLookY=e.clientY;cameraYaw=clampCameraYawToFront(cameraYaw-dx*.0048);cameraPitch=THREE.MathUtils.clamp(cameraPitch-dy*.0035,-1.15,.35);}
 function endLook(e){if(lookPointer===e.pointerId)lookPointer=null;}
 lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('pointermove',moveLook);lookZone.addEventListener('pointerup',endLook);lookZone.addEventListener('pointercancel',endLook);lookZone.addEventListener('lostpointercapture',endLook);
  // PC controls: center-reticle raycast shooting; mouse movement freely controls the camera.
@@ -919,7 +920,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  });
  addEventListener('mousemove',e=>{
   if(!onFoot||document.pointerLockElement!==renderer.domElement)return;
-  cameraYaw-=e.movementX*.0048;
+  cameraYaw=clampCameraYawToFront(cameraYaw-e.movementX*.0048);
   cameraPitch=THREE.MathUtils.clamp(cameraPitch-e.movementY*.0035,-1.15,.35);
  });
  addEventListener('blur',()=>{lookPointer=null;keys.clear();});
@@ -1622,11 +1623,11 @@ function updateOnFoot(dt,now){
  // Aim above the avatar's back: the screen-center ray must clear the character
  // before extending into the world. Keep the target at head height while the orbit
  // camera position follows cameraPitch, so pitch input still controls the view.
- const aimReach=12;
+ const aimReach=8.5;
  cameraAimTarget.set(
-  cameraPivot.x+Math.sin(cameraYaw)*horizontal*aimReach+cameraRight.x*(precisionAimMode ? .58 : 0),
+  cameraPivot.x+Math.sin(cameraYaw)*horizontal*aimReach-cameraRight.x*.24+cameraRight.x*(precisionAimMode ? .58 : 0),
   cameraPivot.y+1.0,
-  cameraPivot.z+Math.cos(cameraYaw)*horizontal*aimReach+cameraRight.z*(precisionAimMode ? .58 : 0)
+  cameraPivot.z+Math.cos(cameraYaw)*horizontal*aimReach-cameraRight.z*.24+cameraRight.z*(precisionAimMode ? .58 : 0)
  );
  camera.lookAt(cameraAimTarget);
  pistolVisual.rotation.x=THREE.MathUtils.clamp(cameraPitch,-.45,.55);
