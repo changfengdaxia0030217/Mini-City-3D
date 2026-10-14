@@ -40,6 +40,7 @@ body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{di
 #mission-status{font-size:12px;line-height:1.55;margin-top:8px;white-space:pre-line}
 #mission-meta{display:flex;justify-content:space-between;gap:8px;font-size:11px;opacity:.85;margin-top:6px}
 #mission-toast{position:absolute;top:68px;left:50%;transform:translateX(-50%);font-size:14px;font-weight:900;text-align:center;background:#102033e8;border:1px solid #ffffff45;border-radius:12px;padding:10px 16px;display:none;width:max-content;max-width:min(560px,calc(100vw - 32px));white-space:pre-line;pointer-events:none;z-index:6;box-shadow:0 6px 20px #0018}@media(max-width:700px){#mission-toast{top:78px;font-size:12px;padding:8px 12px;max-width:calc(100vw - 24px)}}
+#aim-target-info{position:absolute;top:112px;left:50%;transform:translateX(-50%);display:none;width:190px;padding:8px 10px;border:1px solid #ffffff45;border-radius:10px;background:#102033d9;color:#fff;text-align:center;pointer-events:none;z-index:5;box-shadow:0 4px 14px #0015}#aim-target-name{font-size:12px;font-weight:900}#aim-target-track{height:5px;background:#ffffff30;border-radius:99px;overflow:hidden;margin-top:5px}#aim-target-health{height:100%;width:100%;background:#ef4444;transition:width .12s}#aim-target-detail{font-size:10px;opacity:.8;margin-top:4px}@media(max-width:700px){#aim-target-info{top:118px;width:156px;padding:6px 8px}}
 #garage-open{margin-top:7px;padding:6px 10px;border:1px solid #ffffff45;border-radius:8px;background:#ffffff14;color:#fff;font-weight:800;cursor:pointer}
 #garage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(340px,calc(100vw - 28px));pointer-events:auto;display:none;z-index:5}
 #garage h3{margin:0 0 8px;font-size:16px}#garage p{font-size:12px;opacity:.8;margin:0 0 12px}
@@ -58,7 +59,7 @@ body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{di
 <div id="hud">
   <div id="brand" class="panel">MINI CITY <small>3D DRIVE · ALPHA 0.1</small></div>
   <div id="stats" class="panel"><div id="speed">0<span>KM/H</span></div><div id="combat-hud" style="margin-top:8px;text-align:left"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:900"><span>❤️ 生命</span><span id="health-value">100 / 100</span></div><div style="height:7px;background:#ffffff30;border-radius:99px;overflow:hidden;margin-top:3px"><div id="health-fill" style="height:100%;width:100%;background:#ef4444"></div></div><div id="cash-value" style="font-size:12px;color:#8dffb0;font-weight:900;margin-top:5px">💵 现金 $0</div><div id="weapon-status" style="font-size:10px;margin-top:3px;color:#ffd98a">🔫 简易手枪 · 点击攻击</div></div><div id="traffic-status" style="font-size:11px;opacity:.75;margin-top:6px">城市驾驶 · AI 交通加载中</div><div id="police-status" style="font-size:11px;color:#bfe8ff;margin-top:5px">🚓 警察系统：未通缉</div><button id="police-call" style="margin-top:7px;width:100%;padding:7px 9px;border:1px solid #8acbff;border-radius:8px;background:#17466c;color:#fff;font-weight:900;cursor:pointer">🚨 触发警察追捕</button><div id="pickup-streak" style="font-size:11px;color:#ffd34f;margin-top:4px">🪙 金币连击：—</div><div id="nitro-wrap" style="margin-top:9px;text-align:left"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;margin-bottom:4px"><span>⚡ 氮气加速 SHIFT</span><span id="nitro-value">100%</span></div><div style="height:6px;background:#ffffff30;border-radius:99px;overflow:hidden"><div id="nitro-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#38e8ff,#7b8cff);border-radius:99px;box-shadow:0 0 10px #38e8ff88"></div></div></div><button id="garage-open">🚘 车库</button></div>
-  <div id="toast" class="panel">WASD / 方向键驾驶 · 手机使用屏幕按键</div><div id="crosshair" aria-label="瞄准准星"><span class="dot"></span></div>
+  <div id="toast" class="panel">WASD / 方向键驾驶 · 手机使用屏幕按键</div><div id="crosshair" aria-label="瞄准准星"><span class="dot"></span></div><div id="aim-target-info" aria-live="polite"><div id="aim-target-name">目标</div><div id="aim-target-track"><div id="aim-target-health"></div></div><div id="aim-target-detail"></div></div>
   <div id="missions" class="panel">
     <h3>🏁 城市驾驶挑战</h3>
     <div id="mission-options">
@@ -831,14 +832,35 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
   }
   return best;
  }
+ const aimTargetInfo=document.getElementById('aim-target-info');
+ const aimTargetName=document.getElementById('aim-target-name');
+ const aimTargetHealth=document.getElementById('aim-target-health');
+ const aimTargetDetail=document.getElementById('aim-target-detail');
  function updateAimReticle(){
-  if(!onFoot){document.body.classList.remove('aiming-target');return;}
+  if(!onFoot){
+   document.body.classList.remove('aiming-target');
+   aimTargetInfo.style.display='none';
+   return;
+  }
   // Raycasting every render frame is wasteful in the dense city scene; refresh the
   // visual target hint at 8–10 Hz while shots still perform a fresh check on click.
   const now=performance.now();
   if(now-lastAimReticleCheck<120)return;
   lastAimReticleCheck=now;
-  document.body.classList.toggle('aiming-target',!!findAimedPedestrian());
+  const aim=findAimedPedestrian();
+  document.body.classList.toggle('aiming-target',!!aim);
+  if(!aim){
+   aimTargetInfo.style.display='none';
+   return;
+  }
+  const p=aim.pedestrian;
+  const maxHealth=p.hostile?55:100;
+  const health=Math.max(0,p.health??maxHealth);
+  aimTargetInfo.style.display='block';
+  aimTargetName.textContent=p.hostile?'🔴 敌对 NPC':'👤 城市居民';
+  aimTargetHealth.style.width=(health/maxHealth*100)+'%';
+  aimTargetHealth.style.background=health/maxHealth<.35?'#ff3434':health/maxHealth<.7?'#ffb13b':'#45e28b';
+  aimTargetDetail.textContent='生命 '+Math.ceil(health)+' / '+maxHealth+(aim.assisted?' · 辅助瞄准':' · 精确瞄准');
  }
  function fireWeapon(){
   if(!onFoot||punchCooldown>0)return;
