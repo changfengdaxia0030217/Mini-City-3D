@@ -1432,8 +1432,44 @@ function updatePedestrians(dt){
   p.group.rotation.y=Math.atan2(p.group.position.x-p.homeX,p.group.position.z-p.homeZ);
  }
 }
+// Building-aware combat movement: hostiles must route around city blocks and cannot hit through walls.
+function combatPointBlocked(x,z){
+ for(const b of occupied){if(Math.abs(x-b.x)<b.hw&&Math.abs(z-b.z)<b.hd)return true;}
+ return false;
+}
+function combatLineBlocked(x1,z1,x2,z2){
+ const dx=x2-x1,dz=z2-z1;
+ for(const b of occupied){
+  const tx1=(b.x-b.hw-x1)/(Math.abs(dx)<1e-6?1e-6:dx),tx2=(b.x+b.hw-x1)/(Math.abs(dx)<1e-6?1e-6:dx);
+  const tz1=(b.z-b.hd-z1)/(Math.abs(dz)<1e-6?1e-6:dz),tz2=(b.z+b.hd-z1)/(Math.abs(dz)<1e-6?1e-6:dz);
+  const enter=Math.max(Math.min(tx1,tx2),Math.min(tz1,tz2)),leave=Math.min(Math.max(tx1,tx2),Math.max(tz1,tz2));
+  if(leave>=Math.max(0,enter)&&enter<=1&&leave>=0)return true;
+ }
+ return false;
+}
 function updateCombatAI(dt,now){
- if(onFoot&&playerHealth>0){for(const p of pedestrians){if(!p.hostile||p.stun>0)continue;p.attackCooldown=Math.max(0,(p.attackCooldown||0)-dt);const dx=playerAvatar.position.x-p.group.position.x,dz=playerAvatar.position.z-p.group.position.z,d=Math.max(.01,Math.hypot(dx,dz));if(d<15){p.group.rotation.y=Math.atan2(dx,dz);if(d>1.65){p.group.position.x+=dx/d*2.1*dt;p.group.position.z+=dz/d*2.1*dt;}else if(p.attackCooldown<=0){p.attackCooldown=1.25;playerHealth=Math.max(0,playerHealth-8);refreshCombatHud();showMissionToast(playerHealth<=0?"💀 你被击倒了！":"⚠️ 敌对 NPC 攻击你！生命 -8");}}}}
+ if(onFoot&&playerHealth>0){
+  for(const p of pedestrians){
+   if(!p.hostile||p.stun>0||p.knockdownTimer>0)continue;
+   p.attackCooldown=Math.max(0,(p.attackCooldown||0)-dt);
+   const px=p.group.position.x,pz=p.group.position.z,dx=playerAvatar.position.x-px,dz=playerAvatar.position.z-pz,d=Math.max(.01,Math.hypot(dx,dz));
+   if(d>=15)continue;
+   p.group.rotation.y=Math.atan2(dx,dz);
+   const blocked=combatLineBlocked(px,pz,playerAvatar.position.x,playerAvatar.position.z);
+   if(d>1.65){
+    const step=2.1*dt, nx=px+dx/d*step,nz=pz+dz/d*step;
+    if(!blocked&&!combatPointBlocked(nx,nz)){p.group.position.x=nx;p.group.position.z=nz;}
+    else{
+     const xFirst=Math.abs(dx)>=Math.abs(dz);
+     const candidates=xFirst?[[px+dx/d*step,pz],[px,pz+dz/d*step]]:[[px,pz+dz/d*step],[px+dx/d*step,pz]];
+     for(const c of candidates){if(!combatPointBlocked(c[0],c[1])){p.group.position.x=c[0];p.group.position.z=c[1];break;}}
+    }
+   }else if(!blocked&&p.attackCooldown<=0){
+    p.attackCooldown=1.25;playerHealth=Math.max(0,playerHealth-8);refreshCombatHud();
+    showMissionToast(playerHealth<=0?"💀 你被击倒了！":"⚠️ 敌对 NPC 攻击你！生命 -8");
+   }
+  }
+ }
  for(let i=cashDrops.length-1;i>=0;i--){const d=cashDrops[i];d.phase+=dt*2.3;d.group.rotation.y+=dt*.7;d.group.position.y=.15+Math.sin(d.phase)*.1;const target=onFoot?playerAvatar.position:car.position;if(Math.hypot(target.x-d.group.position.x,target.z-d.group.position.z)<1.9){playerCash+=d.value;scene.remove(d.group);cashDrops.splice(i,1);refreshCombatHud();showMissionToast("💵 拾取现金 +$"+d.value);}}
  if(playerHealth<=0&&onFoot&&!respawnPending){respawnPending=true;playerAvatar.visible=false;onFoot=false;setTimeout(()=>{playerAvatar.position.set(car.position.x+2.1,0,car.position.z);playerAvatar.visible=true;onFoot=true;playerHealth=100;refreshCombatHud();respawnPending=false;showMissionToast("❤️ 已重生，生命恢复");},900);}
 }
