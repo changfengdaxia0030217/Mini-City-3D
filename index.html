@@ -577,7 +577,8 @@ box(1.95,.1,.6,mat(0x172333),0,.5,-2.05,neonKit);
 for(const x of [-1.01,1.01]){box(.07,.07,2.8,new THREE.MeshStandardMaterial({color:0x42eaff,emissive:0x159dff,emissiveIntensity:1.4}),x,.47,0,neonKit);box(.18,.12,.45,mat(0x172333),x,1.5,1.48,neonKit)}
 box(1.95,.1,.2,mat(0x172333),0,1.57,1.55,neonKit);
 const vehicleStats=[{name:'街头轿车',maxSpeed:34,acceleration:24,grip:4.6},{name:'烈焰跑车',maxSpeed:43,acceleration:29,grip:3.9},{name:'霓虹跑车',maxSpeed:49,acceleration:32,grip:3.5}];
-car.position.set(0,0,8);
+car.position.set(0,0,-8);
+car.visible=true;
 window.miniCityCar = car;
 
 // Pedestrians make sidewalks feel inhabited; simple low-poly citizens wander along safe roadside routes.
@@ -928,9 +929,9 @@ joystick.addEventListener('pointermove',e=>{e.preventDefault();moveJoystick(e)})
 joystick.addEventListener('pointerup',e=>{if(joystickPointer===e.pointerId)releaseJoystick()});
 joystick.addEventListener('pointercancel',releaseJoystick);joystick.addEventListener('lostpointercapture',releaseJoystick);
 document.querySelectorAll('[data-panel]').forEach(btn=>btn.addEventListener('click',()=>{const name=btn.dataset.panel,hidden=document.body.classList.toggle('hide-'+name);btn.classList.toggle('active',!hidden);btn.setAttribute('aria-pressed',String(!hidden))}));
-function resetCar(){car.position.set(0,0,8);car.rotation.y=0;car.rotation.z=0;speed=0;steering=0;lateralSpeed=0;carDamage=0;carOnFire=false;forcedExit=false;car.visible=true;carSmoke.forEach(p=>p.visible=false);carFlames.forEach(p=>p.visible=false);lastSafeCarPosition.set(0,0,8);riverFallTimer=0}
+function resetCar(){car.position.set(0,0,-8);car.rotation.y=0;car.rotation.z=0;speed=0;steering=0;lateralSpeed=0;carDamage=0;carOnFire=false;forcedExit=false;car.visible=true;carSmoke.forEach(p=>p.visible=false);carFlames.forEach(p=>p.visible=false);lastSafeCarPosition.set(0,0,8);riverFallTimer=0}
 let speed=0, steering=0, lateralSpeed=0, last=performance.now(), nitro=100;
-const lastSafeCarPosition=new THREE.Vector3(0,0,8);let riverFallTimer=0,lastPedestrianImpact=0,lastLampImpact=0,lastDamageTime=0,carDamage=0,carOnFire=false,forcedExit=false;
+const lastSafeCarPosition=new THREE.Vector3(0,0,-8);let riverFallTimer=0,lastPedestrianImpact=0,lastLampImpact=0,lastDamageTime=0,carDamage=0,carOnFire=false,forcedExit=false;
 const bridgeXs=[-100,-60,0,60,100];
 function isOnBridge(x,z){return bridgeXs.some(bx=>Math.abs(x-bx)<6.7&&Math.abs(z-riverCenterZ(x))<7.4)}
 function hitDestructible(x,z){return destructibleProps.find(p=>!p.fallen&&Math.hypot(x-p.x,z-p.z)<p.radius+1.15)||null}
@@ -1675,8 +1676,9 @@ function update(dt, now){
  speedEl.innerHTML=Math.round(Math.abs(speed)*3.6)+'<span>KM/H</span>';
 }
 function animate(now){requestAnimationFrame(animate);const dt=Math.min((now-last)/1000,.04);last=now;updateRiverFlow(dt);update(dt,now);renderer.render(scene,camera)}
-// initial camera position behind car
-camera.position.set(0,5,18);camera.lookAt(0,1,0);
+// Initial camera framing: place the parked car clearly in front of the camera on the main road.
+car.visible=true;
+camera.position.set(0,5,1);camera.lookAt(0,1,-8);
 requestAnimationFrame(animate);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.8))});
 </script>
