@@ -738,8 +738,7 @@ function punchNearby(){
   flashHitConfirm();
   hit.health=(hit.health??(hit.hostile?55:100))-34;hit.stun=.85;
   if(hit.health>0){
-   hit.knockdownTimer=.72;hit.knockdownSide=Math.random()<.5?Math.PI/2:-Math.PI/2;
-   hit.group.position.y=.24;hit.group.rotation.z=hit.knockdownSide;
+   hit.knockdownTimer=.72;hit.knockdownDuration=.72;hit.knockdownSide=Math.random()<.5?Math.PI/2:-Math.PI/2;
   }
   if(hit.health<=0){
    const px=hit.group.position.x,pz=hit.group.position.z;scene.remove(hit.group);const idx=pedestrians.indexOf(hit);if(idx>=0)pedestrians.splice(idx,1);
@@ -913,8 +912,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
   flashHitConfirm();
   hitPed.health=(hitPed.health??(hitPed.hostile?55:100))-34;hitPed.stun=.85;hitPed.fleeTime=hitPed.hostile?0:7;hitPed.reportTimer=1.6;hitPed.reported=false;
   if(hitPed.health>0){
-   hitPed.knockdownTimer=.72;hitPed.knockdownSide=Math.random()<.5?Math.PI/2:-Math.PI/2;
-   hitPed.group.position.y=.24;hitPed.group.rotation.z=hitPed.knockdownSide;
+   hitPed.knockdownTimer=.72;hitPed.knockdownDuration=.72;hitPed.knockdownSide=Math.random()<.5?Math.PI/2:-Math.PI/2;
   }
   if(hitPed.health<=0){
    // Keep combat mission progress consistent for both melee and firearm takedowns.
@@ -1405,16 +1403,21 @@ function updatePolice(dt,now){
 let lastTrafficImpact=0;
 function updatePedestrians(dt){
  for(const p of pedestrians){
-  // A non-lethal hit briefly knocks the low-poly NPC down, then lets them recover.
+  // Animate the fall and recovery instead of snapping the NPC into a fixed pose.
   if(p.knockdownTimer>0){
    p.knockdownTimer=Math.max(0,p.knockdownTimer-dt);
-   p.group.position.y=.24;
-   p.group.rotation.z=p.knockdownSide||Math.PI/2;
+   const duration=p.knockdownDuration||.72;
+   const elapsed=duration-p.knockdownTimer;
+   const fall=THREE.MathUtils.clamp(elapsed/.12,0,1);
+   const recover=THREE.MathUtils.clamp(p.knockdownTimer/.18,0,1);
+   const pose=fall*recover;
+   p.group.position.y=.24*pose;
+   p.group.rotation.z=(p.knockdownSide||Math.PI/2)*pose;
    p.group.rotation.x=0;
    if(p.knockdownTimer===0){
     p.group.position.y=0;
     p.group.rotation.set(0,p.group.rotation.y,0);
-    p.knockdownSide=0;
+    p.knockdownSide=0;p.knockdownDuration=0;
    }
    continue;
   }
