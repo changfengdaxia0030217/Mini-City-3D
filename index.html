@@ -761,7 +761,7 @@ const joystick=document.getElementById('joystick'),joystickKnob=document.getElem
 let joystickPointer=null,footMoveX=0,footMoveY=0;
 let cameraYaw=playerAvatar.rotation.y,lookPointer=null,lastLookX=0,lastLookY=0;const lookZone=document.getElementById('look-zone');
 function beginLook(e){if(!onFoot||lookPointer!==null)return;e.preventDefault();lookPointer=e.pointerId;lastLookX=e.clientX;lastLookY=e.clientY;lookZone.setPointerCapture(e.pointerId);}
-function clampCameraYawToFront(yaw){const facing=playerAvatar.rotation.y;let delta=((yaw-facing+Math.PI*3)%(Math.PI*2))-Math.PI;delta=THREE.MathUtils.clamp(delta,-Math.PI/2,Math.PI/2);return facing+delta;}
+function clampCameraYawToFront(yaw){const facing=playerAvatar.rotation.y;const delta=Math.atan2(Math.sin(yaw-facing),Math.cos(yaw-facing));return facing+THREE.MathUtils.clamp(delta,-Math.PI/2,Math.PI/2);}
  function moveLook(e){if(lookPointer!==e.pointerId||!onFoot)return;e.preventDefault();const dx=e.clientX-lastLookX,dy=e.clientY-lastLookY;lastLookX=e.clientX;lastLookY=e.clientY;cameraYaw=clampCameraYawToFront(cameraYaw-dx*.0048);cameraPitch=THREE.MathUtils.clamp(cameraPitch-dy*.0035,-1.15,.35);}
 function endLook(e){if(lookPointer===e.pointerId)lookPointer=null;}
 lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('pointermove',moveLook);lookZone.addEventListener('pointerup',endLook);lookZone.addEventListener('pointercancel',endLook);lookZone.addEventListener('lostpointercapture',endLook);
@@ -1519,10 +1519,10 @@ function updateOnFoot(dt,now){
  const moving=Math.abs(fwd)>.02||Math.abs(side)>.02;
  const fx=Math.sin(cameraYaw),fz=Math.cos(cameraYaw),rx=Math.cos(cameraYaw),rz=-Math.sin(cameraYaw);
  let moveX=fx*fwd+rx*side,moveZ=fz*fwd+rz*side;const moveLen=Math.hypot(moveX,moveZ);if(moveLen>1){moveX/=moveLen;moveZ/=moveLen;}
- if(moving||precisionAimMode){
-  // In precision aim mode face the reticle direction even while standing still; allow strafing and backing up.
-  // During exploration, face the direction of travel.
-  const desiredYaw=precisionAimMode?cameraYaw:Math.atan2(moveX,moveZ);
+ if(moving){
+  // Character turning is driven by movement, never by camera rotation alone.
+  // This keeps the camera's forward-180-degree limit from rotating around with the reticle.
+  const desiredYaw=Math.atan2(moveX,moveZ);
   let delta=((desiredYaw-playerAvatar.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;
   playerAvatar.rotation.y+=delta*(1-Math.exp(-(precisionAimMode?8.5:6.0)*dt));
  }
