@@ -767,7 +767,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  // PC controls: center-reticle raycast shooting; mouse movement freely controls the camera.
  let cameraPitch=-.22;
  let cameraDistance=5.0;
- let cameraRotating=false;
+ let precisionAimMode=false;
  const cameraCollisionRaycaster=new THREE.Raycaster();
  const cameraAimTarget=new THREE.Vector3(),cameraPivot=new THREE.Vector3(),cameraDesiredPosition=new THREE.Vector3(),cameraCollisionPosition=new THREE.Vector3(),cameraDirection=new THREE.Vector3(),cameraRight=new THREE.Vector3();
  let cameraCollisionCheckTimer=0,lastAimReticleCheck=0;
@@ -914,16 +914,16 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  }
  renderer.domElement.addEventListener('mousedown',e=>{
   if(!onFoot)return;
-  if(e.button===2){e.preventDefault();cameraRotating=true;return;}
-  if(e.button===0){e.preventDefault();fireWeapon();}
+  if(e.button===2){e.preventDefault();precisionAimMode=!precisionAimMode;document.body.classList.toggle('precision-aiming',precisionAimMode);showMissionToast(precisionAimMode?'🎯 精确瞄准已开启 · 右键关闭':'🔫 普通瞄准');if(document.pointerLockElement!==renderer.domElement&&renderer.domElement.requestPointerLock)renderer.domElement.requestPointerLock();return;}
+  if(e.button===0){e.preventDefault();if(document.pointerLockElement!==renderer.domElement&&renderer.domElement.requestPointerLock)renderer.domElement.requestPointerLock();fireWeapon();}
  });
  addEventListener('mousemove',e=>{
-  if(!onFoot||!cameraRotating||!(e.buttons&2))return;
+  if(!onFoot||document.pointerLockElement!==renderer.domElement)return;
   cameraYaw-=e.movementX*.0048;
   cameraPitch=THREE.MathUtils.clamp(cameraPitch-e.movementY*.0035,-.55,.35);
  });
- addEventListener('mouseup',e=>{if(e.button===2)cameraRotating=false;});
- addEventListener('blur',()=>{cameraRotating=false;lookPointer=null;keys.clear();});
+ addEventListener('blur',()=>{lookPointer=null;keys.clear();});
+ document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement){precisionAimMode=false;document.body.classList.remove('precision-aiming');}});
  // Listen in capture phase on window so overlays/UI layers cannot swallow the wheel event.
  // Only zoom while on foot; clamp to keep the camera at a usable distance.
  window.addEventListener('wheel',e=>{
@@ -1518,12 +1518,12 @@ function updateOnFoot(dt,now){
  const moving=Math.abs(fwd)>.02||Math.abs(side)>.02;
  const fx=Math.sin(cameraYaw),fz=Math.cos(cameraYaw),rx=Math.cos(cameraYaw),rz=-Math.sin(cameraYaw);
  let moveX=fx*fwd+rx*side,moveZ=fz*fwd+rz*side;const moveLen=Math.hypot(moveX,moveZ);if(moveLen>1){moveX/=moveLen;moveZ/=moveLen;}
- if(moving||cameraRotating){
-  // While aiming, face the reticle direction even when standing still; allow strafing and backing up.
+ if(moving||precisionAimMode){
+  // In precision aim mode face the reticle direction even while standing still; allow strafing and backing up.
   // During exploration, face the direction of travel.
-  const desiredYaw=cameraRotating?cameraYaw:Math.atan2(moveX,moveZ);
+  const desiredYaw=precisionAimMode?cameraYaw:Math.atan2(moveX,moveZ);
   let delta=((desiredYaw-playerAvatar.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;
-  playerAvatar.rotation.y+=delta*(1-Math.exp(-(cameraRotating?8.5:6.0)*dt));
+  playerAvatar.rotation.y+=delta*(1-Math.exp(-(precisionAimMode?8.5:6.0)*dt));
  }
  turnBlend=0;
  const footOldX=playerAvatar.position.x,footOldZ=playerAvatar.position.z;
@@ -1583,17 +1583,17 @@ function updateOnFoot(dt,now){
  punchArm.rotation.z=airborne?.12:Math.sin(cycle)*.055*playerWalkSpeed-idleSway*.012;
  // Small shoulder roll and forward lean sell the running/jumping motion.
  avatarBody.rotation.x=running?-.12:(airborne?-.09:Math.sin(cycle*2)*.018*playerWalkSpeed);
- camera.fov=62;camera.updateProjectionMatrix();
- // GTA-style third-person orbit camera; right mouse also activates the shoulder-aim offset.
+ camera.fov=precisionAimMode?43:62;camera.updateProjectionMatrix();
+ // Mouse movement directly orbits the camera; right mouse toggles precision aim instead of dragging.
  cameraPivot.set(playerAvatar.position.x,playerAvatar.position.y+1.35,playerAvatar.position.z);
  const horizontal=Math.cos(cameraPitch),vertical=Math.sin(cameraPitch);
  cameraRight.set(Math.cos(cameraYaw),0,-Math.sin(cameraYaw));
  // Keep the orbit camera on the same yaw/pitch ray used by the reticle.
 // The extra height offset made the view tilt too far down at default zoom.
  cameraDesiredPosition.set(
-  cameraPivot.x-Math.sin(cameraYaw)*horizontal*cameraDistance+cameraRight.x*(cameraRotating ? .58 : 0),
-  cameraPivot.y-vertical*cameraDistance,
-  cameraPivot.z-Math.cos(cameraYaw)*horizontal*cameraDistance+cameraRight.z*(cameraRotating ? .58 : 0)
+  cameraPivot.x-Math.sin(cameraYaw)*horizontal*(cameraDistance*(precisionAimMode?.78:1))+cameraRight.x*(precisionAimMode?.58:0),
+  cameraPivot.y-vertical*(cameraDistance*(precisionAimMode?.78:1)),
+  cameraPivot.z-Math.cos(cameraYaw)*horizontal*(cameraDistance*(precisionAimMode?.78:1))+cameraRight.z*(precisionAimMode?.58:0)
  );
  // Pull the camera in when buildings or props block the desired orbit position.
  // Recheck at 20 Hz instead of traversing every city mesh on every render frame.
@@ -1624,9 +1624,9 @@ function updateOnFoot(dt,now){
  // camera position follows cameraPitch, so pitch input still controls the view.
  const aimReach=12;
  cameraAimTarget.set(
-  cameraPivot.x+Math.sin(cameraYaw)*horizontal*aimReach+cameraRight.x*(cameraRotating ? .58 : 0),
+  cameraPivot.x+Math.sin(cameraYaw)*horizontal*aimReach+cameraRight.x*(precisionAimMode ? .58 : 0),
   cameraPivot.y+1.0,
-  cameraPivot.z+Math.cos(cameraYaw)*horizontal*aimReach+cameraRight.z*(cameraRotating ? .58 : 0)
+  cameraPivot.z+Math.cos(cameraYaw)*horizontal*aimReach+cameraRight.z*(precisionAimMode ? .58 : 0)
  );
  camera.lookAt(cameraAimTarget);
  pistolVisual.rotation.x=THREE.MathUtils.clamp(cameraPitch,-.45,.55);
