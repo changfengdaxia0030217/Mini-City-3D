@@ -613,8 +613,9 @@ function createPedestrian(x,z,index){
  }
  g.rotation.y=Math.random()*Math.PI*2;
  const route=index%4;
- if(hostile){const mark=mat(0xff3535,.5);const dot=new THREE.Mesh(new THREE.SphereGeometry(.09,8,6),mark);dot.position.set(0,2.27,0);g.add(dot);}
-  pedestrians.push({group:g,homeX:x,homeZ:z,route,phase:Math.random()*Math.PI*2,baseX:x,baseZ:z,stun:0,walkSpeed:.65+Math.random()*.45,fleeTime:0,reportTimer:0,reported:false,hostile,health:hostile?55:100,attackCooldown:1+Math.random()*2});
+ let attackMarker=null;
+ if(hostile){const mark=mat(0xff3535,.5);attackMarker=new THREE.Mesh(new THREE.SphereGeometry(.09,8,6),mark);attackMarker.position.set(0,2.27,0);g.add(attackMarker);}
+  pedestrians.push({group:g,homeX:x,homeZ:z,route,phase:Math.random()*Math.PI*2,baseX:x,baseZ:z,stun:0,walkSpeed:.65+Math.random()*.45,fleeTime:0,reportTimer:0,reported:false,hostile,health:hostile?55:100,attackCooldown:1+Math.random()*2,attackWindup:0,attackMarker});
 }
 for(let i=0;i<56;i++){
  const row=Math.floor(i/7),col=i%7;
@@ -1494,8 +1495,23 @@ function updateCombatAI(dt,now){
    if(!p.hostile||p.stun>0||p.knockdownTimer>0)continue;
    p.attackCooldown=Math.max(0,(p.attackCooldown||0)-dt);
    const px=p.group.position.x,pz=p.group.position.z,tx=playerAvatar.position.x,tz=playerAvatar.position.z,dx=tx-px,dz=tz-pz,d=Math.max(.01,Math.hypot(dx,dz));
-   if(d>=15)continue;
+   if(d>=15){p.attackWindup=0;if(p.attackMarker)p.attackMarker.material.color.setHex(0xff3535);continue;}
    const blockers=combatBlockingBuildings(px,pz,tx,tz);
+   // A visible wind-up gives the player a fair chance to dodge each melee attack.
+   if(p.attackWindup>0){
+    if(d>2.65||blockers.length){p.attackWindup=0;if(p.attackMarker)p.attackMarker.material.color.setHex(0xff3535);}
+    else{
+     p.attackWindup=Math.max(0,p.attackWindup-dt);
+     if(p.attackMarker)p.attackMarker.material.color.setHex(0xffd34d);
+     if(p.attackWindup===0){
+      p.attackCooldown=1.35;
+      playerHealth=Math.max(0,playerHealth-8);refreshCombatHud();
+      if(p.attackMarker)p.attackMarker.material.color.setHex(0xff3535);
+      showMissionToast(playerHealth<=0?"💀 你被击倒了！":"⚠️ 敌人攻击命中！生命 -8");
+     }
+     continue;
+    }
+   }
    let moveX=dx/d,moveZ=dz/d;
    if(blockers.length){
     const waypoint=combatChooseWaypoint(px,pz,tx,tz,blockers);
@@ -1515,8 +1531,9 @@ function updateCombatAI(dt,now){
      if(!moved&&blockers.length){const waypoint=combatChooseWaypoint(px,pz,tx,tz,blockers);if(waypoint){const wx=waypoint.x-px,wz=waypoint.z-pz,wd=Math.max(.01,Math.hypot(wx,wz)),sx=px+wx/wd*step,sz=pz+wz/wd*step;if(!combatPointBlocked(sx,sz)){p.group.position.x=sx;p.group.position.z=sz;}}}
     }
    }else if(!combatLineBlocked(px,pz,tx,tz)&&p.attackCooldown<=0){
-    p.attackCooldown=1.25;playerHealth=Math.max(0,playerHealth-8);refreshCombatHud();
-    showMissionToast(playerHealth<=0?"💀 你被击倒了！":"⚠️ 敌对 NPC 攻击你！生命 -8");
+    p.attackWindup=.42;
+    if(p.attackMarker)p.attackMarker.material.color.setHex(0xffd34d);
+    showMissionToast("⚠️ 敌人准备攻击！快躲开");
    }
   }
  }
