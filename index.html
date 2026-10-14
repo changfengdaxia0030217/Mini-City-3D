@@ -708,7 +708,11 @@ function punchNearby(){
   if(d<best&&facing>-.35){best=d;hit=p}
  }
  if(hit){
-  hit.health=(hit.health??(hit.hostile?55:100))-34;hit.stun=.3;
+  hit.health=(hit.health??(hit.hostile?55:100))-34;hit.stun=.85;
+  if(hit.health>0){
+   hit.knockdownTimer=.72;hit.knockdownSide=Math.random()<.5?Math.PI/2:-Math.PI/2;
+   hit.group.position.y=.24;hit.group.rotation.z=hit.knockdownSide;
+  }
   if(hit.health<=0){
    const px=hit.group.position.x,pz=hit.group.position.z;scene.remove(hit.group);const idx=pedestrians.indexOf(hit);if(idx>=0)pedestrians.splice(idx,1);
    const amount=hit.hostile?Math.floor(35+Math.random()*66):Math.floor(10+Math.random()*31);
@@ -814,9 +818,11 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
    aimAssistScreen.copy(aimAssistWorld).project(camera);
    if(aimAssistScreen.z< -1||aimAssistScreen.z>1||Math.abs(aimAssistScreen.x)>1||Math.abs(aimAssistScreen.y)>1)continue;
    const screenDistance=Math.hypot(aimAssistScreen.x,aimAssistScreen.y);
-   // Tight assist radius prevents the reticle turning red for an NPC noticeably away from center.
-   // Slightly forgiving for small/far NPCs, while keeping the assist close to the reticle.
-   if(screenDistance>.075)continue;
+   // Increase aim assistance for close targets, where third-person perspective and the muzzle offset
+   // make pixel-perfect aiming awkward. Keep distant assistance tight to avoid snapping to the wrong NPC.
+   const playerDistance=onFoot?Math.hypot(p.group.position.x-playerAvatar.position.x,p.group.position.z-playerAvatar.position.z):Infinity;
+   const assistRadius=playerDistance<8?.16:playerDistance<20?.11:.075;
+   if(screenDistance>assistRadius)continue;
    const distance=camera.position.distanceTo(aimAssistWorld);
    if(distance>MAX_AIM_DISTANCE)continue;
    // Favor the NPC nearest the reticle, with a slight preference for nearer targets.
@@ -852,7 +858,11 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
   const beam=new THREE.Line(beamGeometry,new THREE.LineBasicMaterial({color:hitPed?0xffd45b:0xfff0b5,transparent:true,opacity:.95}));
   scene.add(beam);setTimeout(()=>{scene.remove(beam);beamGeometry.dispose();beam.material.dispose();},75);
   if(!hitPed){showMissionToast('🔫 未命中：检查准星与枪口之间是否有障碍物');return;}
-  hitPed.health=(hitPed.health??(hitPed.hostile?55:100))-34;hitPed.stun=.45;hitPed.fleeTime=hitPed.hostile?0:7;hitPed.reportTimer=1.6;hitPed.reported=false;
+  hitPed.health=(hitPed.health??(hitPed.hostile?55:100))-34;hitPed.stun=.85;hitPed.fleeTime=hitPed.hostile?0:7;hitPed.reportTimer=1.6;hitPed.reported=false;
+  if(hitPed.health>0){
+   hitPed.knockdownTimer=.72;hitPed.knockdownSide=Math.random()<.5?Math.PI/2:-Math.PI/2;
+   hitPed.group.position.y=.24;hitPed.group.rotation.z=hitPed.knockdownSide;
+  }
   if(hitPed.health<=0){
    const px=hitPed.group.position.x,pz=hitPed.group.position.z;scene.remove(hitPed.group);const idx=pedestrians.indexOf(hitPed);if(idx>=0)pedestrians.splice(idx,1);
    const amount=hitPed.hostile?Math.floor(35+Math.random()*66):Math.floor(10+Math.random()*31);
@@ -1302,6 +1312,19 @@ function updatePolice(dt,now){
 let lastTrafficImpact=0;
 function updatePedestrians(dt){
  for(const p of pedestrians){
+  // A non-lethal hit briefly knocks the low-poly NPC down, then lets them recover.
+  if(p.knockdownTimer>0){
+   p.knockdownTimer=Math.max(0,p.knockdownTimer-dt);
+   p.group.position.y=.24;
+   p.group.rotation.z=p.knockdownSide||Math.PI/2;
+   p.group.rotation.x=0;
+   if(p.knockdownTimer===0){
+    p.group.position.y=0;
+    p.group.rotation.set(0,p.group.rotation.y,0);
+    p.knockdownSide=0;
+   }
+   continue;
+  }
   if(p.stun>0){p.stun=Math.max(0,p.stun-dt);continue}
   // Hostile NPCs near the player are steered by the combat AI instead of their patrol route.
   if(p.hostile&&onFoot&&Math.hypot(p.group.position.x-playerAvatar.position.x,p.group.position.z-playerAvatar.position.z)<15)continue;
