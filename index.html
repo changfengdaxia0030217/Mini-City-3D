@@ -94,6 +94,20 @@ body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{di
   <div id="joystick" role="application" aria-label="虚拟摇杆，向上前进，左右横移，向下后退"><div id="joystick-knob"></div></div>
   <div style="display:flex;gap:9px;align-items:end;pointer-events:auto"><button class="control" id="brake" data-key="Space">刹车</button><button class="control" id="gas" data-key="KeyW">加速</button><button class="control" id="foot-mode" type="button">下车</button><button class="control" id="foot-punch" type="button">🔫 射击</button><button class="control" id="foot-run" type="button">跑</button></div>
 </div>
+<style id="mini-city-boot-diagnostic-style">
+#boot-diagnostic{display:none;position:fixed;z-index:99999;inset:12px auto auto 12px;max-width:min(680px,calc(100vw - 24px));max-height:45vh;overflow:auto;padding:14px 16px;border:1px solid #ff8585;border-radius:10px;background:#25171af2;color:#fff;font:13px/1.5 ui-monospace,monospace;white-space:pre-wrap;box-shadow:0 8px 30px #0008;pointer-events:auto}
+#boot-diagnostic strong{display:block;color:#ffb2b2;font:700 15px/1.4 system-ui;margin-bottom:6px}
+</style>
+<div id="boot-diagnostic" role="alert"><strong>Mini City 3D 启动诊断</strong><span id="boot-diagnostic-message"></span></div>
+<script>
+(function(){
+ const panel=document.getElementById('boot-diagnostic'),message=document.getElementById('boot-diagnostic-message');
+ function report(text){panel.style.display='block';message.textContent=String(text||'未知错误');}
+ window.addEventListener('error',function(e){report((e.message||'脚本加载或运行失败')+(e.filename?'\\n'+e.filename:'')+(e.lineno?':'+e.lineno:''));});
+ window.addEventListener('unhandledrejection',function(e){const r=e.reason;report('异步加载失败：'+(r&&r.message?r.message:String(r)));});
+ window.setTimeout(function(){if(!document.body.dataset.gameReady){report('游戏在 12 秒内没有完成启动。请检查网络是否能加载 Three.js CDN，或查看上方错误信息。');}},12000);
+})();
+</script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
@@ -1675,7 +1689,7 @@ function update(dt, now){
  camera.lookAt(look);
  speedEl.innerHTML=Math.round(Math.abs(speed)*3.6)+'<span>KM/H</span>';
 }
-function animate(now){requestAnimationFrame(animate);const dt=Math.min((now-last)/1000,.04);last=now;updateRiverFlow(dt);update(dt,now);renderer.render(scene,camera)}
+function animate(now){requestAnimationFrame(animate);const dt=Math.min((now-last)/1000,.04);last=now;updateRiverFlow(dt);update(dt,now);renderer.render(scene,camera);document.body.dataset.gameReady="1"}
 // Initial camera framing: place the parked car clearly in front of the camera on the main road.
 car.visible=true;
 camera.position.set(0,5,1);camera.lookAt(0,1,-8);
