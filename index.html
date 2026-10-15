@@ -14,7 +14,7 @@
 #stats{position:absolute;top:16px;right:16px;min-width:135px;text-align:right;font-variant-numeric:tabular-nums;pointer-events:auto}
 #speed{font-size:30px;font-weight:900;line-height:1}#speed span{font-size:11px;font-weight:700;opacity:.75;margin-left:5px}
 #help{position:absolute;left:16px;bottom:16px;font-size:12px;line-height:1.6;max-width:245px}
-#toast{position:absolute;top:90px;left:50%;transform:translateX(-50%);font-weight:700;font-size:13px;white-space:nowrap}#crosshair{display:none;position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);opacity:.92;filter:drop-shadow(0 1px 3px #001)}#crosshair:before,#crosshair:after{content:'';position:absolute;background:#fff;border-radius:2px}#crosshair:before{width:2px;height:22px;left:10px;top:0}#crosshair:after{height:2px;width:22px;left:0;top:10px}#crosshair .dot{position:absolute;width:4px;height:4px;background:#ffcc55;border:1px solid #18202b;border-radius:50%;left:9px;top:9px;z-index:1}body.on-foot #crosshair{display:block}body.aiming-target #crosshair:before,body.aiming-target #crosshair:after{background:#ff5656}body.aiming-target #crosshair .dot{background:#ff5656;transform:scale(1.6)}#crosshair.hit-confirm:before,#crosshair.hit-confirm:after{background:#53ff9a;box-shadow:0 0 8px #53ff9a}#crosshair.hit-confirm .dot{background:#53ff9a;transform:scale(1.8)}
+#toast{position:absolute;top:90px;left:50%;transform:translateX(-50%);font-weight:700;font-size:13px;white-space:nowrap}#crosshair{display:none;position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);opacity:.92;filter:drop-shadow(0 1px 3px #001)}#crosshair:before,#crosshair:after{content:'';position:absolute;background:#fff;border-radius:2px}#crosshair:before{width:2px;height:22px;left:10px;top:0}#crosshair:after{height:2px;width:22px;left:0;top:10px}#crosshair .dot{position:absolute;width:4px;height:4px;background:#ffcc55;border:1px solid #18202b;border-radius:50%;left:9px;top:9px;z-index:1}body.on-foot #crosshair{display:block}body.aiming-target #crosshair:before,body.aiming-target #crosshair:after{background:#ff5656}body.aiming-target #crosshair .dot{background:#ff5656;transform:scale(1.6)}body.weapon-moving #crosshair:before{height:28px;top:-3px}body.weapon-moving #crosshair:after{width:28px;left:-3px}body.weapon-firing #crosshair:before{height:34px;top:-6px}body.weapon-firing #crosshair:after{width:34px;left:-6px}body.weapon-firing #crosshair{filter:drop-shadow(0 0 5px #ffcc55)}#crosshair.hit-confirm:before,#crosshair.hit-confirm:after{background:#53ff9a;box-shadow:0 0 8px #53ff9a}#crosshair.hit-confirm .dot{background:#53ff9a;transform:scale(1.8)}
 #mobile{display:none;position:fixed;inset:auto 0 18px 0;padding:0 16px;justify-content:space-between;align-items:end;pointer-events:none;gap:10px}
 #joystick{position:relative;width:142px;height:142px;flex:0 0 142px;border:1px solid #ffffff65;border-radius:50%;background:radial-gradient(circle,#263e55bb,#10203399);box-shadow:0 4px 18px #10203355;touch-action:none;pointer-events:auto;user-select:none;-webkit-user-select:none}
 #look-zone{display:none}@media(max-width:700px){#look-zone{display:block;position:fixed;right:0;top:22%;width:48vw;height:48vh;z-index:1;touch-action:none;pointer-events:auto;background:transparent}#look-hint{position:absolute;right:12px;top:8px;color:#ffffff8a;font-size:10px;font-weight:800;text-shadow:0 1px 5px #102033;pointer-events:none}}#joystick:before{content:'移动';position:absolute;inset:0;display:grid;place-items:center;color:#ffffff88;font-size:11px;font-weight:800;pointer-events:none}
@@ -1087,6 +1087,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
   if(!onFoot||punchCooldown>0)return;
   punchCooldown=.22;
   weaponRecoil=Math.min(.2,weaponRecoil+.085);
+  document.body.classList.add('weapon-firing');setTimeout(()=>document.body.classList.remove('weapon-firing'),105);
   if(muzzleFlash){muzzleFlash.visible=true;setTimeout(()=>{muzzleFlash.visible=false;},55);}
   camera.updateMatrixWorld(true);
   weaponRaycaster.setFromCamera(weaponScreenCenter,camera);
@@ -1744,6 +1745,7 @@ function updateOnFoot(dt,now){
  const stickActive=Math.abs(footMoveX)>.001||Math.abs(footMoveY)>.001;
  const fwd=stickActive?-footMoveY:keyFwd,side=stickActive?-footMoveX:-keySide;
  const moving=Math.abs(fwd)>.02||Math.abs(side)>.02;
+ document.body.classList.toggle('weapon-moving',moving);
  const fx=Math.sin(cameraYaw),fz=Math.cos(cameraYaw),rx=Math.cos(cameraYaw),rz=-Math.sin(cameraYaw);
  let moveX=fx*fwd+rx*side,moveZ=fz*fwd+rz*side;const moveLen=Math.hypot(moveX,moveZ);if(moveLen>1){moveX/=moveLen;moveZ/=moveLen;}
  if(moving||precisionAimMode){
@@ -1872,6 +1874,7 @@ function updateCarDamageEffects(now){
  carFlames.forEach((p,i)=>{p.visible=fireOn;if(fireOn){p.position.y=1.1+Math.abs(Math.sin(now*.009+i*2))*.55;p.scale.y=.7+Math.abs(Math.sin(now*.013+i))*1.2;p.material.opacity=.65+Math.abs(Math.sin(now*.012+i))*.3;}});
 }
 function update(dt, now){
+ if(!onFoot)document.body.classList.remove('weapon-moving');
  // Keep signal phases live; without this call the lamps and right-of-way would freeze.
  updateTrafficSignals(now);
  updatePedestrians(dt);
