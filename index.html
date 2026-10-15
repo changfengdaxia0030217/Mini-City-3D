@@ -437,6 +437,64 @@ for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
    if(Math.random()>.45)box(1.1,.8,1.1,roofMat,x+(Math.random()-.5)*w*.35,h+.62,z+(Math.random()-.5)*d*.35);
   }
  }
+
+ // The Bund gets its own low-poly historic stone ensemble, separate from the glass towers across the river.
+ // Keep this row behind the waterfront road so the player experiences a clear architectural transition while driving.
+ const bundStoneMats=[mat(0xe6d7bd,.82),mat(0xd8c6a8,.86),mat(0xf0e3ca,.8),mat(0xcbb99d,.88)];
+ const bundWindowMat=mat(0x4b7183,.48),bundTrimMat=mat(0xf5e7cc,.78),bundRoofMat=mat(0x59636a,.82),bundBronzeMat=mat(0x7b8c8d,.55);
+ function bundBuilding(x,z,w,d,h,variant){
+  const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
+  const stone=bundStoneMats[variant%bundStoneMats.length];
+  box(w,h,d,stone,0,h/2,0,g);
+  // Broad plinth, repeated floor bands, projecting cornice and parapet establish a classical silhouette.
+  box(w+.8,.55,d+.65,stone,0,.28,0,g);
+  for(const fy of [h*.27,h*.51,h*.75])box(w+.42,.2,d+.34,bundTrimMat,0,fy,0,g);
+  box(w+1.25,.5,d+.9,bundTrimMat,0,h+.12,0,g);
+  box(w+.7,.25,d+.55,bundRoofMat,0,h+.48,0,g);
+  const cols=Math.max(3,Math.floor(w/3.7)),rows=Math.max(3,Math.floor((h-3)/3.15));
+  const winW=Math.min(1.12,w/(cols+1)*.48);
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+   const wx=-w/2+(c+1)*w/(cols+1),wy=2.1+r*(h-4)/rows;
+   box(winW,1.35,.065,bundWindowMat,wx,wy,d/2+.045,g);
+   box(winW+.22,.13,.12,bundTrimMat,wx,wy+.76,d/2+.09,g);
+   box(winW+.25,.16,.14,bundTrimMat,wx,wy-.78,d/2+.09,g);
+   box(.09,1.52,.1,bundTrimMat,wx-winW*.57,wy,d/2+.1,g);
+   box(.09,1.52,.1,bundTrimMat,wx+winW*.57,wy,d/2+.1,g);
+  }
+  // Tall pilasters and a strong central entrance make the facade read as an old civic/bank building.
+  for(let p=-1;p<=1;p+=2)box(.32,h*.83,.25,bundTrimMat,p*(w/2-.65),h*.48,d/2+.12,g);
+  box(Math.min(2.6,w*.17),2.4,.16,bundRoofMat,0,1.45,d/2+.11,g);
+  box(Math.min(2.25,w*.145),2.05,.12,bundBronzeMat,0,1.38,d/2+.22,g);
+  // Central pediment: a simple triangular cartoon roof ornament, not a photorealistic copy.
+  const ped=new THREE.Mesh(new THREE.ConeGeometry(w*.16,2.8,4),bundTrimMat);
+  ped.position.set(0,h+.98,d/2-.05);ped.rotation.y=Math.PI/4;ped.scale.z=.38;ped.castShadow=true;g.add(ped);
+  if(variant%3!==1){
+   const drumH=variant%3===0?1.25:1.65,rad=variant%3===0?2.05:1.55;
+   const drum=new THREE.Mesh(new THREE.CylinderGeometry(rad,rad*1.12,drumH,10),bundTrimMat);
+   drum.position.set(0,h+.48+drumH/2,0);drum.castShadow=true;g.add(drum);
+   const dome=new THREE.Mesh(new THREE.SphereGeometry(rad,12,8,0,Math.PI*2,0,Math.PI/2),stone);
+   dome.position.set(0,h+.48+drumH,0);dome.castShadow=true;g.add(dome);
+   const cap=new THREE.Mesh(new THREE.ConeGeometry(.28,.9,8),bundBronzeMat);
+   cap.position.set(0,h+.48+drumH+rad*.9,0);g.add(cap);
+  }else{
+   // Alternate blocks use a stepped mansard-like roof and small corner turrets for variety.
+   box(w*.76,1.05,d*.76,bundRoofMat,0,h+.98,0,g);
+   for(const tx of [-1,1]){
+    const turret=new THREE.Mesh(new THREE.CylinderGeometry(.68,.9,1.8,8),bundTrimMat);
+    turret.position.set(tx*(w*.34),h+1.7,0);g.add(turret);
+    const cap=new THREE.Mesh(new THREE.ConeGeometry(.9,1.35,8),bundRoofMat);
+    cap.position.set(tx*(w*.34),h+3.25,0);g.add(cap);
+   }
+  }
+  occupied.push({x,z,hw:w/2+1.2,hd:d/2+1.2});
+ }
+ const bundXs=[-104,-78,-52,-26,0,26,52,78,104];
+ for(let bi=0;bi<bundXs.length;bi++){
+  const bw=bi%3===0?20:bi%3===1?22:19;
+  const bh=[22,27,24,31,23,29,25,32,22][bi];
+  bundBuilding(bundXs[bi],101,bw,12,bh,bi);
+ }
+
 // Stylized Shanghai skyline landmarks occupy reserved central plots.
 const landmarkPink=mat(0xd65d91,.3),landmarkMetal=mat(0x9baeb8,.35),landmarkGlass=mat(0x79b9d8,.28);
 const pearlX=30,pearlZ=30;
