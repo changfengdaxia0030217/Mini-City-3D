@@ -193,7 +193,7 @@ addChineseWayfindingSign(9.8,9.8,Math.PI/4,'中山东一路','外滩 · 南京�
 addChineseWayfindingSign(-9.8,-9.8,-Math.PI/4,'人民广场','南京路步行街');
 // Huangpu River waterfront district: broad river, Bund promenade, railing and a distant Pudong skyline.
 const riverMat=new THREE.MeshStandardMaterial({color:0x397f9e,roughness:.28,metalness:.12});
-const river=new THREE.Mesh(new THREE.PlaneGeometry(420,72),riverMat);river.rotation.x=-Math.PI/2;river.position.set(0,-.055,181);river.receiveShadow=true;scene.add(river);
+const huangpuRiver=new THREE.Mesh(new THREE.PlaneGeometry(420,72),riverMat);huangpuRiver.rotation.x=-Math.PI/2;huangpuRiver.position.set(0,-.055,181);huangpuRiver.receiveShadow=true;scene.add(huangpuRiver);
 const quayStone=mat(0xc7c1b4),railMetal=mat(0x303b45,.65),riverFoam=mat(0x9ac9d7,.4);
 box(420,.28,3.8,quayStone,0,.04,141);
 box(420,.18,1.15,quayStone,0,.16,137.8);
