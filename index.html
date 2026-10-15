@@ -763,23 +763,27 @@ function addHand(parent,y){
  const hand=new THREE.Mesh(new THREE.BoxGeometry(.16,.17,.16),skinMat);
  hand.position.set(0,y,-.015);parent.add(hand);return hand;
 }
-const leftArm=new THREE.Group();leftArm.position.set(-.39,1.48,0);fallbackAvatar.add(leftArm);
-addLimbSegment(leftArm,shirtMat,.115,.34,-.18);
-addLimbSegment(leftArm,skinMat,.082,.32,-.49);
-addHand(leftArm,-.68);
-const punchArm=new THREE.Group();punchArm.position.set(.39,1.48,0);fallbackAvatar.add(punchArm);
-addLimbSegment(punchArm,shirtMat,.12,.34,-.18);
-addLimbSegment(punchArm,skinMat,.084,.34,-.49);
-addHand(punchArm,-.69);
-// Arms are held forward in a compact two-handed pistol stance; camera controls remain unchanged.
-leftArm.rotation.x=.72;
-punchArm.rotation.x=.48;
-// Keep the pistol visible with either the fallback or animated character model.
+const leftArm=new THREE.Group();leftArm.position.set(-.34,1.43,-.015);fallbackAvatar.add(leftArm);
+addLimbSegment(leftArm,shirtMat,.13,.34,-.18);
+addLimbSegment(leftArm,skinMat,.09,.30,-.48);
+const leftHand=addHand(leftArm,-.65);
+const punchArm=new THREE.Group();punchArm.position.set(.34,1.43,-.015);fallbackAvatar.add(punchArm);
+addLimbSegment(punchArm,shirtMat,.135,.34,-.18);
+addLimbSegment(punchArm,skinMat,.09,.30,-.48);
+const rightHand=addHand(punchArm,-.65);
+// Raise both forearms toward the weapon instead of leaving the hands below the pistol.
+leftArm.rotation.x=1.18;leftArm.rotation.z=-.24;
+punchArm.rotation.x=1.12;punchArm.rotation.z=.08;
+// Pistol is parented to the same rig so both hands and weapon stay aligned with the character.
 const pistolMat=mat(0x252a30,.55),pistolGripMat=mat(0x111820,.8);
-const pistolVisual=new THREE.Group();pistolVisual.position.set(.34,1.38,-.55);avatarVisual.add(pistolVisual);
-box(.13,.13,.34,pistolMat,0,0,-.08,pistolVisual);
-box(.105,.22,.12,pistolGripMat,0,-.12,.03,pistolVisual);
-box(.07,.07,.19,mat(0x080b0f,.4),0,.02,-.29,pistolVisual);
+const pistolVisual=new THREE.Group();pistolVisual.position.set(.19,1.19,-.67);fallbackAvatar.add(pistolVisual);
+box(.15,.13,.38,pistolMat,0,0,-.08,pistolVisual);
+box(.11,.23,.13,pistolGripMat,0,-.13,.04,pistolVisual);
+box(.075,.075,.22,mat(0x080b0f,.4),0,.02,-.31,pistolVisual);
+box(.17,.055,.12,mat(0x4a535c,.45),0,.085,-.12,pistolVisual);
+// Short magazine and rear sight make the pistol silhouette read clearly at gameplay distance.
+box(.075,.12,.09,pistolGripMat,0,-.23,-.005,pistolVisual);
+box(.12,.035,.045,mat(0x080b0f,.4),0,.085,.12,pistolVisual);
 function makeLeg(x){
  const leg=new THREE.Group();leg.position.set(x,.76,0);fallbackAvatar.add(leg);
  addLimbSegment(leg,pantsMat,.13,.36,-.18);
@@ -1655,7 +1659,7 @@ function updateCombatAI(dt,now){
 function updateOnFoot(dt,now){
  punchCooldown=Math.max(0,punchCooldown-dt);
  punchAnim=Math.max(0,punchAnim-dt*3.8);
- const punchPhase=Math.sin((1-punchAnim)*Math.PI);punchArm.rotation.x=.48+punchPhase*1.65*punchAnim;leftArm.rotation.x=.72-punchPhase*.18*punchAnim;
+ const punchPhase=Math.sin((1-punchAnim)*Math.PI);punchArm.rotation.x=1.12+punchPhase*.9*punchAnim;punchArm.rotation.z=.08+punchPhase*.08*punchAnim;leftArm.rotation.x=1.18-punchPhase*.12*punchAnim;leftArm.rotation.z=-.24;
  const forward=keys.has('KeyW')||keys.has('ArrowUp'),back=keys.has('KeyS')||keys.has('ArrowDown');
  const left=keys.has('KeyA')||keys.has('ArrowLeft'),right=keys.has('KeyD')||keys.has('ArrowRight');
  const keyFwd=(forward?1:0)-(back?1:0),keySide=(right?1:0)-(left?1:0);
