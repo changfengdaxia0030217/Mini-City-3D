@@ -1717,12 +1717,13 @@ function updateOnFoot(dt,now){
  const moving=Math.abs(fwd)>.02||Math.abs(side)>.02;
  const fx=Math.sin(cameraYaw),fz=Math.cos(cameraYaw),rx=Math.cos(cameraYaw),rz=-Math.sin(cameraYaw);
  let moveX=fx*fwd+rx*side,moveZ=fz*fwd+rz*side;const moveLen=Math.hypot(moveX,moveZ);if(moveLen>1){moveX/=moveLen;moveZ/=moveLen;}
- if(moving){
-  // Character turning is driven by movement, never by camera rotation alone.
-  // This keeps the camera's forward-180-degree limit from rotating around with the reticle.
-  const desiredYaw=Math.atan2(moveX,moveZ);
+ if(moving||precisionAimMode){
+  // Normal movement faces the travel direction. In precision-aim mode, rotate
+  // the whole blocky character toward the camera ray even while standing still,
+  // so the rifle, shoulders and reticle no longer visibly disagree.
+  const desiredYaw=precisionAimMode?cameraYaw:Math.atan2(moveX,moveZ);
   let delta=((desiredYaw-playerAvatar.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;
-  playerAvatar.rotation.y+=delta*(1-Math.exp(-(precisionAimMode?8.5:6.0)*dt));
+  playerAvatar.rotation.y+=delta*(1-Math.exp(-(precisionAimMode?10.5:6.0)*dt));
  }
  turnBlend=0;
  const footOldX=playerAvatar.position.x,footOldZ=playerAvatar.position.z;
