@@ -465,6 +465,37 @@ for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
   for(let p=-1;p<=1;p+=2)box(.32,h*.83,.25,bundTrimMat,p*(w/2-.65),h*.48,d/2+.12,g);
   box(Math.min(2.6,w*.17),2.4,.16,bundRoofMat,0,1.45,d/2+.11,g);
   box(Math.min(2.25,w*.145),2.05,.12,bundBronzeMat,0,1.38,d/2+.22,g);
+  // Arcade-like ground floor: chunky pale columns and simple arches create a continuous historic street rhythm.
+  const arcadeCount=Math.max(4,Math.floor(w/4.2));
+  for(let ai=0;ai<=arcadeCount;ai++){
+   const ax=-w/2+ai*w/arcadeCount;
+   box(.22,2.65,.3,bundTrimMat,ax,1.55,d/2+.2,g);
+   box(.42,.18,.38,bundTrimMat,ax,2.88,d/2+.2,g);
+   box(.42,.2,.38,bundTrimMat,ax,.25,d/2+.2,g);
+  }
+  // A bold entrance canopy and keystones make the ground floor legible at driving speed.
+  box(w*.58,.22,.48,bundTrimMat,0,3.15,d/2+.22,g);
+  for(let c=0;c<cols;c++){
+   const wx=-w/2+(c+1)*w/(cols+1);
+   const wy=2.1+(rows-1)*(h-4)/rows;
+   box(.18,.24,.15,bundBronzeMat,wx,wy+.92,d/2+.13,g);
+  }
+  // Low parapet balusters repeat along the roofline; every third building gets corner turrets.
+  const balusters=Math.max(5,Math.floor(w/2.8));
+  for(let bp=0;bp<=balusters;bp++){
+   const bx=-w/2+bp*w/balusters;
+   box(.13,.72,.14,bundTrimMat,bx,h+.82,d/2+.18,g);
+  }
+  box(w+.18,.16,.28,bundTrimMat,0,h+1.2,d/2+.18,g);
+  if(variant%3===2){
+   for(const tx of [-1,1]){
+    const towerX=tx*(w*.43);
+    box(2.1,2.4,2.1,stone,towerX,h+1.55,0,g);
+    box(2.35,.24,2.35,bundTrimMat,towerX,h+2.82,0,g);
+    const roof=new THREE.Mesh(new THREE.ConeGeometry(1.5,2.5,8),bundRoofMat);
+    roof.position.set(towerX,h+4.15,0);g.add(roof);
+   }
+  }
   // Central pediment: a simple triangular cartoon roof ornament, not a photorealistic copy.
   const ped=new THREE.Mesh(new THREE.ConeGeometry(w*.16,2.8,4),bundTrimMat);
   ped.position.set(0,h+.98,d/2-.05);ped.rotation.y=Math.PI/4;ped.scale.z=.38;ped.castShadow=true;g.add(ped);
