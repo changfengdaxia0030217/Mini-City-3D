@@ -155,6 +155,42 @@ function road(x,z,w,d){
 }
 road(0,0,240,13);road(0,0,13,240);
 for(const p of [-60,60]){road(0,p,240,11);road(p,0,11,240)}
+// Shanghai streetscape details: sidewalk lamp posts and Chinese wayfinding signs.
+function addStreetLamp(x,z,rotation=0){
+ const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rotation;scene.add(g);
+ const metal=mat(0x252d36,.62),warmGlass=new THREE.MeshStandardMaterial({color:0xffe6a3,emissive:0xffbd55,emissiveIntensity:.38,roughness:.35});
+ const pole=new THREE.Mesh(new THREE.CylinderGeometry(.075,.11,3.8,8),metal);pole.position.y=1.9;g.add(pole);
+ const arm=box(.08,.08,.72,metal,.0,3.55,-.34,g);
+ const lamp=box(.38,.18,.42,warmGlass,0,3.48,-.67,g);
+ box(.46,.07,.5,metal,0,3.59,-.67,g);
+ const base=box(.32,.2,.32,metal,0,.1,0,g);
+ return g;
+}
+for(const z of [-60,0,60])for(const x of [-108,-84,-36,-12,12,36,84,108]){
+ addStreetLamp(x,z+(z===0?9.35:8.0),0);
+ addStreetLamp(x,z-(z===0?9.35:8.0),Math.PI);
+}
+for(const x of [-60,0,60])for(const z of [-108,-84,-36,-12,12,36,84,108]){
+ addStreetLamp(x+(x===0?9.35:8.0),z,Math.PI/2);
+ addStreetLamp(x-(x===0?9.35:8.0),z,-Math.PI/2);
+}
+function addChineseWayfindingSign(x,z,rotation,label,subLabel){
+ const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rotation;scene.add(g);
+ const poleMat=mat(0x313b45,.55),signBlue=mat(0x15549a,.42),white=mat(0xf4f4eb);
+ const pole=new THREE.Mesh(new THREE.CylinderGeometry(.055,.075,2.9,8),poleMat);pole.position.y=1.45;g.add(pole);
+ box(2.65,.72,.12,signBlue,0,2.75,0,g);
+ box(2.69,.055,.14,white,0,3.12,0,g);box(2.69,.055,.14,white,0,2.38,0,g);
+ // Legible Chinese street names rendered as real geometry labels, not a background image.
+ const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;
+ const ctx=canvas.getContext('2d');ctx.fillStyle='#15549a';ctx.fillRect(0,0,512,128);
+ ctx.fillStyle='#ffffff';ctx.font='bold 42px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+ ctx.fillText(label,256,42);ctx.font='26px sans-serif';ctx.fillText(subLabel,256,91);
+ const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
+ const face=new THREE.Mesh(new THREE.PlaneGeometry(2.5,.62),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
+ face.position.set(0,2.75,.071);g.add(face);
+}
+addChineseWayfindingSign(9.8,9.8,Math.PI/4,'中山东一路','外滩 · 南京东路');
+addChineseWayfindingSign(-9.8,-9.8,-Math.PI/4,'人民广场','南京路步行街');
 // Outer ring roads add more routes around the expanded city.
 for(const p of [-100,100]){road(0,p,280,8);road(p,0,8,280)}
 // Raised pedestrian sidewalks on both sides of every road. Gaps keep junctions open for traffic.
