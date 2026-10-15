@@ -971,7 +971,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  let precisionAimMode=false;
  const cameraCollisionRaycaster=new THREE.Raycaster();
  const cameraAimTarget=new THREE.Vector3(),cameraPivot=new THREE.Vector3(),cameraDesiredPosition=new THREE.Vector3(),cameraCollisionPosition=new THREE.Vector3(),cameraDirection=new THREE.Vector3(),cameraRight=new THREE.Vector3();
- let cameraCollisionCheckTimer=0,lastAimReticleCheck=0;
+ let cameraCollisionCheckTimer=0,lastAimReticleCheck=0,lastMissToast=0;
  const weaponRaycaster=new THREE.Raycaster(),lineOfSightRaycaster=new THREE.Raycaster(),weaponScreenCenter=new THREE.Vector2(0,0);
  const shotOrigin=new THREE.Vector3(),shotDirection=new THREE.Vector3();
  const aimAssistWorld=new THREE.Vector3(),aimAssistScreen=new THREE.Vector3();
@@ -1021,7 +1021,8 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  function findAimedPedestrian(){
   camera.updateMatrixWorld(true);
   weaponRaycaster.setFromCamera(weaponScreenCenter,camera);
-  const available=pedestrians.filter(p=>p.group&&p.group.parent&&p.stun<=0);
+  // A stunned or knocked-down NPC remains targetable; stun should interrupt AI, not grant temporary bullet immunity.
+  const available=pedestrians.filter(p=>p.group&&p.group.parent);
   // First prefer a true center-screen ray hit. This remains the most accurate result.
   const intersections=weaponRaycaster.intersectObjects(available.map(p=>p.group),true);
   for(const hit of intersections){
@@ -1101,7 +1102,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
   const beamGeometry=new THREE.BufferGeometry().setFromPoints([origin,end]);
   const beam=new THREE.Line(beamGeometry,new THREE.LineBasicMaterial({color:hitPed?0xffd45b:0xfff0b5,transparent:true,opacity:.95}));
   scene.add(beam);setTimeout(()=>{scene.remove(beam);beamGeometry.dispose();beam.material.dispose();},75);
-  if(!hitPed){showMissionToast('🔫 未命中：检查准星与枪口之间是否有障碍物');return;}
+  if(!hitPed){const now=performance.now();if(now-lastMissToast>1400){lastMissToast=now;showMissionToast('🔫 未命中：检查准星与枪口之间是否有障碍物');}return;}
   flashHitConfirm();
   hitPed.health=(hitPed.health??(hitPed.hostile?55:100))-34;hitPed.stun=.85;interruptHostileWindup(hitPed);hitPed.fleeTime=hitPed.hostile?0:7;hitPed.reportTimer=1.6;hitPed.reported=false;
   if(hitPed.health>0){
