@@ -216,19 +216,20 @@ for(let tx=-130;tx<=130;tx+=13){
 }
 // Far-bank glass towers create a continuous Pudong silhouette beyond the water.
 const farTowerColors=[0x78aabd,0x91b7c8,0x6c8fa8,0xb8cbd2,0x8aa4b6];
+const farTrimMat=mat(0xcbd9dc,.5),farGlassMat=mat(0x79b9d8,.28),farMetalMat=mat(0x9baeb8,.35);
 for(let fi=0;fi<21;fi++){
  const fx=-150+fi*15,fh=18+((fi*17)%5)*8,fw=7+(fi%3)*1.7,fd=7+(fi%4)*1.2;
  const fg=new THREE.Group();fg.position.set(fx,0,222+(fi%2)*8);scene.add(fg);
  const fm=mat(farTowerColors[fi%farTowerColors.length],.42);
  const towerBody=box(fw,fh,fd,fm,0,fh/2,0,fg);
- box(fw+.25,.22,fd+.25,facadeTrim,0,fh+.1,0,fg);
+ box(fw+.25,.22,fd+.25,farTrimMat,0,fh+.1,0,fg);
  for(let wy=3;wy<fh-1;wy+=3.2)box(fw*.88,.055,fd+.035,mat(0xb8d7e1,.45),0,wy,fd/2+.025,fg);
- if(fi%4===1){const tip=new THREE.Mesh(new THREE.ConeGeometry(.45,5,6),landmarkMetal);tip.position.y=fh+2.4;fg.add(tip);}
+ if(fi%4===1){const tip=new THREE.Mesh(new THREE.ConeGeometry(.45,5,6),farMetalMat);tip.position.y=fh+2.4;fg.add(tip);}
 }
 // A slim Shanghai Tower-inspired tapering landmark rises above the far-bank skyline.
 const farShanghai=new THREE.Group();farShanghai.position.set(62,0,218);scene.add(farShanghai);
-const farCore=new THREE.Mesh(new THREE.CylinderGeometry(2.1,4.2,62,8,1),landmarkGlass);farCore.position.y=31;farCore.rotation.y=Math.PI/8;farCore.castShadow=true;farShanghai.add(farCore);
-const farSpire=new THREE.Mesh(new THREE.ConeGeometry(.55,12,8),landmarkMetal);farSpire.position.y=68;farShanghai.add(farSpire);
+const farCore=new THREE.Mesh(new THREE.CylinderGeometry(2.1,4.2,62,8,1),farGlassMat);farCore.position.y=31;farCore.rotation.y=Math.PI/8;farCore.castShadow=true;farShanghai.add(farCore);
+const farSpire=new THREE.Mesh(new THREE.ConeGeometry(.55,12,8),farMetalMat);farSpire.position.y=68;farShanghai.add(farSpire);
 // Outer ring roads add more routes around the expanded city.
 for(const p of [-100,100]){road(0,p,280,8);road(p,0,8,280)}
 // Raised pedestrian sidewalks on both sides of every road. Gaps keep junctions open for traffic.
