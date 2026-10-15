@@ -802,7 +802,7 @@ function addHand(parent,y){
  const hand=new THREE.Mesh(new THREE.BoxGeometry(.16,.17,.16),skinMat);
  hand.position.set(0,y,-.015);parent.add(hand);return hand;
 }
-const leftArm=new THREE.Group();leftArm.position.set(-.34,1.43,-.015);fallbackAvatar.add(leftArm);
+const leftArm=new THREE.Group();leftArm.position.set(-.34,1.43,-.28);fallbackAvatar.add(leftArm);
 addLimbSegment(leftArm,shirtMat,.13,.34,-.18);
 addLimbSegment(leftArm,skinMat,.09,.30,-.48);
 const leftHand=addHand(leftArm,-.65);
@@ -812,8 +812,8 @@ addLimbSegment(punchArm,skinMat,.09,.30,-.48);
 const rightHand=addHand(punchArm,-.65);
 // Two-handed shouldered rifle pose: keep the blocky avatar silhouette while
 // giving the weapon a longer, readable profile like a compact Roblox-style carbine.
-leftArm.rotation.x=1.02;leftArm.rotation.z=-.18;
-punchArm.rotation.x=1.04;punchArm.rotation.z=.04;
+leftArm.rotation.x=1.02;leftArm.rotation.z=.48;
+punchArm.rotation.x=1.04;punchArm.rotation.z=-.27;
 const pistolMat=mat(0x252a30,.55),pistolGripMat=mat(0x111820,.8),rifleMetal=mat(0x414951,.5);
 // Keep the historical variable name because the aiming ray uses its world position as muzzle origin.
 const pistolVisual=new THREE.Group();pistolVisual.position.set(.19,1.22,-.72);fallbackAvatar.add(pistolVisual);
@@ -1781,10 +1781,10 @@ function updateOnFoot(dt,now){
  // preserve readable movement without making the hands drift away from the rifle.
  const armStride=Math.sin(cycle)*.10*playerWalkSpeed;
  leftArm.rotation.x=airborne?.72:1.02-armStride;
- leftArm.rotation.z=-.18+(airborne?-.08:Math.sin(cycle+Math.PI)*.035*playerWalkSpeed)+idleSway*.006;
+ leftArm.rotation.z=.48+(airborne?-.08:Math.sin(cycle+Math.PI)*.025*playerWalkSpeed)+idleSway*.004;
  const punchPose=Math.sin((1-punchAnim)*Math.PI)*1.18*punchAnim;
  punchArm.rotation.x=punchAnim>0?Math.max(-.15,punchPose):(airborne?.72:1.04+armStride);
- punchArm.rotation.z=punchAnim>0?.08:(airborne?.12:.04+Math.sin(cycle)*.025*playerWalkSpeed-idleSway*.006);
+ punchArm.rotation.z=punchAnim>0?.08:(airborne?-.12:-.27+Math.sin(cycle)*.02*playerWalkSpeed-idleSway*.004);
  // Small shoulder roll and forward lean sell the running/jumping motion.
  avatarBody.rotation.x=running?-.12:(airborne?-.09:Math.sin(cycle*2)*.018*playerWalkSpeed);
  camera.fov=precisionAimMode?43:62;camera.updateProjectionMatrix();
