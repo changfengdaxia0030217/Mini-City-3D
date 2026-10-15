@@ -838,6 +838,10 @@ punchArm.rotation.x=1.04;punchArm.rotation.z=-.27;
 const pistolMat=mat(0x252a30,.55),pistolGripMat=mat(0x111820,.8),rifleMetal=mat(0x414951,.5);
 // Keep the historical variable name because the aiming ray uses its world position as muzzle origin.
 const pistolVisual=new THREE.Group();pistolVisual.position.set(.19,1.22,-.72);fallbackAvatar.add(pistolVisual);
+// Short-lived, low-cost muzzle flash makes each shot readable without a particle system.
+const muzzleFlash=new THREE.Group();muzzleFlash.position.set(0,.01,-.88);muzzleFlash.visible=false;pistolVisual.add(muzzleFlash);
+const muzzleFlare=new THREE.Mesh(new THREE.ConeGeometry(.095,.28,8),new THREE.MeshBasicMaterial({color:0xffb52e}));muzzleFlare.rotation.x=-Math.PI/2;muzzleFlash.add(muzzleFlare);
+const muzzleCore=new THREE.Mesh(new THREE.SphereGeometry(.052,8,6),new THREE.MeshBasicMaterial({color:0xfff3b0}));muzzleCore.position.z=-.025;muzzleFlash.add(muzzleCore);
 // Receiver and long forward barrel point along the avatar's -Z facing direction.
 box(.19,.16,.48,pistolMat,0,0,-.02,pistolVisual);
 box(.105,.105,.58,rifleMetal,0,.015,-.51,pistolVisual);
@@ -870,7 +874,7 @@ const avatarLoader=new GLTFLoader();
 // The fallback rig is animated below; do not replace it with a realistic external soldier model.
 function setRiggedMotion(kind){if(!avatarMixer)return;const names=Object.keys(avatarActions),find=terms=>names.find(n=>terms.some(t=>n.includes(t)));const key=kind==='run'?(find(['run'])||find(['walk'])):kind==='walk'?(find(['walk'])||find(['run'])):(find(['idle'])||find(['walk'])||find(['run']));const next=key?avatarActions[key]:null;if(!next||next===activeAvatarAction)return;next.reset().fadeIn(.18).play();if(activeAvatarAction)activeAvatarAction.fadeOut(.18);activeAvatarAction=next;}
 let punchAnim=0;
-let onFoot=false, punchCooldown=0, playerWalkSpeed=0, jumpVelocity=0, footstepPhase=0, turnBlend=0;
+let onFoot=false, punchCooldown=0, weaponRecoil=0, playerWalkSpeed=0, jumpVelocity=0, footstepPhase=0, turnBlend=0;
 let playerHealth=100,playerCash=0,respawnPending=false;
 const cashDrops=[];
 const healthFill=document.getElementById("health-fill"),healthValue=document.getElementById("health-value"),cashValue=document.getElementById("cash-value");
@@ -1081,6 +1085,8 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  function fireWeapon(){
   if(!onFoot||punchCooldown>0)return;
   punchCooldown=.22;
+  weaponRecoil=Math.min(.2,weaponRecoil+.085);
+  if(muzzleFlash){muzzleFlash.visible=true;setTimeout(()=>{muzzleFlash.visible=false;},55);}
   camera.updateMatrixWorld(true);
   weaponRaycaster.setFromCamera(weaponScreenCenter,camera);
   const aim=findAimedPedestrian();
@@ -1091,7 +1097,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
    const muzzleBlocker=getMuzzleBlocker(hitPoint,hitPed,origin);
    if(muzzleBlocker){hitPed=null;hitPoint=muzzleBlocker;}
   }
-  const end=hitPoint||camera.position.clone().add(weaponRaycaster.ray.direction.clone().multiplyScalar(45));
+  const end=hitPoint||origin.clone().add(weaponRaycaster.ray.direction.clone().multiplyScalar(45));
   const beamGeometry=new THREE.BufferGeometry().setFromPoints([origin,end]);
   const beam=new THREE.Line(beamGeometry,new THREE.LineBasicMaterial({color:hitPed?0xffd45b:0xfff0b5,transparent:true,opacity:.95}));
   scene.add(beam);setTimeout(()=>{scene.remove(beam);beamGeometry.dispose();beam.material.dispose();},75);
@@ -1728,6 +1734,7 @@ function updateCombatAI(dt,now){
 }
 function updateOnFoot(dt,now){
  punchCooldown=Math.max(0,punchCooldown-dt);
+ weaponRecoil=Math.max(0,weaponRecoil-dt*1.7);
  punchAnim=Math.max(0,punchAnim-dt*3.8);
  const punchPhase=Math.sin((1-punchAnim)*Math.PI);punchArm.rotation.x=1.12+punchPhase*.9*punchAnim;punchArm.rotation.z=.08+punchPhase*.08*punchAnim;leftArm.rotation.x=1.18-punchPhase*.12*punchAnim;leftArm.rotation.z=-.24;
  const forward=keys.has('KeyW')||keys.has('ArrowUp'),back=keys.has('KeyS')||keys.has('ArrowDown');
@@ -1853,7 +1860,7 @@ function updateOnFoot(dt,now){
   cameraPivot.z+Math.cos(cameraYaw)*horizontal*aimReach+cameraRight.z*(precisionAimMode?-.92:-.72)
  );
  camera.lookAt(cameraAimTarget);
- pistolVisual.rotation.x=THREE.MathUtils.clamp(cameraPitch,-1.0,.35);
+ pistolVisual.rotation.x=THREE.MathUtils.clamp(cameraPitch+weaponRecoil,-1.0,.45);
  camera.updateMatrixWorld(true);
  updateAimReticle();
  speedEl.innerHTML='0<span>KM/H</span>';
