@@ -1775,11 +1775,15 @@ function updateOnFoot(dt,now){
   rightLeg.rotation.x+=!airborne?Math.max(0,Math.sin(cycle-Math.PI/2))*.12*playerWalkSpeed:0;
  leftLeg.rotation.z=Math.sin(cycle+Math.PI/2)*.014*playerWalkSpeed;
  rightLeg.rotation.z=Math.sin(cycle-Math.PI/2)*.014*playerWalkSpeed;
- leftArm.rotation.x=airborne?-.78:-walkSwing*.82;
- leftArm.rotation.z=(airborne?-.12:Math.sin(cycle+Math.PI)*.055*playerWalkSpeed)+idleSway*.012;
+ // Keep a stable two-handed rifle-ready pose while idle and moving.
+ // Only the melee attack temporarily breaks the weapon hold; small stride offsets
+ // preserve readable movement without making the hands drift away from the rifle.
+ const armStride=Math.sin(cycle)*.10*playerWalkSpeed;
+ leftArm.rotation.x=airborne?.72:1.02-armStride;
+ leftArm.rotation.z=-.18+(airborne?-.08:Math.sin(cycle+Math.PI)*.035*playerWalkSpeed)+idleSway*.006;
  const punchPose=Math.sin((1-punchAnim)*Math.PI)*1.18*punchAnim;
- punchArm.rotation.x=punchAnim>0?Math.max(-.15,punchPose):(airborne?-.78:walkSwing*.82);
- punchArm.rotation.z=airborne?.12:Math.sin(cycle)*.055*playerWalkSpeed-idleSway*.012;
+ punchArm.rotation.x=punchAnim>0?Math.max(-.15,punchPose):(airborne?.72:1.04+armStride);
+ punchArm.rotation.z=punchAnim>0?.08:(airborne?.12:.04+Math.sin(cycle)*.025*playerWalkSpeed-idleSway*.006);
  // Small shoulder roll and forward lean sell the running/jumping motion.
  avatarBody.rotation.x=running?-.12:(airborne?-.09:Math.sin(cycle*2)*.018*playerWalkSpeed);
  camera.fov=precisionAimMode?43:62;camera.updateProjectionMatrix();
