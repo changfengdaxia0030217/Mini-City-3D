@@ -810,18 +810,28 @@ const punchArm=new THREE.Group();punchArm.position.set(.34,1.43,-.015);fallbackA
 addLimbSegment(punchArm,shirtMat,.135,.34,-.18);
 addLimbSegment(punchArm,skinMat,.09,.30,-.48);
 const rightHand=addHand(punchArm,-.65);
-// Raise both forearms toward the weapon instead of leaving the hands below the pistol.
-leftArm.rotation.x=1.18;leftArm.rotation.z=-.24;
-punchArm.rotation.x=1.12;punchArm.rotation.z=.08;
-// Pistol is parented to the same rig so both hands and weapon stay aligned with the character.
-const pistolMat=mat(0x252a30,.55),pistolGripMat=mat(0x111820,.8);
-const pistolVisual=new THREE.Group();pistolVisual.position.set(.19,1.19,-.67);fallbackAvatar.add(pistolVisual);
-box(.15,.13,.38,pistolMat,0,0,-.08,pistolVisual);
-box(.11,.23,.13,pistolGripMat,0,-.13,.04,pistolVisual);
-box(.075,.075,.22,mat(0x080b0f,.4),0,.02,-.31,pistolVisual);
-box(.17,.055,.12,mat(0x4a535c,.45),0,.085,-.12,pistolVisual);
-// Short magazine and rear sight make the pistol silhouette read clearly at gameplay distance.
-box(.075,.12,.09,pistolGripMat,0,-.23,-.005,pistolVisual);
+// Two-handed shouldered rifle pose: keep the blocky avatar silhouette while
+// giving the weapon a longer, readable profile like a compact Roblox-style carbine.
+leftArm.rotation.x=1.02;leftArm.rotation.z=-.18;
+punchArm.rotation.x=1.04;punchArm.rotation.z=.04;
+const pistolMat=mat(0x252a30,.55),pistolGripMat=mat(0x111820,.8),rifleMetal=mat(0x414951,.5);
+// Keep the historical variable name because the aiming ray uses its world position as muzzle origin.
+const pistolVisual=new THREE.Group();pistolVisual.position.set(.19,1.22,-.72);fallbackAvatar.add(pistolVisual);
+// Receiver and long forward barrel point along the avatar's -Z facing direction.
+box(.19,.16,.48,pistolMat,0,0,-.02,pistolVisual);
+box(.105,.105,.58,rifleMetal,0,.015,-.51,pistolVisual);
+box(.13,.12,.42,pistolGripMat,0,-.015,-.36,pistolVisual);
+// Stock extends behind the receiver; angled grip and magazine sit beneath it.
+box(.17,.14,.34,pistolGripMat,0,.015,.36,pistolVisual);
+box(.115,.25,.14,pistolGripMat,0,-.17,.09,pistolVisual);
+box(.12,.23,.16,pistolGripMat,0,-.22,-.12,pistolVisual);
+// Handguard grooves, top rail, front/rear sights and a small optic make the rifle legible at gameplay distance.
+for(let i=0;i<4;i++)box(.145,.025,.055,rifleMetal,0,-.005,-.29-i*.085,pistolVisual);
+box(.12,.045,.46,rifleMetal,0,.105,-.27,pistolVisual);
+box(.045,.11,.045,pistolGripMat,0,.18,-.48,pistolVisual);
+box(.05,.085,.045,pistolGripMat,0,.17,.04,pistolVisual);
+box(.11,.085,.13,mat(0x151b22,.35),0,.17,-.13,pistolVisual);
+box(.075,.065,.13,mat(0x080b0f,.4),0,.01,-.83,pistolVisual);
 box(.12,.035,.045,mat(0x080b0f,.4),0,.085,.12,pistolVisual);
 function makeLeg(x){
  const leg=new THREE.Group();leg.position.set(x,.76,0);fallbackAvatar.add(leg);
