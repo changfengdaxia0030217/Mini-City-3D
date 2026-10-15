@@ -209,6 +209,25 @@ for(let fi=0;fi<21;fi++){
  if(fi%4===1){const tip=new THREE.Mesh(new THREE.ConeGeometry(.45,5,6),farMetalMat);tip.position.y=fh+2.4;fg.add(tip);}
 }
 // A slim Shanghai Tower-inspired tapering landmark rises above the far-bank skyline.
+// Distinct Pudong landmarks: Jin Mao's tiered crown and the World Financial Center frame Shanghai Tower.
+const pudongGold=mat(0xc5b18a,.38),pudongGlass=mat(0x6fa8c4,.28),pudongEdge=mat(0xc9d7dc,.4);
+// Jin Mao-inspired stepped tower.
+const jinMao=new THREE.Group();jinMao.position.set(18,0,221);scene.add(jinMao);
+for(let level=0;level<8;level++){
+ const w=5.8-level*.48,d=5.8-level*.48,h=5.6;
+ box(w,h,d,level%2?pudongGlass:pudongGold,0,level*h+h/2,0,jinMao);
+ box(w+.18,.12,d+.18,farTrimMat,0,(level+1)*h,0,jinMao);
+}
+const jinMaoSpire=new THREE.Mesh(new THREE.ConeGeometry(.42,7,8),farMetalMat);jinMaoSpire.position.y=8*5.6+3.4;jinMao.add(jinMaoSpire);
+// World Financial Center-inspired tower with its unmistakable framed crown.
+const wfc=new THREE.Group();wfc.position.set(-31,0,222);scene.add(wfc);
+box(8,43,7,pudongGlass,0,21.5,0,wfc);
+for(const side of [-1,1])box(.22,12,.24,farTrimMat,side*3.85,49,0,wfc);
+box(8.1,.28,7.1,farTrimMat,0,43,0,wfc);
+box(5.2,.35,7.15,pudongGlass,0,48.8,0,wfc);
+box(8.15,.22,7.15,farTrimMat,0,55,0,wfc);
+for(let wy=4;wy<41;wy+=3.2)box(8.04,.07,7.06,farTrimMat,0,wy,0,wfc);
+// Shanghai Tower remains the tallest, twisted glass landmark.
 const farShanghai=new THREE.Group();farShanghai.position.set(62,0,218);scene.add(farShanghai);
 const farCore=new THREE.Mesh(new THREE.CylinderGeometry(2.1,4.2,62,8,1),farGlassMat);farCore.position.y=31;farCore.rotation.y=Math.PI/8;farCore.castShadow=true;farShanghai.add(farCore);
 const farSpire=new THREE.Mesh(new THREE.ConeGeometry(.55,12,8),farMetalMat);farSpire.position.y=68;farShanghai.add(farSpire);
@@ -349,16 +368,40 @@ const occupied=[];
  });
 function building(x,z,w,d,h,color){
  const group=new THREE.Group();group.position.set(x,0,z);scene.add(group);
- box(w,h,d,mat(color),0,h/2,0,group);
+ const facadeMat=mat(color),classic=Math.abs(color===0xd8c9b2||color===0xd9d5c8||color===0xe0d7c7);
+ box(w,h,d,facadeMat,0,h/2,0,group);
+ // Layered cornices and a clear roofline make each block read as a real Shanghai street facade.
  box(w+.42,.24,d+.42,roofMat,0,h+.08,0,group);
+ box(w+.26,.13,d+.26,facadeTrim,0,h*.72,0,group);
  box(w+.22,.12,d+.22,facadeTrim,0,h*.56,d/2+.04,group);
- const cols=Math.max(2,Math.floor(w/2.1)), rows=Math.max(1,Math.floor(h/2.35));
+ const cols=Math.max(2,Math.floor(w/2.1)),rows=Math.max(1,Math.floor(h/2.35));
  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
   const wx=-w/2+(c+.5)*w/cols,wy=1.15+r*(h-1.6)/rows;
-  box(.68,.76,.04,windowMat,wx,wy,d/2+.035,group);
-  box(.045,.8,.045,facadeTrim,wx,wy,d/2+.065,group);
-  box(.72,.055,.07,facadeTrim,wx,wy-.41,d/2+.06,group);
+  const ww=Math.min(.68,w/cols*.56);
+  box(ww,.76,.045,windowMat,wx,wy,d/2+.035,group);
+  box(.045,.8,.055,facadeTrim,wx-ww*.58,wy,d/2+.065,group);
+  box(.045,.8,.055,facadeTrim,wx+ww*.58,wy,d/2+.065,group);
+  box(ww+.07,.055,.075,facadeTrim,wx,wy-.41,d/2+.06,group);
+  // Alternate buildings receive shallow projecting sills/balconies for a less repetitive skyline.
+  if(!classic&&r>0&&r<rows-1&&(c+r)%3===0){
+   box(ww+.16,.075,.24,facadeTrim,wx,wy-.43,d/2+.13,group);
+   box(.045,.2,.22,facadeTrim,wx-ww*.52,wy-.31,d/2+.2,group);
+   box(.045,.2,.22,facadeTrim,wx+ww*.52,wy-.31,d/2+.2,group);
+  }
  }
+ // Side-wall windows give the blocks depth when seen while driving around corners.
+ const sideRows=Math.max(1,Math.floor(h/3.1));
+ for(let r=0;r<sideRows;r++){
+  const wy=1.5+r*(h-2)/sideRows;
+  for(const side of [-1,1]){
+   box(.045,.62,Math.min(.62,d/Math.max(2,Math.floor(d/2.2))*.55),windowMat,side*(w/2+.025),wy,0,group);
+  }
+ }
+ // Vertical pilasters and a stronger ground-floor plinth evoke renovated Bund and Nanjing Road blocks.
+ for(const side of [-1,1]){
+  box(.12,h*.86,.1,facadeTrim,side*(w/2-.18),h*.49,d/2+.075,group);
+ }
+ box(w+.3,.22,d+.3,facadeTrim,0,.24,0,group);
  if(h>=9){
   const signY=Math.min(4.1,h*.34);
   box(w*.78,.72,.12,storefrontRed,0,signY,d/2+.11,group);
@@ -374,7 +417,12 @@ function building(x,z,w,d,h,color){
   box(.38,Math.min(2.8,h*.3),.13,storefrontRed,w/2-.32,Math.min(h*.52,5.2),d/2+.13,group);
   box(.43,.08,.16,signGold,w/2-.32,Math.min(h*.52,5.2)+Math.min(2.8,h*.3)/2,d/2+.14,group);
  }
- if(h>14){box(w*.28,.7,d*.3,roofMat,-w*.2,h+.52,0,group);box(w*.24,.45,d*.25,facadeTrim,w*.2,h+.4,0,group);}
+ if(h>14){
+  box(w*.28,.7,d*.3,roofMat,-w*.2,h+.52,0,group);
+  box(w*.24,.45,d*.25,facadeTrim,w*.2,h+.4,0,group);
+  // Water tank / lift core silhouette, common on dense city rooftops.
+  box(Math.min(1.8,w*.32),1.15,Math.min(1.8,d*.32),facadeTrim,w*.12,h+1.1,-d*.12,group);
+ }
  occupied.push({x,z,hw:w/2+.8,hd:d/2+.8});
 }
 for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
