@@ -348,183 +348,104 @@ function createMountainTunnel(x1,x2,z){
 }
 createMountainTunnel(108,140,100);
 createMountainTunnel(-108,-140,-100);
-// blocks of colourful low-poly buildings
-// Shanghai-inspired palette: warm stone, old-town brick, pale concrete and modern blue glass.
+// REBUILT SHANGHAI MAP: replace the previous generic block grid with two visibly different cartoon districts.
 const buildingColors=[0xd8c9b2,0xc8b6a0,0xaaaeb2,0x879eaa,0xd9d5c8,0x9b7770,0xb7c6c9,0xe0d7c7];
-const windowMat=mat(0x82bed3,.38), roofMat=mat(0x535b65), facadeTrim=mat(0xf0e5d1), storefrontRed=mat(0x9d3029), signGold=mat(0xe8bd65);
+const windowMat=mat(0x82bed3,.38),roofMat=mat(0x535b65),facadeTrim=mat(0xf0e5d1),storefrontRed=mat(0x9d3029),signGold=mat(0xe8bd65);
 const occupied=[];
- // Reuse a small atlas of Shanghai-style Chinese shop signs so the street reads as a lived-in city without creating a texture for every building.
- const shopSignLabels=['老上海面馆','海派便利店','小笼包','沪上茶饮','弄堂百货','城市修车','沪味小馆','南京路商店'];
- const shopSignMaterials=shopSignLabels.map((label,i)=>{
-  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;
-  const ctx=canvas.getContext('2d');
-  const colors=['#9d3029','#173e5a','#7d3429','#35624e','#62432f','#303943','#8a382d','#173f78'];
-  ctx.fillStyle=colors[i%colors.length];ctx.fillRect(0,0,512,128);
-  ctx.strokeStyle='#e8bd65';ctx.lineWidth=7;ctx.strokeRect(8,8,496,112);
-  ctx.fillStyle='#fff1cf';ctx.font='bold 54px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText(label,256,65,470);
-  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
-  return new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide});
- });
-function building(x,z,w,d,h,color){
- const group=new THREE.Group();group.position.set(x,0,z);scene.add(group);
- const facadeMat=mat(color),classic=Math.abs(color===0xd8c9b2||color===0xd9d5c8||color===0xe0d7c7);
- box(w,h,d,facadeMat,0,h/2,0,group);
- // Layered cornices and a clear roofline make each block read as a real Shanghai street facade.
- box(w+.42,.24,d+.42,roofMat,0,h+.08,0,group);
- box(w+.26,.13,d+.26,facadeTrim,0,h*.72,0,group);
- box(w+.22,.12,d+.22,facadeTrim,0,h*.56,d/2+.04,group);
- const cols=Math.max(2,Math.floor(w/2.1)),rows=Math.max(1,Math.floor(h/2.35));
+const shopSignLabels=['老上海面馆','海派便利店','小笼包','沪上茶饮','弄堂百货','城市修车','沪味小馆','南京路商店'];
+const shopSignMaterials=shopSignLabels.map((label,i)=>{
+ const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;
+ const ctx=canvas.getContext('2d');const colors=['#9d3029','#173e5a','#7d3429','#35624e','#62432f','#303943','#8a382d','#173f78'];
+ ctx.fillStyle=colors[i%colors.length];ctx.fillRect(0,0,512,128);ctx.strokeStyle='#e8bd65';ctx.lineWidth=7;ctx.strokeRect(8,8,496,112);
+ ctx.fillStyle='#fff1cf';ctx.font='bold 54px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,256,65,470);
+ const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+ return new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide});
+});
+const bundStoneMats=[mat(0xe6d7bd,.82),mat(0xd8c6a8,.86),mat(0xf0e3ca,.8),mat(0xcbb99d,.88)];
+const bundWindowMat=mat(0x4b7183,.48),bundTrimMat=mat(0xf5e7cc,.78),bundRoofMat=mat(0x59636a,.82),bundBronzeMat=mat(0x7b8c8d,.55);
+function bundBuilding(x,z,w,d,h,variant){
+ const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);const stone=bundStoneMats[variant%4];
+ box(w,h,d,stone,0,h/2,0,g);box(w+.8,.55,d+.65,stone,0,.28,0,g);
+ for(const fy of [h*.27,h*.51,h*.75])box(w+.42,.2,d+.34,bundTrimMat,0,fy,0,g);
+ box(w+1.25,.5,d+.9,bundTrimMat,0,h+.12,0,g);box(w+.7,.25,d+.55,bundRoofMat,0,h+.48,0,g);
+ const cols=Math.max(3,Math.floor(w/3.7)),rows=Math.max(3,Math.floor((h-3)/3.15)),winW=Math.min(1.12,w/(cols+1)*.48);
  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
-  const wx=-w/2+(c+.5)*w/cols,wy=1.15+r*(h-1.6)/rows;
-  const ww=Math.min(.68,w/cols*.56);
-  box(ww,.76,.045,windowMat,wx,wy,d/2+.035,group);
-  box(.045,.8,.055,facadeTrim,wx-ww*.58,wy,d/2+.065,group);
-  box(.045,.8,.055,facadeTrim,wx+ww*.58,wy,d/2+.065,group);
-  box(ww+.07,.055,.075,facadeTrim,wx,wy-.41,d/2+.06,group);
-  // Alternate buildings receive shallow projecting sills/balconies for a less repetitive skyline.
-  if(!classic&&r>0&&r<rows-1&&(c+r)%3===0){
-   box(ww+.16,.075,.24,facadeTrim,wx,wy-.43,d/2+.13,group);
-   box(.045,.2,.22,facadeTrim,wx-ww*.52,wy-.31,d/2+.2,group);
-   box(.045,.2,.22,facadeTrim,wx+ww*.52,wy-.31,d/2+.2,group);
-  }
+  const wx=-w/2+(c+1)*w/(cols+1),wy=2.1+r*(h-4)/rows;
+  box(winW,1.35,.065,bundWindowMat,wx,wy,d/2+.045,g);
+  box(winW+.22,.13,.12,bundTrimMat,wx,wy+.76,d/2+.09,g);box(winW+.25,.16,.14,bundTrimMat,wx,wy-.78,d/2+.09,g);
+  box(.09,1.52,.1,bundTrimMat,wx-winW*.57,wy,d/2+.1,g);box(.09,1.52,.1,bundTrimMat,wx+winW*.57,wy,d/2+.1,g);
  }
- // Side-wall windows give the blocks depth when seen while driving around corners.
- const sideRows=Math.max(1,Math.floor(h/3.1));
- for(let r=0;r<sideRows;r++){
-  const wy=1.5+r*(h-2)/sideRows;
-  for(const side of [-1,1]){
-   box(.045,.62,Math.min(.62,d/Math.max(2,Math.floor(d/2.2))*.55),windowMat,side*(w/2+.025),wy,0,group);
-  }
+ for(let p=-1;p<=1;p+=2)box(.32,h*.83,.25,bundTrimMat,p*(w/2-.65),h*.48,d/2+.12,g);
+ box(Math.min(2.6,w*.17),2.4,.16,bundRoofMat,0,1.45,d/2+.11,g);box(Math.min(2.25,w*.145),2.05,.12,bundBronzeMat,0,1.38,d/2+.22,g);
+ const ped=new THREE.Mesh(new THREE.ConeGeometry(w*.16,2.8,4),bundTrimMat);ped.position.set(0,h+.98,d/2-.05);ped.rotation.y=Math.PI/4;ped.scale.z=.38;g.add(ped);
+ if(variant%3!==1){
+  const rad=variant%3===0?2.05:1.55,dh=variant%3===0?1.25:1.65;
+  const drum=new THREE.Mesh(new THREE.CylinderGeometry(rad,rad*1.12,dh,10),bundTrimMat);drum.position.set(0,h+.48+dh/2,0);g.add(drum);
+  const dome=new THREE.Mesh(new THREE.SphereGeometry(rad,12,8,0,Math.PI*2,0,Math.PI/2),stone);dome.position.set(0,h+.48+dh,0);g.add(dome);
+  const cap=new THREE.Mesh(new THREE.ConeGeometry(.28,.9,8),bundBronzeMat);cap.position.set(0,h+.48+dh+rad*.9,0);g.add(cap);
+ }else{
+  box(w*.76,1.05,d*.76,bundRoofMat,0,h+.98,0,g);
+  for(const tx of [-1,1]){const t=new THREE.Mesh(new THREE.CylinderGeometry(.68,.9,1.8,8),bundTrimMat);t.position.set(tx*w*.34,h+1.7,0);g.add(t);const c=new THREE.Mesh(new THREE.ConeGeometry(.9,1.35,8),bundRoofMat);c.position.set(tx*w*.34,h+3.25,0);g.add(c);}
  }
- // Vertical pilasters and a stronger ground-floor plinth evoke renovated Bund and Nanjing Road blocks.
- for(const side of [-1,1]){
-  box(.12,h*.86,.1,facadeTrim,side*(w/2-.18),h*.49,d/2+.075,group);
+ // Roof balustrades and chunky arcade columns create a continuous cartoon historic streetscape.
+ const count=Math.max(4,Math.floor(w/4.2));
+ for(let a=0;a<=count;a++){const ax=-w/2+a*w/count;box(.22,2.65,.3,bundTrimMat,ax,1.55,d/2+.2,g);box(.42,.18,.38,bundTrimMat,ax,2.88,d/2+.2,g);box(.42,.2,.38,bundTrimMat,ax,.25,d/2+.2,g);}
+ for(let b=0;b<=Math.max(5,Math.floor(w/2.8));b++)box(.13,.72,.14,bundTrimMat,-w/2+b*w/Math.max(5,Math.floor(w/2.8)),h+.82,d/2+.18,g);
+ box(w+.18,.16,.28,bundTrimMat,0,h+1.2,d/2+.18,g);
+ occupied.push({x,z,hw:w/2+1.2,hd:d/2+1.2});
+}
+function shikumenBlock(x,z,w,d,h,variant){
+ const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
+ const brick=mat([0xb96e54,0xc58a6b,0xd1b08b,0x9f6b5d][variant%4]),trim=mat(0xe7d7bd),dark=mat(0x344d5b,.5);
+ box(w,h,d,brick,0,h/2,0,g);box(w+.28,.24,d+.25,trim,0,h+.08,0,g);box(w+.18,.18,d+.2,trim,0,.2,0,g);
+ const cols=Math.max(2,Math.floor(w/2.8)),rows=Math.max(2,Math.floor(h/2.8));
+ for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+  const wx=-w/2+(c+.5)*w/cols,wy=1.3+r*(h-1.5)/rows,ww=Math.min(.72,w/cols*.5);
+  box(ww,.88,.06,dark,wx,wy,d/2+.04,g);box(ww+.18,.12,.12,trim,wx,wy+.5,d/2+.08,g);
+  box(.09,.98,.1,trim,wx-ww*.62,wy,d/2+.09,g);box(.09,.98,.1,trim,wx+ww*.62,wy,d/2+.09,g);
  }
- box(w+.3,.22,d+.3,facadeTrim,0,.24,0,group);
- if(h>=9){
-  const signY=Math.min(4.1,h*.34);
-  box(w*.78,.72,.12,storefrontRed,0,signY,d/2+.11,group);
-  const shopFace=new THREE.Mesh(new THREE.PlaneGeometry(w*.74,.58),shopSignMaterials[Math.floor(Math.random()*shopSignMaterials.length)]);
-  shopFace.position.set(0,signY,d/2+.176);group.add(shopFace);
-  box(w*.8,.09,.15,signGold,0,signY+.4,d/2+.12,group);
-  box(w*.8,.07,.15,signGold,0,signY-.4,d/2+.12,group);
-  for(let ai=0;ai<Math.floor(w*.9);ai++){
-   const ax=-w*.34+ai*.68;
-   box(.25,.22,.58,ai%2===0?facadeTrim:storefrontRed,ax,signY-.65,d/2+.34,group);
-  }
-  box(Math.min(1.1,w*.2),1.8,.08,mat(0x493c35),-w*.27,1.05,d/2+.07,group);
-  box(.38,Math.min(2.8,h*.3),.13,storefrontRed,w/2-.32,Math.min(h*.52,5.2),d/2+.13,group);
-  box(.43,.08,.16,signGold,w/2-.32,Math.min(h*.52,5.2)+Math.min(2.8,h*.3)/2,d/2+.14,group);
- }
- if(h>14){
-  box(w*.28,.7,d*.3,roofMat,-w*.2,h+.52,0,group);
-  box(w*.24,.45,d*.25,facadeTrim,w*.2,h+.4,0,group);
-  // Water tank / lift core silhouette, common on dense city rooftops.
-  box(Math.min(1.8,w*.32),1.15,Math.min(1.8,d*.32),facadeTrim,w*.12,h+1.1,-d*.12,group);
+ for(let a=-1;a<=1;a+=2)box(.14,h*.82,.12,trim,a*(w/2-.22),h*.48,d/2+.08,g);
+ if(h>10){box(w*.8,.5,d*.82,roofMat,0,h+.38,0,g);box(w*.35,.7,d*.35,trim,0,h+.82,0,g);}
+ if(w>7){
+  const sy=2.7,sw=w*.78;box(sw,.65,.14,storefrontRed,0,sy,d/2+.1,g);
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(sw*.94,.5),shopSignMaterials[(variant+3)%shopSignMaterials.length]);face.position.set(0,sy,d/2+.19);g.add(face);
+  box(sw,.08,.18,signGold,0,sy+.36,d/2+.12,g);
  }
  occupied.push({x,z,hw:w/2+.8,hd:d/2+.8});
 }
+function glassTower(x,z,w,d,h,variant){
+ const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
+ const glass=mat([0x62a9c8,0x78bdd3,0x547f9f,0x9bcbd8][variant%4],.28),edge=mat(0xc6d9df,.42),shadow=mat(0x36566d,.5);
+ box(w,h,d,glass,0,h/2,0,g);
+ for(let xx=-w/2;xx<=w/2+.01;xx+=Math.max(1.5,w/4))box(.12,h,d+.12,edge,xx,h/2,0,g);
+ for(let yy=3;yy<h;yy+=3.1)box(w+.08,.1,d+.08,edge,0,yy,0,g);
+ box(w+1,.32,d+1,edge,0,h+.12,0,g);
+ if(variant%3===0){const crown=new THREE.Mesh(new THREE.ConeGeometry(w*.32,Math.min(8,h*.18),4),edge);crown.position.set(0,h+3,0);crown.rotation.y=Math.PI/4;g.add(crown);}
+ if(variant%3===1){box(w*.82,.22,d*.82,shadow,0,h*.72,0,g);box(w*.66,.22,d*.66,edge,0,h*.85,0,g);}
+ if(variant%3===2){box(w*.45,1.2,d*.45,edge,0,h+0.8,0,g);const sp=new THREE.Mesh(new THREE.ConeGeometry(.32,5,8),edge);sp.position.y=h+3.8;g.add(sp);}
+ occupied.push({x,z,hw:w/2+1,hd:d/2+1});
+}
+// A new, deliberately composed district plan replaces the former random building scatter.
+// North edge: a continuous Bund-style historic row, placed BETWEEN streets rather than on top of the road.
+const bundXs=[-104,-78,-52,-26,0,26,52,78,104];
+for(let i=0;i<bundXs.length;i++)bundBuilding(bundXs[i],80,[20,22,19][i%3],[12,13,12][i%3],[22,27,24,31,23,29,25,32,22][i],i);
+// Inner residential blocks: recognizable Shanghai shikumen / lilong brick-and-stone low-rise buildings.
 for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
-  if(gx===0||gz===0)continue;
-  const cx=gx*40,cz=gz*40;
-  const sites=[[-10,-10],[10,-10],[-10,10],[10,10]];
-  for(let i=0;i<sites.length;i++){
-   if(gx===1&&gz===1&&(i===0||i===1))continue;
-   const x=cx+sites[i][0]+(Math.random()-.5)*2.2,z=cz+sites[i][1]+(Math.random()-.5)*2.2;
-   const w=6+Math.random()*3.2,d=6+Math.random()*3.2,h=8+Math.random()*25;
-   building(x,z,w,d,h,buildingColors[Math.floor(Math.random()*buildingColors.length)]);
-   if(Math.random()>.45)box(1.1,.8,1.1,roofMat,x+(Math.random()-.5)*w*.35,h+.62,z+(Math.random()-.5)*d*.35);
-  }
+ if(gx===0||gz===0)continue;
+ const cx=gx*40,cz=gz*40;
+ if(Math.abs(cz-80)<22)continue;
+ for(let j=0;j<3;j++){
+  const x=cx+(j-1)*8+(gx%2?1:-1),z=cz+(j%2?7:-7);
+  if(Math.abs(z-80)<17)continue;
+  shikumenBlock(x,z,6.5+(j%2)*1.2,6.2,8+(j%3)*2,(Math.abs(gx*3+gz+j))%4);
  }
-
- // The Bund gets its own low-poly historic stone ensemble, separate from the glass towers across the river.
- // Keep this row behind the waterfront road so the player experiences a clear architectural transition while driving.
- const bundStoneMats=[mat(0xe6d7bd,.82),mat(0xd8c6a8,.86),mat(0xf0e3ca,.8),mat(0xcbb99d,.88)];
- const bundWindowMat=mat(0x4b7183,.48),bundTrimMat=mat(0xf5e7cc,.78),bundRoofMat=mat(0x59636a,.82),bundBronzeMat=mat(0x7b8c8d,.55);
- function bundBuilding(x,z,w,d,h,variant){
-  const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
-  const stone=bundStoneMats[variant%bundStoneMats.length];
-  box(w,h,d,stone,0,h/2,0,g);
-  // Broad plinth, repeated floor bands, projecting cornice and parapet establish a classical silhouette.
-  box(w+.8,.55,d+.65,stone,0,.28,0,g);
-  for(const fy of [h*.27,h*.51,h*.75])box(w+.42,.2,d+.34,bundTrimMat,0,fy,0,g);
-  box(w+1.25,.5,d+.9,bundTrimMat,0,h+.12,0,g);
-  box(w+.7,.25,d+.55,bundRoofMat,0,h+.48,0,g);
-  const cols=Math.max(3,Math.floor(w/3.7)),rows=Math.max(3,Math.floor((h-3)/3.15));
-  const winW=Math.min(1.12,w/(cols+1)*.48);
-  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
-   const wx=-w/2+(c+1)*w/(cols+1),wy=2.1+r*(h-4)/rows;
-   box(winW,1.35,.065,bundWindowMat,wx,wy,d/2+.045,g);
-   box(winW+.22,.13,.12,bundTrimMat,wx,wy+.76,d/2+.09,g);
-   box(winW+.25,.16,.14,bundTrimMat,wx,wy-.78,d/2+.09,g);
-   box(.09,1.52,.1,bundTrimMat,wx-winW*.57,wy,d/2+.1,g);
-   box(.09,1.52,.1,bundTrimMat,wx+winW*.57,wy,d/2+.1,g);
-  }
-  // Tall pilasters and a strong central entrance make the facade read as an old civic/bank building.
-  for(let p=-1;p<=1;p+=2)box(.32,h*.83,.25,bundTrimMat,p*(w/2-.65),h*.48,d/2+.12,g);
-  box(Math.min(2.6,w*.17),2.4,.16,bundRoofMat,0,1.45,d/2+.11,g);
-  box(Math.min(2.25,w*.145),2.05,.12,bundBronzeMat,0,1.38,d/2+.22,g);
-  // Arcade-like ground floor: chunky pale columns and simple arches create a continuous historic street rhythm.
-  const arcadeCount=Math.max(4,Math.floor(w/4.2));
-  for(let ai=0;ai<=arcadeCount;ai++){
-   const ax=-w/2+ai*w/arcadeCount;
-   box(.22,2.65,.3,bundTrimMat,ax,1.55,d/2+.2,g);
-   box(.42,.18,.38,bundTrimMat,ax,2.88,d/2+.2,g);
-   box(.42,.2,.38,bundTrimMat,ax,.25,d/2+.2,g);
-  }
-  // A bold entrance canopy and keystones make the ground floor legible at driving speed.
-  box(w*.58,.22,.48,bundTrimMat,0,3.15,d/2+.22,g);
-  for(let c=0;c<cols;c++){
-   const wx=-w/2+(c+1)*w/(cols+1);
-   const wy=2.1+(rows-1)*(h-4)/rows;
-   box(.18,.24,.15,bundBronzeMat,wx,wy+.92,d/2+.13,g);
-  }
-  // Low parapet balusters repeat along the roofline; every third building gets corner turrets.
-  const balusters=Math.max(5,Math.floor(w/2.8));
-  for(let bp=0;bp<=balusters;bp++){
-   const bx=-w/2+bp*w/balusters;
-   box(.13,.72,.14,bundTrimMat,bx,h+.82,d/2+.18,g);
-  }
-  box(w+.18,.16,.28,bundTrimMat,0,h+1.2,d/2+.18,g);
-  if(variant%3===2){
-   for(const tx of [-1,1]){
-    const towerX=tx*(w*.43);
-    box(2.1,2.4,2.1,stone,towerX,h+1.55,0,g);
-    box(2.35,.24,2.35,bundTrimMat,towerX,h+2.82,0,g);
-    const roof=new THREE.Mesh(new THREE.ConeGeometry(1.5,2.5,8),bundRoofMat);
-    roof.position.set(towerX,h+4.15,0);g.add(roof);
-   }
-  }
-  // Central pediment: a simple triangular cartoon roof ornament, not a photorealistic copy.
-  const ped=new THREE.Mesh(new THREE.ConeGeometry(w*.16,2.8,4),bundTrimMat);
-  ped.position.set(0,h+.98,d/2-.05);ped.rotation.y=Math.PI/4;ped.scale.z=.38;ped.castShadow=true;g.add(ped);
-  if(variant%3!==1){
-   const drumH=variant%3===0?1.25:1.65,rad=variant%3===0?2.05:1.55;
-   const drum=new THREE.Mesh(new THREE.CylinderGeometry(rad,rad*1.12,drumH,10),bundTrimMat);
-   drum.position.set(0,h+.48+drumH/2,0);drum.castShadow=true;g.add(drum);
-   const dome=new THREE.Mesh(new THREE.SphereGeometry(rad,12,8,0,Math.PI*2,0,Math.PI/2),stone);
-   dome.position.set(0,h+.48+drumH,0);dome.castShadow=true;g.add(dome);
-   const cap=new THREE.Mesh(new THREE.ConeGeometry(.28,.9,8),bundBronzeMat);
-   cap.position.set(0,h+.48+drumH+rad*.9,0);g.add(cap);
-  }else{
-   // Alternate blocks use a stepped mansard-like roof and small corner turrets for variety.
-   box(w*.76,1.05,d*.76,bundRoofMat,0,h+.98,0,g);
-   for(const tx of [-1,1]){
-    const turret=new THREE.Mesh(new THREE.CylinderGeometry(.68,.9,1.8,8),bundTrimMat);
-    turret.position.set(tx*(w*.34),h+1.7,0);g.add(turret);
-    const cap=new THREE.Mesh(new THREE.ConeGeometry(.9,1.35,8),bundRoofMat);
-    cap.position.set(tx*(w*.34),h+3.25,0);g.add(cap);
-   }
-  }
-  occupied.push({x,z,hw:w/2+1.2,hd:d/2+1.2});
- }
- const bundXs=[-104,-78,-52,-26,0,26,52,78,104];
- for(let bi=0;bi<bundXs.length;bi++){
-  const bw=bi%3===0?20:bi%3===1?22:19;
-  const bh=[22,27,24,31,23,29,25,32,22][bi];
-  bundBuilding(bundXs[bi],101,bw,12,bh,bi);
- }
+}
+// Modern skyline district to the south-east: clearly blue glass towers rather than old stone blocks.
+for(const t of [
+ {x:40,z:-42,w:8,d:8,h:29,v:0},{x:54,z:-50,w:7,d:8,h:39,v:2},{x:70,z:-42,w:9,d:9,h:33,v:1},
+ {x:42,z:-72,w:7,d:7,h:24,v:3},{x:58,z:-76,w:9,d:8,h:45,v:0},{x:77,z:-70,w:7,d:8,h:31,v:2},
+ {x:-42,z:-42,w:7,d:8,h:21,v:3},{x:-58,z:-50,w:8,d:8,h:28,v:1},{x:-76,z:-42,w:7,d:7,h:19,v:0}
+])glassTower(t.x,t.z,t.w,t.d,t.h,t.v);
 
 // Stylized Shanghai skyline landmarks occupy reserved central plots.
 const landmarkPink=mat(0xd65d91,.3),landmarkMetal=mat(0x9baeb8,.35),landmarkGlass=mat(0x79b9d8,.28);
