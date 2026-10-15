@@ -351,6 +351,19 @@ createMountainTunnel(-108,-140,-100);
 const buildingColors=[0xd8c9b2,0xc8b6a0,0xaaaeb2,0x879eaa,0xd9d5c8,0x9b7770,0xb7c6c9,0xe0d7c7];
 const windowMat=mat(0x82bed3,.38), roofMat=mat(0x535b65), facadeTrim=mat(0xf0e5d1), storefrontRed=mat(0x9d3029), signGold=mat(0xe8bd65);
 const occupied=[];
+ // Reuse a small atlas of Shanghai-style Chinese shop signs so the street reads as a lived-in city without creating a texture for every building.
+ const shopSignLabels=['老上海面馆','海派便利店','小笼包','沪上茶饮','弄堂百货','城市修车','沪味小馆','南京路商店'];
+ const shopSignMaterials=shopSignLabels.map((label,i)=>{
+  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;
+  const ctx=canvas.getContext('2d');
+  const colors=['#9d3029','#173e5a','#7d3429','#35624e','#62432f','#303943','#8a382d','#173f78'];
+  ctx.fillStyle=colors[i%colors.length];ctx.fillRect(0,0,512,128);
+  ctx.strokeStyle='#e8bd65';ctx.lineWidth=7;ctx.strokeRect(8,8,496,112);
+  ctx.fillStyle='#fff1cf';ctx.font='bold 54px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(label,256,65,470);
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+  return new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide});
+ });
 function building(x,z,w,d,h,color){
  const group=new THREE.Group();group.position.set(x,0,z);scene.add(group);
  box(w,h,d,mat(color),0,h/2,0,group);
@@ -366,6 +379,8 @@ function building(x,z,w,d,h,color){
  if(h>=9){
   const signY=Math.min(4.1,h*.34);
   box(w*.78,.72,.12,storefrontRed,0,signY,d/2+.11,group);
+  const shopFace=new THREE.Mesh(new THREE.PlaneGeometry(w*.74,.58),shopSignMaterials[Math.floor(Math.random()*shopSignMaterials.length)]);
+  shopFace.position.set(0,signY,d/2+.176);group.add(shopFace);
   box(w*.8,.09,.15,signGold,0,signY+.4,d/2+.12,group);
   box(w*.8,.07,.15,signGold,0,signY-.4,d/2+.12,group);
   for(let ai=0;ai<Math.floor(w*.9);ai++){
