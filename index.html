@@ -1086,7 +1086,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
   const aim=findAimedPedestrian();
   let hitPed=aim?.pedestrian||null,hitPoint=aim?.point||null;
   const origin=new THREE.Vector3();
-  if(pistolVisual)pistolVisual.getWorldPosition(origin);else camera.getWorldPosition(origin);
+  if(pistolVisual)pistolVisual.localToWorld(origin.set(0,.01,-.83));else camera.getWorldPosition(origin);
   if(hitPed&&hitPoint){
    const muzzleBlocker=getMuzzleBlocker(hitPoint,hitPed,origin);
    if(muzzleBlocker){hitPed=null;hitPoint=muzzleBlocker;}
@@ -1849,11 +1849,11 @@ function updateOnFoot(dt,now){
  const aimReach=8.5;
  cameraAimTarget.set(
   cameraPivot.x+Math.sin(cameraYaw)*horizontal*aimReach+cameraRight.x*(precisionAimMode?-.92:-.72),
-  cameraPivot.y+vertical*aimReach+3.0,
+  cameraPivot.y+vertical*aimReach,
   cameraPivot.z+Math.cos(cameraYaw)*horizontal*aimReach+cameraRight.z*(precisionAimMode?-.92:-.72)
  );
  camera.lookAt(cameraAimTarget);
- pistolVisual.rotation.x=THREE.MathUtils.clamp(cameraPitch,-.45,.55);
+ pistolVisual.rotation.x=THREE.MathUtils.clamp(cameraPitch,-1.0,.35);
  camera.updateMatrixWorld(true);
  updateAimReticle();
  speedEl.innerHTML='0<span>KM/H</span>';
