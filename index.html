@@ -723,6 +723,7 @@ function flashHitConfirm(){
  clearTimeout(hitConfirmTimer);
  hitConfirmTimer=setTimeout(()=>crosshair.classList.remove('hit-confirm'),130);
 }
+function interruptHostileWindup(p){if(!p?.hostile)return;p.attackWindup=0;if(p.attackMarker)p.attackMarker.material.color.setHex(0xff3535);}
 function punchNearby(){
  if(!onFoot||punchCooldown>0)return;
  punchCooldown=.42;punchAnim=1;
@@ -737,7 +738,7 @@ function punchNearby(){
  }
  if(hit){
   flashHitConfirm();
-  hit.health=(hit.health??(hit.hostile?55:100))-34;hit.stun=.85;
+  hit.health=(hit.health??(hit.hostile?55:100))-34;hit.stun=.85;interruptHostileWindup(hit);
   if(hit.health>0){
    hit.knockdownTimer=.72;hit.knockdownDuration=.72;hit.knockdownSide=Math.random()<.5?Math.PI/2:-Math.PI/2;
   }
@@ -911,7 +912,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
   scene.add(beam);setTimeout(()=>{scene.remove(beam);beamGeometry.dispose();beam.material.dispose();},75);
   if(!hitPed){showMissionToast('🔫 未命中：检查准星与枪口之间是否有障碍物');return;}
   flashHitConfirm();
-  hitPed.health=(hitPed.health??(hitPed.hostile?55:100))-34;hitPed.stun=.85;hitPed.fleeTime=hitPed.hostile?0:7;hitPed.reportTimer=1.6;hitPed.reported=false;
+  hitPed.health=(hitPed.health??(hitPed.hostile?55:100))-34;hitPed.stun=.85;interruptHostileWindup(hitPed);hitPed.fleeTime=hitPed.hostile?0:7;hitPed.reportTimer=1.6;hitPed.reported=false;
   if(hitPed.health>0){
    hitPed.knockdownTimer=.72;hitPed.knockdownDuration=.72;hitPed.knockdownSide=Math.random()<.5?Math.PI/2:-Math.PI/2;
   }
@@ -1543,7 +1544,7 @@ function updateCombatAI(dt,now){
 function updateOnFoot(dt,now){
  punchCooldown=Math.max(0,punchCooldown-dt);
  punchAnim=Math.max(0,punchAnim-dt*3.8);
- punchArm.rotation.x=Math.sin((1-punchAnim)*Math.PI)*1.18*punchAnim;
+ const punchPhase=Math.sin((1-punchAnim)*Math.PI);punchArm.rotation.x=punchPhase*2.2*punchAnim;leftArm.rotation.x=-punchPhase*.28*punchAnim;
  const forward=keys.has('KeyW')||keys.has('ArrowUp'),back=keys.has('KeyS')||keys.has('ArrowDown');
  const left=keys.has('KeyA')||keys.has('ArrowLeft'),right=keys.has('KeyD')||keys.has('ArrowRight');
  const keyFwd=(forward?1:0)-(back?1:0),keySide=(right?1:0)-(left?1:0);
