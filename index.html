@@ -691,7 +691,7 @@ const avatarVisual=new THREE.Group();avatarVisual.rotation.y=Math.PI;playerAvata
 // Keep the fallback human model in its own group so loading the animated model cannot detach or hide it.
 const fallbackAvatar=new THREE.Group();avatarVisual.add(fallbackAvatar);
 // Roblox-inspired blocky avatar: square head, torso, hands and feet, with animated hinged limbs.
-const skinMat=mat(0xd6a17d), shirtMat=mat(0x2477d4), pantsMat=mat(0x26364a), shoeMat=mat(0x20242b);
+const skinMat=mat(0xc98e68), shirtMat=mat(0x252a30), pantsMat=mat(0x234a86), shoeMat=mat(0x171b22);
 const avatarBody=new THREE.Mesh(new THREE.BoxGeometry(.62,.78,.42),shirtMat);
 avatarBody.position.set(0,1.17,0);fallbackAvatar.add(avatarBody);
 const avatarChest=new THREE.Mesh(new THREE.BoxGeometry(.54,.36,.43),shirtMat);
@@ -702,6 +702,18 @@ const avatarHead=new THREE.Mesh(new THREE.BoxGeometry(.48,.48,.45),skinMat);
 avatarHead.position.set(0,1.86,0);fallbackAvatar.add(avatarHead);
 const avatarHair=new THREE.Mesh(new THREE.BoxGeometry(.5,.13,.47),mat(0x292522));
 avatarHair.position.set(0,2.12,.012);fallbackAvatar.add(avatarHair);
+ // Chunky dark hairline and simple brows give the block character a more game-ready face.
+ for(const x of [-.09,.09]){const brow=new THREE.Mesh(new THREE.BoxGeometry(.065,.025,.025),mat(0x292522));brow.position.set(x,1.925,-.25);fallbackAvatar.add(brow);}
+ // Compact dark tactical backpack, visible from the over-the-shoulder camera.
+ const backpackMat=mat(0x171d27),packTrim=mat(0x394553);
+ box(.48,.62,.2,backpackMat,0,1.17,.29,fallbackAvatar);
+ box(.34,.18,.055,packTrim,0,1.22,.405,fallbackAvatar);
+ box(.12,.38,.045,packTrim,-.16,1.16,.405,fallbackAvatar);
+ box(.12,.38,.045,packTrim,.16,1.16,.405,fallbackAvatar);
+ // Dark jacket panels and a small utility belt break up the torso silhouette.
+ box(.12,.5,.035,mat(0x39414c),-.22,1.2,-.225,fallbackAvatar);
+ box(.12,.5,.035,mat(0x39414c),.22,1.2,-.225,fallbackAvatar);
+ box(.58,.1,.45,mat(0x171d27),0,.79,0,fallbackAvatar);
 // Eyes face toward -Z, the direction the character walks when facing forward.
 for(const x of [-.09,.09]){
  const eye=new THREE.Mesh(new THREE.BoxGeometry(.045,.045,.018),mat(0x26211f));
@@ -716,16 +728,19 @@ function addHand(parent,y){
  hand.position.set(0,y,-.015);parent.add(hand);return hand;
 }
 const leftArm=new THREE.Group();leftArm.position.set(-.39,1.48,0);fallbackAvatar.add(leftArm);
-addLimbSegment(leftArm,shirtMat,.105,.34,-.18);
-addLimbSegment(leftArm,skinMat,.078,.32,-.49);
+addLimbSegment(leftArm,shirtMat,.115,.34,-.18);
+addLimbSegment(leftArm,skinMat,.082,.32,-.49);
 addHand(leftArm,-.68);
 const punchArm=new THREE.Group();punchArm.position.set(.39,1.48,0);fallbackAvatar.add(punchArm);
-addLimbSegment(punchArm,shirtMat,.11,.34,-.18);
-addLimbSegment(punchArm,skinMat,.08,.34,-.49);
+addLimbSegment(punchArm,shirtMat,.12,.34,-.18);
+addLimbSegment(punchArm,skinMat,.084,.34,-.49);
 addHand(punchArm,-.69);
+// Arms are held forward in a compact two-handed pistol stance; camera controls remain unchanged.
+leftArm.rotation.x=.72;
+punchArm.rotation.x=.48;
 // Keep the pistol visible with either the fallback or animated character model.
 const pistolMat=mat(0x252a30,.55),pistolGripMat=mat(0x111820,.8);
-const pistolVisual=new THREE.Group();pistolVisual.position.set(.4,1.12,-.42);avatarVisual.add(pistolVisual);
+const pistolVisual=new THREE.Group();pistolVisual.position.set(.34,1.38,-.55);avatarVisual.add(pistolVisual);
 box(.13,.13,.34,pistolMat,0,0,-.08,pistolVisual);
 box(.105,.22,.12,pistolGripMat,0,-.12,.03,pistolVisual);
 box(.07,.07,.19,mat(0x080b0f,.4),0,.02,-.29,pistolVisual);
@@ -1604,7 +1619,7 @@ function updateCombatAI(dt,now){
 function updateOnFoot(dt,now){
  punchCooldown=Math.max(0,punchCooldown-dt);
  punchAnim=Math.max(0,punchAnim-dt*3.8);
- const punchPhase=Math.sin((1-punchAnim)*Math.PI);punchArm.rotation.x=punchPhase*2.2*punchAnim;leftArm.rotation.x=-punchPhase*.28*punchAnim;
+ const punchPhase=Math.sin((1-punchAnim)*Math.PI);punchArm.rotation.x=.48+punchPhase*1.65*punchAnim;leftArm.rotation.x=.72-punchPhase*.18*punchAnim;
  const forward=keys.has('KeyW')||keys.has('ArrowUp'),back=keys.has('KeyS')||keys.has('ArrowDown');
  const left=keys.has('KeyA')||keys.has('ArrowLeft'),right=keys.has('KeyD')||keys.has('ArrowRight');
  const keyFwd=(forward?1:0)-(back?1:0),keySide=(right?1:0)-(left?1:0);
