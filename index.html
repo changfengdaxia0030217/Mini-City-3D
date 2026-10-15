@@ -792,8 +792,14 @@ const avatarHead=new THREE.Mesh(new THREE.BoxGeometry(.48,.48,.45),skinMat);
 avatarHead.position.set(0,1.86,0);fallbackAvatar.add(avatarHead);
 const avatarHair=new THREE.Mesh(new THREE.BoxGeometry(.5,.13,.47),mat(0x292522));
 avatarHair.position.set(0,2.12,.012);fallbackAvatar.add(avatarHair);
- // Chunky dark hairline and simple brows give the block character a more game-ready face.
- for(const x of [-.09,.09]){const brow=new THREE.Mesh(new THREE.BoxGeometry(.065,.025,.025),mat(0x292522));brow.position.set(x,1.925,-.25);fallbackAvatar.add(brow);}
+ // Simple square eyes and brows make the face read clearly at gameplay distance.
+ const eyeWhite=mat(0xf2eee4),eyeDark=mat(0x1d242b),mouthMat=mat(0x70463c);
+ for(const x of [-.09,.09]){
+  const eye=new THREE.Mesh(new THREE.BoxGeometry(.065,.06,.025),eyeWhite);eye.position.set(x,1.865,-.244);fallbackAvatar.add(eye);
+  const pupil=new THREE.Mesh(new THREE.BoxGeometry(.027,.036,.012),eyeDark);pupil.position.set(x,1.865,-.263);fallbackAvatar.add(pupil);
+  const brow=new THREE.Mesh(new THREE.BoxGeometry(.065,.022,.025),mat(0x292522));brow.position.set(x,1.925,-.25);fallbackAvatar.add(brow);
+ }
+ const avatarMouth=new THREE.Mesh(new THREE.BoxGeometry(.105,.022,.018),mouthMat);avatarMouth.position.set(0,1.785,-.242);fallbackAvatar.add(avatarMouth);
  // Compact dark tactical backpack, visible from the over-the-shoulder camera.
  const backpackMat=mat(0x171d27),packTrim=mat(0x394553);
  box(.48,.62,.2,backpackMat,0,1.17,.29,fallbackAvatar);
