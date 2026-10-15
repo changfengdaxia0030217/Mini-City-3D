@@ -1109,7 +1109,16 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
    const muzzleBlocker=getMuzzleBlocker(hitPoint,hitPed,origin);
    if(muzzleBlocker){hitPed=null;hitPoint=muzzleBlocker;}
   }
-  const end=hitPoint||origin.clone().add(weaponRaycaster.ray.direction.clone().multiplyScalar(45));
+  // When no NPC is selected, extend the camera-centre aim line through a
+  // distant point, then re-aim from the muzzle to that point. This removes the
+  // visible parallax between the third-person camera ray and the rifle tracer.
+  let end;
+  if(hitPoint)end=hitPoint.clone();
+  else{
+   const cameraAimPoint=weaponRaycaster.ray.origin.clone().add(weaponRaycaster.ray.direction.clone().multiplyScalar(45));
+   const muzzleDirection=cameraAimPoint.sub(origin).normalize();
+   end=origin.clone().add(muzzleDirection.multiplyScalar(45));
+  }
   const beamGeometry=new THREE.BufferGeometry().setFromPoints([origin,end]);
   const beam=new THREE.Line(beamGeometry,new THREE.LineBasicMaterial({color:hitPed?0xffd45b:0xfff0b5,transparent:true,opacity:.95}));
   scene.add(beam);setTimeout(()=>{scene.remove(beam);beamGeometry.dispose();beam.material.dispose();},75);
