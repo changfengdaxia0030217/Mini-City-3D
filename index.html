@@ -432,6 +432,9 @@ for(let i=0;i<bundXs.length;i++)bundBuilding(bundXs[i],80,[20,22,19][i%3],[12,13
 // Inner residential blocks: recognizable Shanghai shikumen / lilong brick-and-stone low-rise buildings.
 for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
  if(gx===0||gz===0)continue;
+ // Reserve the landmark plaza and the south-east glass-tower district; do not bury them under low-rise blocks.
+ if(gx===1&&gz===1)continue;
+ if(gx>0&&gz<0)continue;
  const cx=gx*40,cz=gz*40;
  if(Math.abs(cz-80)<22)continue;
  for(let j=0;j<3;j++){
