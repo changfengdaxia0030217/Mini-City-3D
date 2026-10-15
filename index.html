@@ -155,25 +155,7 @@ function road(x,z,w,d){
 }
 road(0,0,240,13);road(0,0,13,240);
 for(const p of [-60,60]){road(0,p,240,11);road(p,0,11,240)}
-// Shanghai streetscape details: sidewalk lamp posts and Chinese wayfinding signs.
-function addStreetLamp(x,z,rotation=0){
- const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rotation;scene.add(g);
- const metal=mat(0x252d36,.62),warmGlass=new THREE.MeshStandardMaterial({color:0xffe6a3,emissive:0xffbd55,emissiveIntensity:.38,roughness:.35});
- const pole=new THREE.Mesh(new THREE.CylinderGeometry(.075,.11,3.8,8),metal);pole.position.y=1.9;g.add(pole);
- const arm=box(.08,.08,.72,metal,.0,3.55,-.34,g);
- const lamp=box(.38,.18,.42,warmGlass,0,3.48,-.67,g);
- box(.46,.07,.5,metal,0,3.59,-.67,g);
- const base=box(.32,.2,.32,metal,0,.1,0,g);
- return g;
-}
-for(const z of [-60,0,60])for(const x of [-108,-84,-36,-12,12,36,84,108]){
- addStreetLamp(x,z+(z===0?9.35:8.0),0);
- addStreetLamp(x,z-(z===0?9.35:8.0),Math.PI);
-}
-for(const x of [-60,0,60])for(const z of [-108,-84,-36,-12,12,36,84,108]){
- addStreetLamp(x+(x===0?9.35:8.0),z,Math.PI/2);
- addStreetLamp(x-(x===0?9.35:8.0),z,-Math.PI/2);
-}
+// Street lamps removed for a cleaner, more open Shanghai street silhouette.
 function addChineseWayfindingSign(x,z,rotation,label,subLabel){
  const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rotation;scene.add(g);
  const poleMat=mat(0x313b45,.55),signBlue=mat(0x15549a,.42),white=mat(0xf4f4eb);
@@ -322,7 +304,8 @@ function createRiverBridge(x){
   wall.position.set(x+side*6.15,-.12,16);wall.castShadow=true;wall.receiveShadow=true;scene.add(wall);
  }
 }
-for(const x of [-100,-60,0,60,100])createRiverBridge(x);
+// Keep only three prominent crossings on the central city roads; outer-ring roads remain flat causeways.
+for(const x of [-60,0,60])createRiverBridge(x);
 // Drive-through mountain tunnels on the outer ring road.
 function createMountainTunnel(x1,x2,z){
  const stone=mat(0x737c7d,.95),inner=mat(0x202a31,.98),rim=mat(0x4b555b,.9),glow=mat(0xffd98b,.5);
@@ -532,13 +515,7 @@ function createRepairGarage(){
 }
 createRepairGarage();
 
-// Street lights pivot and fall when hit by a vehicle.
-for(const axis of ['x','z'])for(let p=-100;p<=100;p+=20)for(const side of [-1,1]){
- const x=axis==='x'?p:side*10,z=axis==='z'?p:side*10,group=new THREE.Group();group.position.set(x,0,z);scene.add(group);
- box(.16,3,.16,mat(0x475563),0,1.5,0,group);
- box(.9,.16,.35,mat(0xfff1b3),axis==='x'?.3:0,3,axis==='z'?.3:0,group);
- destructibleProps.push({kind:'lamp',group,x,z,radius:1.25,fallen:false});
-}
+// Streetlight props removed; keep destructible props limited to intentional roadside obstacles.
 
 // car group: local forward is negative Z
 const car=new THREE.Group();scene.add(car);
