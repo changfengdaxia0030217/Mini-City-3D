@@ -138,7 +138,21 @@ const grassMat=mat(0x7fc16c), roadMat=mat(0x424d5a), sidewalkMat=mat(0xd7d5c9), 
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(300,300),grassMat);ground.rotation.x=-Math.PI/2;ground.position.y=-.12;ground.receiveShadow=true;scene.add(ground);
 
 function box(w,h,d,material,x,y,z, parent=scene){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
-function road(x,z,w,d){box(w,.08,d,roadMat,x,0,z); if(w>d){for(let xx=x-w/2+3;xx<x+w/2;xx+=6)box(2,.012,.13,lineMat,xx,.05,z)}else{for(let zz=z-d/2+3;zz<z+d/2;zz+=6)box(.13,.012,2,lineMat,x,.05,zz)}}
+function road(x,z,w,d){
+ box(w,.08,d,roadMat,x,0,z);
+ const horizontal=w>d,span=horizontal?w:d,width=horizontal?d:w;
+ const white=mat(0xf4f4eb),yellow=mat(0xf2c94c);
+ const laneOffsets=width>=12?[-2.15,2.15]:width>=10?[-1.7,1.7]:[];
+ for(const off of laneOffsets){
+  if(horizontal){for(let p=-span/2+2;p<span/2-1;p+=7)box(3.2,.016,.12,white,x+p,.052,z+off)}
+  else{for(let p=-span/2+2;p<span/2-1;p+=7)box(.12,.016,3.2,white,x+off,.052,z+p)}
+ }
+ if(width>=10){
+  if(horizontal){box(span,.014,.10,yellow,x,.052,z);box(span,.014,.10,white,x,.052,z-width/2+.42);box(span,.014,.10,white,x,.052,z+width/2-.42)}
+  else{box(.10,.014,span,yellow,x,.052,z);box(.10,.014,span,white,x-width/2+.42,.052,z);box(.10,.014,span,white,x+width/2-.42,.052,z)}
+ }else if(horizontal){box(span,.014,.09,white,x,.052,z-width/2+.35);box(span,.014,.09,white,x,.052,z+width/2-.35)}
+ else{box(.09,.014,span,white,x-width/2+.35,.052,z);box(.09,.014,span,white,x+width/2-.35,.052,z)}
+}
 road(0,0,240,13);road(0,0,13,240);
 for(const p of [-60,60]){road(0,p,240,11);road(p,0,11,240)}
 // Outer ring roads add more routes around the expanded city.
@@ -162,6 +176,16 @@ for(const z of [-60,60])for(const side of [-1,1])addSidewalkRun('x',z,120,side*7
 for(const x of [-60,60])for(const side of [-1,1])addSidewalkRun('z',x,120,side*7.15,1.9,roadCrossings.filter(z=>Math.abs(z)<120));
 for(const z of [-100,100])for(const side of [-1,1])addSidewalkRun('x',z,140,side*5.25,1.7,roadCrossings.filter(x=>Math.abs(x)<140));
 for(const x of [-100,100])for(const side of [-1,1])addSidewalkRun('z',x,140,side*5.25,1.7,roadCrossings.filter(z=>Math.abs(z)<140));
+ // Zebra crossings at major intersections.
+ const crosswalkMat=mat(0xf5f5ee);
+ for(const ix of [-100,-60,0,60,100])for(const iz of [-100,-60,0,60,100]){
+  for(let stripe=-3;stripe<=3;stripe++){
+   box(3.5,.018,.42,crosswalkMat,ix+stripe*.62,.061,iz-6.1);
+   box(3.5,.018,.42,crosswalkMat,ix+stripe*.62,.061,iz+6.1);
+   box(.42,.018,3.5,crosswalkMat,ix-6.1,.061,iz+stripe*.62);
+   box(.42,.018,3.5,crosswalkMat,ix+6.1,.061,iz+stripe*.62);
+  }
+ }
 // A winding river cuts across the city; shallow banks and moving highlights make the water read as flowing.
 const riverCenterZ=x=>16+1.8*Math.sin(x*.028)+.65*Math.sin(x*.071);
 const riverHalfWidth=4.1;
@@ -248,20 +272,36 @@ function createMountainTunnel(x1,x2,z){
 createMountainTunnel(108,140,100);
 createMountainTunnel(-108,-140,-100);
 // blocks of colourful low-poly buildings
-const buildingColors=[0xf3bd85,0xd98573,0x88b6c9,0xe6d69a,0xb1c4a0,0xb2a3c9,0xe8a8ad,0xd8d9df];
-const windowMat=mat(0x9bd3e3,.55), roofMat=mat(0x586575);
+// Shanghai-inspired palette: warm stone, old-town brick, pale concrete and modern blue glass.
+const buildingColors=[0xd8c9b2,0xc8b6a0,0xaaaeb2,0x879eaa,0xd9d5c8,0x9b7770,0xb7c6c9,0xe0d7c7];
+const windowMat=mat(0x82bed3,.38), roofMat=mat(0x535b65), facadeTrim=mat(0xf0e5d1), storefrontRed=mat(0x9d3029), signGold=mat(0xe8bd65);
 const occupied=[];
 function building(x,z,w,d,h,color){
  const group=new THREE.Group();group.position.set(x,0,z);scene.add(group);
- const body=box(w,h,d,mat(color),0,h/2,0,group);
- box(w+.35,.25,d+.35,roofMat,0,h+.08,0,group);
- // front-facing rows of simple windows
- const cols=Math.max(2,Math.floor(w/2.4)), rows=Math.max(1,Math.floor(h/2.5));
+ box(w,h,d,mat(color),0,h/2,0,group);
+ box(w+.42,.24,d+.42,roofMat,0,h+.08,0,group);
+ box(w+.22,.12,d+.22,facadeTrim,0,h*.56,d/2+.04,group);
+ const cols=Math.max(2,Math.floor(w/2.1)), rows=Math.max(1,Math.floor(h/2.35));
  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
-   const wx=-w/2+(c+.5)*w/cols, wy=1.15+r*(h-1.6)/rows;
-   box(.65,.72,.035,windowMat,wx,wy,d/2+.025,group);
-   box(.035,.72,.035,mat(0xf1f0df),wx,wy,d/2+.05,group);
+  const wx=-w/2+(c+.5)*w/cols,wy=1.15+r*(h-1.6)/rows;
+  box(.68,.76,.04,windowMat,wx,wy,d/2+.035,group);
+  box(.045,.8,.045,facadeTrim,wx,wy,d/2+.065,group);
+  box(.72,.055,.07,facadeTrim,wx,wy-.41,d/2+.06,group);
  }
+ if(h>=9){
+  const signY=Math.min(4.1,h*.34);
+  box(w*.78,.72,.12,storefrontRed,0,signY,d/2+.11,group);
+  box(w*.8,.09,.15,signGold,0,signY+.4,d/2+.12,group);
+  box(w*.8,.07,.15,signGold,0,signY-.4,d/2+.12,group);
+  for(let ai=0;ai<Math.floor(w*.9);ai++){
+   const ax=-w*.34+ai*.68;
+   box(.25,.22,.58,ai%2===0?facadeTrim:storefrontRed,ax,signY-.65,d/2+.34,group);
+  }
+  box(Math.min(1.1,w*.2),1.8,.08,mat(0x493c35),-w*.27,1.05,d/2+.07,group);
+  box(.38,Math.min(2.8,h*.3),.13,storefrontRed,w/2-.32,Math.min(h*.52,5.2),d/2+.13,group);
+  box(.43,.08,.16,signGold,w/2-.32,Math.min(h*.52,5.2)+Math.min(2.8,h*.3)/2,d/2+.14,group);
+ }
+ if(h>14){box(w*.28,.7,d*.3,roofMat,-w*.2,h+.52,0,group);box(w*.24,.45,d*.25,facadeTrim,w*.2,h+.4,0,group);}
  occupied.push({x,z,hw:w/2+.8,hd:d/2+.8});
 }
 for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
@@ -269,12 +309,32 @@ for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
   const cx=gx*40,cz=gz*40;
   const sites=[[-10,-10],[10,-10],[-10,10],[10,10]];
   for(let i=0;i<sites.length;i++){
+   if(gx===1&&gz===1&&(i===0||i===1))continue;
    const x=cx+sites[i][0]+(Math.random()-.5)*2.2,z=cz+sites[i][1]+(Math.random()-.5)*2.2;
    const w=6+Math.random()*3.2,d=6+Math.random()*3.2,h=8+Math.random()*25;
    building(x,z,w,d,h,buildingColors[Math.floor(Math.random()*buildingColors.length)]);
    if(Math.random()>.45)box(1.1,.8,1.1,roofMat,x+(Math.random()-.5)*w*.35,h+.62,z+(Math.random()-.5)*d*.35);
   }
  }
+// Stylized Shanghai skyline landmarks occupy reserved central plots.
+const landmarkPink=mat(0xd65d91,.3),landmarkMetal=mat(0x9baeb8,.35),landmarkGlass=mat(0x79b9d8,.28);
+const pearlX=30,pearlZ=30;
+const pearlStem=new THREE.Mesh(new THREE.CylinderGeometry(.42,.72,19,10),landmarkMetal);pearlStem.position.set(pearlX,9.5,pearlZ);pearlStem.castShadow=true;scene.add(pearlStem);
+for(const b of [{y:5.4,r:1.85},{y:11.7,r:1.35},{y:17.2,r:2.15}]){
+ const orb=new THREE.Mesh(new THREE.SphereGeometry(b.r,12,10),landmarkPink);orb.position.set(pearlX,b.y,pearlZ);orb.castShadow=true;scene.add(orb);
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(b.r*.98,.10,6,20),landmarkMetal);ring.position.copy(orb.position);ring.rotation.x=Math.PI/2;scene.add(ring);
+}
+const pearlTip=new THREE.Mesh(new THREE.ConeGeometry(.38,4.5,8),landmarkMetal);pearlTip.position.set(pearlX,21.8,pearlZ);scene.add(pearlTip);
+occupied.push({x:pearlX,z:pearlZ,hw:2.6,hd:2.6});
+const shanghaiX=42,shanghaiZ=30,shanghaiH=39;
+const tower=new THREE.Group();tower.position.set(shanghaiX,0,shanghaiZ);scene.add(tower);
+const towerBase=new THREE.Mesh(new THREE.CylinderGeometry(3.3,4.4,shanghaiH,8,1),landmarkGlass);towerBase.position.y=shanghaiH/2;towerBase.rotation.y=Math.PI/8;towerBase.castShadow=true;tower.add(towerBase);
+for(let level=0;level<7;level++){
+ const y=5+level*4.5,rad=3.8-level*.35;
+ const band=new THREE.Mesh(new THREE.TorusGeometry(rad,.075,5,8),facadeTrim);band.position.y=y;band.rotation.x=Math.PI/2;tower.add(band);
+}
+const spire=new THREE.Mesh(new THREE.ConeGeometry(.62,7,8),landmarkMetal);spire.position.y=shanghaiH+3.4;tower.add(spire);
+occupied.push({x:shanghaiX,z:shanghaiZ,hw:4.8,hd:4.8});
 // Park trees are grouped to support knock-down collisions.
 const destructibleProps=[];
 const park=box(25,.08,25,mat(0x91d47a),-91,.02,-91);
