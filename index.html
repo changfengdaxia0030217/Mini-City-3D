@@ -135,7 +135,7 @@ scene.add(sun);
 
 const mat=(color,roughness=1)=>new THREE.MeshStandardMaterial({color,roughness});
 const grassMat=mat(0x7fc16c), roadMat=mat(0x424d5a), sidewalkMat=mat(0xd7d5c9), lineMat=mat(0xf4e7a0);
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(300,300),grassMat);ground.rotation.x=-Math.PI/2;ground.position.y=-.12;ground.receiveShadow=true;scene.add(ground);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(460,460),grassMat);ground.rotation.x=-Math.PI/2;ground.position.y=-.12;ground.receiveShadow=true;scene.add(ground);
 
 function box(w,h,d,material,x,y,z, parent=scene){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function road(x,z,w,d){
@@ -191,6 +191,44 @@ function addChineseWayfindingSign(x,z,rotation,label,subLabel){
 }
 addChineseWayfindingSign(9.8,9.8,Math.PI/4,'中山东一路','外滩 · 南京东路');
 addChineseWayfindingSign(-9.8,-9.8,-Math.PI/4,'人民广场','南京路步行街');
+// Huangpu River waterfront district: broad river, Bund promenade, railing and a distant Pudong skyline.
+const riverMat=new THREE.MeshStandardMaterial({color:0x397f9e,roughness:.28,metalness:.12});
+const river=new THREE.Mesh(new THREE.PlaneGeometry(420,72),riverMat);river.rotation.x=-Math.PI/2;river.position.set(0,-.055,181);river.receiveShadow=true;scene.add(river);
+const quayStone=mat(0xc7c1b4),railMetal=mat(0x303b45,.65),riverFoam=mat(0x9ac9d7,.4);
+box(420,.28,3.8,quayStone,0,.04,141);
+box(420,.18,1.15,quayStone,0,.16,137.8);
+box(420,.10,.12,railMetal,0,1.08,143.1);
+box(420,.10,.12,railMetal,0,.38,143.1);
+for(let rx=-208;rx<=208;rx+=3.5){
+ const post=box(.09,.9,.09,railMetal,rx,.7,143.1);
+ if(Math.abs(rx%14)<.2)box(.16,.16,.16,riverFoam,rx,1.22,143.1);
+}
+road(0,125,280,13);
+for(const side of [-1,1]){
+ box(280,.14,2.3,sidewalkMat,0,.015,side===1?116.8:133.2);
+}
+const promenadeTreeMat=mat(0x397d43),trunkMat=mat(0x77513a);
+for(let tx=-130;tx<=130;tx+=13){
+ for(const tz of [114,136]){
+  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,2.3,7),trunkMat);trunk.position.set(tx,1.15,tz);trunk.castShadow=true;scene.add(trunk);
+  const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.35,1),promenadeTreeMat);crown.position.set(tx,2.9,tz);crown.castShadow=true;scene.add(crown);
+ }
+}
+// Far-bank glass towers create a continuous Pudong silhouette beyond the water.
+const farTowerColors=[0x78aabd,0x91b7c8,0x6c8fa8,0xb8cbd2,0x8aa4b6];
+for(let fi=0;fi<21;fi++){
+ const fx=-150+fi*15,fh=18+((fi*17)%5)*8,fw=7+(fi%3)*1.7,fd=7+(fi%4)*1.2;
+ const fg=new THREE.Group();fg.position.set(fx,0,222+(fi%2)*8);scene.add(fg);
+ const fm=mat(farTowerColors[fi%farTowerColors.length],.42);
+ const towerBody=box(fw,fh,fd,fm,0,fh/2,0,fg);
+ box(fw+.25,.22,fd+.25,facadeTrim,0,fh+.1,0,fg);
+ for(let wy=3;wy<fh-1;wy+=3.2)box(fw*.88,.055,fd+.035,mat(0xb8d7e1,.45),0,wy,fd/2+.025,fg);
+ if(fi%4===1){const tip=new THREE.Mesh(new THREE.ConeGeometry(.45,5,6),landmarkMetal);tip.position.y=fh+2.4;fg.add(tip);}
+}
+// A slim Shanghai Tower-inspired tapering landmark rises above the far-bank skyline.
+const farShanghai=new THREE.Group();farShanghai.position.set(62,0,218);scene.add(farShanghai);
+const farCore=new THREE.Mesh(new THREE.CylinderGeometry(2.1,4.2,62,8,1),landmarkGlass);farCore.position.y=31;farCore.rotation.y=Math.PI/8;farCore.castShadow=true;farShanghai.add(farCore);
+const farSpire=new THREE.Mesh(new THREE.ConeGeometry(.55,12,8),landmarkMetal);farSpire.position.y=68;farShanghai.add(farSpire);
 // Outer ring roads add more routes around the expanded city.
 for(const p of [-100,100]){road(0,p,280,8);road(p,0,8,280)}
 // Raised pedestrian sidewalks on both sides of every road. Gaps keep junctions open for traffic.
