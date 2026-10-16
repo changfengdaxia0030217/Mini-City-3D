@@ -105,7 +105,7 @@ body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{di
  function report(text){panel.style.display='block';message.textContent=String(text||'未知错误');}
  window.addEventListener('error',function(e){report((e.message||'脚本加载或运行失败')+(e.filename?'\\n'+e.filename:'')+(e.lineno?':'+e.lineno:''));});
  window.addEventListener('unhandledrejection',function(e){const r=e.reason;report('异步加载失败：'+(r&&r.message?r.message:String(r)));});
- window.setTimeout(function(){if(!document.body.dataset.gameReady){report('游戏在 12 秒内没有完成启动。请检查网络是否能加载 Three.js CDN，或查看上方错误信息。');}},12000);
+ window.setTimeout(function(){if(!document.body.dataset.gameReady){report('游戏在 20 秒内没有完成启动。当前阶段：'+(document.body.dataset.bootStage||'未知')+'。请查看网络/CDN 是否可访问。');}},20000);
 })();
 </script>
 <script type="module">
