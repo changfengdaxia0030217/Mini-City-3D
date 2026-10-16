@@ -387,6 +387,17 @@ function bundBuilding(x,z,w,d,h,variant){
   box(w*.76,1.05,d*.76,bundRoofMat,0,h+.98,0,g);
   for(const tx of [-1,1]){const t=new THREE.Mesh(new THREE.CylinderGeometry(.68,.9,1.8,8),bundTrimMat);t.position.set(tx*w*.34,h+1.7,0);g.add(t);const c=new THREE.Mesh(new THREE.ConeGeometry(.9,1.35,8),bundRoofMat);c.position.set(tx*w*.34,h+3.25,0);g.add(c);}
  }
+ // The second Bund building carries a recognizable Customs House-inspired clock tower.
+ if(variant===2){
+  const clockStone=mat(0xd9c7a8,.8),clockFace=mat(0xf4e9d0,.55),clockInk=mat(0x37434a,.65);
+  box(5.2,7.2,5.2,clockStone,0,h+4.1,0,g);
+  box(5.8,.35,5.8,bundTrimMat,0,h+7.8,0,g);
+  const clockRoof=new THREE.Mesh(new THREE.ConeGeometry(3.7,3.8,4),bundRoofMat);clockRoof.position.set(0,h+9.8,0);clockRoof.rotation.y=Math.PI/4;g.add(clockRoof);
+  const dial=new THREE.Mesh(new THREE.CylinderGeometry(1.22,1.22,.16,24),clockFace);dial.rotation.x=Math.PI/2;dial.position.set(0,h+4.7,d/2+2.72);g.add(dial);
+  const handA=box(.09, .76,.09,clockInk,0,h+4.82,d/2+2.84,g);handA.rotation.z=-.45;
+  const handB=box(.62,.09,.09,clockInk,.18,h+4.58,d/2+2.84,g);handB.rotation.z=.25;
+  for(let tick=0;tick<12;tick++){const a=tick*Math.PI/6;const mark=box(.09,.22,.07,clockInk,Math.sin(a)*.94,h+4.7+Math.cos(a)*.94,d/2+2.84,g);mark.rotation.z=-a;}
+ }
  // Roof balustrades and chunky arcade columns create a continuous cartoon historic streetscape.
  const count=Math.max(4,Math.floor(w/4.2));
  for(let a=0;a<=count;a++){const ax=-w/2+a*w/count;box(.22,2.65,.3,bundTrimMat,ax,1.55,d/2+.2,g);box(.42,.18,.38,bundTrimMat,ax,2.88,d/2+.2,g);box(.42,.2,.38,bundTrimMat,ax,.25,d/2+.2,g);}
@@ -428,7 +439,7 @@ function glassTower(x,z,w,d,h,variant){
 // A new, deliberately composed district plan replaces the former random building scatter.
 // North edge: a continuous Bund-style historic row, placed BETWEEN streets rather than on top of the road.
 const bundXs=[-104,-78,-52,-26,0,26,52,78,104];
-for(let i=0;i<bundXs.length;i++)bundBuilding(bundXs[i],-80,[20,22,19][i%3],[12,13,12][i%3],[22,27,24,31,23,29,25,32,22][i],i);
+for(let i=0;i<bundXs.length;i++)if(bundXs[i]!==0)bundBuilding(bundXs[i],-80,[20,22,19][i%3],[12,13,12][i%3],[22,27,24,31,23,29,25,32,22][i],i);
 // Inner residential blocks: recognizable Shanghai shikumen / lilong brick-and-stone low-rise buildings.
 for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
  if(gx===0||gz===0)continue;
@@ -452,7 +463,7 @@ for(const t of [
 
 // Stylized Shanghai skyline landmarks occupy reserved central plots.
 const landmarkPink=mat(0xd65d91,.3),landmarkMetal=mat(0x9baeb8,.35),landmarkGlass=mat(0x79b9d8,.28);
-const pearlX=30,pearlZ=-183;
+const pearlX=0,pearlZ=-183;
 const pearlStem=new THREE.Mesh(new THREE.CylinderGeometry(.42,.72,19,10),landmarkMetal);pearlStem.position.set(pearlX,9.5,pearlZ);pearlStem.castShadow=true;scene.add(pearlStem);
 for(const b of [{y:5.4,r:1.85},{y:11.7,r:1.35},{y:17.2,r:2.15}]){
  const orb=new THREE.Mesh(new THREE.SphereGeometry(b.r,12,10),landmarkPink);orb.position.set(pearlX,b.y,pearlZ);orb.castShadow=true;scene.add(orb);
