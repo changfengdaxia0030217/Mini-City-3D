@@ -229,21 +229,36 @@ huangpuRiverGeometry.setAttribute('position',new THREE.Float32BufferAttribute(hu
 huangpuRiverGeometry.setIndex(huangpuRiverIndices);huangpuRiverGeometry.computeVertexNormals();
 const huangpuRiver=new THREE.Mesh(huangpuRiverGeometry,riverMat);huangpuRiver.receiveShadow=true;scene.add(huangpuRiver);
 const quayStone=mat(0xc7c1b4),railMetal=mat(0x303b45,.65),riverFoam=mat(0x9ac9d7,.4);
-box(420,.28,3.8,quayStone,0,.04,-112.5);
-box(420,.18,1.15,quayStone,0,.16,-109.8);
-box(420,.10,.12,railMetal,0,1.08,-117);
-box(420,.10,.12,railMetal,0,.38,-117);
-for(let rx=-208;rx<=208;rx+=3.5){
- const post=box(.09,.9,.09,railMetal,rx,.7,-117);
- if(Math.abs(rx%14)<.2)box(.16,.16,.16,riverFoam,rx,1.22,-117);
+// Curved promenade geometry follows the river centerline instead of cutting across the shoreline.
+function createBundRibbon(width,offset,y,material,xStart=-210,xEnd=210,step=3){
+ const positions=[],indices=[];
+ for(let x=xStart;x<=xEnd;x+=step){const z=huangpuCenterZ(x)+offset;positions.push(x,y,z-width/2,x,y,z+width/2);}
+ for(let i=0;i<positions.length/6-1;i++){const a=i*2,b=a+1,c=a+2,d=a+3;indices.push(a,c,b,b,c,d);}
+ const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setIndex(indices);geo.computeVertexNormals();
+ const mesh=new THREE.Mesh(geo,material);mesh.receiveShadow=true;scene.add(mesh);return mesh;
 }
-road(0,-110,280,5);
+function createBundCurve(offset,y,radius,material){
+ const points=[];for(let x=-210;x<=210;x+=3)points.push(new THREE.Vector3(x,y,huangpuCenterZ(x)+offset));
+ const curve=new THREE.CatmullRomCurve3(points);scene.add(new THREE.Mesh(new THREE.TubeGeometry(curve,260,radius,5,false),material));return curve;
+}
+createBundRibbon(4.2,30,.04,quayStone);
+createBundRibbon(1.15,35,.16,quayStone);
+createBundCurve(28.0,1.08,.055,railMetal);
+createBundCurve(28.0,.38,.055,railMetal);
+for(let rx=-208;rx<=208;rx+=3.5){
+ const post=box(.09,.9,.09,railMetal,rx,.7,huangpuCenterZ(rx)+28);
+ if(Math.abs(rx%14)<.2)box(.16,.16,.16,riverFoam,rx,1.22,huangpuCenterZ(rx)+28);
+}
+// Curved waterfront access road and center marking.
+createBundRibbon(5,36,.012,roadMat,-140,140,2);
+const bundRoadLine=[];for(let x=-140;x<=140;x+=2)bundRoadLine.push(new THREE.Vector3(x,.055,huangpuCenterZ(x)+36));
+scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(bundRoadLine),180,.045,5,false),lineMat));
 for(const side of [-1,1]){
  box(280,.14,2.3,sidewalkMat,0,.015,side===1?-106.8:-113.2);
 }
 const promenadeTreeMat=mat(0x397d43),trunkMat=mat(0x77513a);
-for(let tx=-130;tx<=130;tx+=28){
- const tz=-107;
+for(let tx=-126;tx<=126;tx+=28){
+ const tz=huangpuCenterZ(tx)+38;
  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,2.3,7),trunkMat);trunk.position.set(tx,1.15,tz);trunk.castShadow=true;scene.add(trunk);
  const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.05,1),promenadeTreeMat);crown.position.set(tx,2.75,tz);crown.castShadow=true;scene.add(crown);
 }
@@ -351,12 +366,13 @@ function updateRiverFlow(dt){
 
 // Shanghai waterfront landmark dressing: a generous promenade, warm lamps, benches and a legible Bund entrance.
 const bundPlazaMat=mat(0xd5c7ad,.9),bundLampMetal=mat(0x303943,.65),bundLampGlow=new THREE.MeshStandardMaterial({color:0xffe1a0,emissive:0xffbd55,emissiveIntensity:.7});
-box(250,.16,8,bundPlazaMat,0,.035,-108.8);
-box(250,.09,1.1,quayStone,0,.13,-113.3);
+createBundRibbon(8,36.1,.035,bundPlazaMat,-125,125,2);
+createBundRibbon(1.1,32,.13,quayStone,-125,125,2);
 for(let lx=-120;lx<=120;lx+=15){
- const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.18,3.4,8),bundLampMetal);post.position.set(lx,1.7,-106.3);post.castShadow=true;scene.add(post);
- const arm=box(.75,.12,.12,bundLampMetal,lx+.28,3.22,-106.3);
- const bulb=new THREE.Mesh(new THREE.SphereGeometry(.24,8,6),bundLampGlow);bulb.position.set(lx+.55,3.05,-106.3);scene.add(bulb);
+ const lampZ=huangpuCenterZ(lx)+39.7;
+ const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.18,3.4,8),bundLampMetal);post.position.set(lx,1.7,lampZ);post.castShadow=true;scene.add(post);
+ const arm=box(.75,.12,.12,bundLampMetal,lx+.28,3.22,lampZ);
+ const bulb=new THREE.Mesh(new THREE.SphereGeometry(.24,8,6),bundLampGlow);bulb.position.set(lx+.55,3.05,lampZ);scene.add(bulb);
  // Keep the promenade visually open; benches are placed sparingly in dedicated rest areas.
 }
 // Monumental, readable entrance sign facing the road.
