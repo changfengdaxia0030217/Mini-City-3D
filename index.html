@@ -368,11 +368,11 @@ function updateRiverFlow(dt){
 const bundPlazaMat=mat(0xd5c7ad,.9),bundLampMetal=mat(0x303943,.65),bundLampGlow=new THREE.MeshStandardMaterial({color:0xffe1a0,emissive:0xffbd55,emissiveIntensity:.7});
 createBundRibbon(8,36.1,.035,bundPlazaMat,-125,125,2);
 createBundRibbon(1.1,32,.13,quayStone,-125,125,2);
-for(let lx=-120;lx<=120;lx+=15){
+for(let lx=-120;lx<=120;lx+=30){
  const lampZ=huangpuCenterZ(lx)+39.7;
- const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.18,3.4,8),bundLampMetal);post.position.set(lx,1.7,lampZ);post.castShadow=true;scene.add(post);
- const arm=box(.75,.12,.12,bundLampMetal,lx+.28,3.22,lampZ);
- const bulb=new THREE.Mesh(new THREE.SphereGeometry(.24,8,6),bundLampGlow);bulb.position.set(lx+.55,3.05,lampZ);scene.add(bulb);
+ const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.18,3.4,6),bundLampMetal);post.position.set(lx,1.7,lampZ);post.castShadow=false;post.receiveShadow=false;scene.add(post);
+ const arm=box(.75,.12,.12,bundLampMetal,lx+.28,3.22,lampZ);arm.castShadow=false;arm.receiveShadow=false;
+ const bulb=new THREE.Mesh(new THREE.SphereGeometry(.2,6,4),bundLampGlow);bulb.position.set(lx+.55,3.05,lampZ);bulb.castShadow=false;bulb.receiveShadow=false;scene.add(bulb);
  // Keep the promenade visually open; benches are placed sparingly in dedicated rest areas.
 }
 // Monumental, readable entrance sign facing the road.
