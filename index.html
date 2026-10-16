@@ -190,11 +190,10 @@ for(const side of [-1,1]){
  box(280,.14,2.3,sidewalkMat,0,.015,side===1?-106.8:-113.2);
 }
 const promenadeTreeMat=mat(0x397d43),trunkMat=mat(0x77513a);
-for(let tx=-130;tx<=130;tx+=13){
- for(const tz of [-107,-114]){
-  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,2.3,7),trunkMat);trunk.position.set(tx,1.15,tz);trunk.castShadow=true;scene.add(trunk);
-  const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.35,1),promenadeTreeMat);crown.position.set(tx,2.9,tz);crown.castShadow=true;scene.add(crown);
- }
+for(let tx=-130;tx<=130;tx+=28){
+ const tz=-107;
+ const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,2.3,7),trunkMat);trunk.position.set(tx,1.15,tz);trunk.castShadow=true;scene.add(trunk);
+ const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.05,1),promenadeTreeMat);crown.position.set(tx,2.75,tz);crown.castShadow=true;scene.add(crown);
 }
 // Far-bank glass towers create a continuous Pudong silhouette beyond the water.
 const farTowerColors=[0x78aabd,0x91b7c8,0x6c8fa8,0xb8cbd2,0x8aa4b6];
@@ -308,12 +307,7 @@ for(let lx=-120;lx<=120;lx+=15){
  const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.18,3.4,8),bundLampMetal);post.position.set(lx,1.7,-106.3);post.castShadow=true;scene.add(post);
  const arm=box(.75,.12,.12,bundLampMetal,lx+.28,3.22,-106.3);
  const bulb=new THREE.Mesh(new THREE.SphereGeometry(.24,8,6),bundLampGlow);bulb.position.set(lx+.55,3.05,-106.3);scene.add(bulb);
- for(const bx of [-1,1]){
-  const bench= new THREE.Group();bench.position.set(lx+bx*3,.2,-103.7);scene.add(bench);
-  box(1.8,.14,.62,mat(0x805b3e),0,.48,0,bench);
-  box(1.8,.62,.12,mat(0x805b3e),0,.78,-.23,bench);
-  for(const leg of [-.68,.68])box(.12,.48,.12,bundLampMetal,leg,.22,0,bench);
- }
+ // Keep the promenade visually open; benches are placed sparingly in dedicated rest areas.
 }
 // Monumental, readable entrance sign facing the road.
 const bundSignCanvas=document.createElement('canvas');bundSignCanvas.width=1024;bundSignCanvas.height=256;
@@ -385,6 +379,8 @@ for(const side of [-1,1]){
  box(.12,.5,10,shipWhite,side*2.05,1.75,1.1,cruiseShip);
  for(let rz=-3.5;rz<=5.5;rz+=1.5)box(.08,.45,.08,shipRed,side*2.08,1.95,rz,cruiseShip);
 }
+// A second smaller sightseeing boat sits farther along the Bund waterfront for a lived-in river scene.
+const cruiseShipFar=cruiseShip.clone(true);cruiseShipFar.position.set(-38,.12,-137);cruiseShipFar.rotation.y=Math.PI/2;cruiseShipFar.scale.setScalar(.78);scene.add(cruiseShipFar);
 // Low-poly rolling hills form a green ridge around the city outskirts.
 const hillMaterials=[mat(0x659b58),mat(0x79aa62),mat(0x527f4c)];
 for(let i=0;i<18;i++){
