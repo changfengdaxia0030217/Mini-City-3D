@@ -198,7 +198,7 @@ addChineseWayfindingSign(-9.8,-9.8,-Math.PI/4,'人民广场','南京路步行街
 // Huangpu River waterfront district: repositioned directly ahead of spawn so the Bund, river and Pudong skyline are visible during the first drive.
 const riverMat=new THREE.MeshStandardMaterial({color:0x397f9e,roughness:.28,metalness:.12});
 // A broad, gently winding Huangpu channel: a curved ribbon mesh instead of a rectangular water plane.
-const huangpuCenterZ=x=>-145+7.5*Math.sin(x*.018)+2.4*Math.sin(x*.043);
+const huangpuCenterZ=x=>-145+4.5*Math.sin(x*.018)+1.5*Math.sin(x*.043);
 const huangpuRiverPositions=[],huangpuRiverIndices=[];
 for(let x=-210;x<=210;x+=3){
  const z=huangpuCenterZ(x);
