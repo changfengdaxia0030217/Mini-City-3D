@@ -153,8 +153,30 @@ function road(x,z,w,d){
  }else if(horizontal){box(span,.014,.09,white,x,.052,z-width/2+.35);box(span,.014,.09,white,x,.052,z+width/2-.35)}
  else{box(.09,.014,span,white,x-width/2+.35,.052,z);box(.09,.014,span,white,x+width/2-.35,.052,z)}
 }
+// Main avenues remain easy to navigate, while the secondary east-west avenues gently meander.
+function curvedRoadX(baseZ,width){
+ const positions=[],indices=[],edgeL=[],edgeR=[];
+ for(let x=-120;x<=120;x+=2){
+  const z=baseZ+4.6*Math.sin(x*.022+baseZ*.013)+1.35*Math.sin(x*.052);
+  positions.push(x,.012,z-width/2,x,.012,z+width/2);
+  edgeL.push(new THREE.Vector3(x,.06,z-width/2+.35));edgeR.push(new THREE.Vector3(x,.06,z+width/2-.35));
+ }
+ for(let i=0;i<positions.length/6-1;i++){const a=i*2,b=a+1,c=a+2,d=a+3;indices.push(a,c,b,b,c,d);}
+ const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setIndex(indices);geo.computeVertexNormals();
+ const mesh=new THREE.Mesh(geo,roadMat);mesh.receiveShadow=true;scene.add(mesh);
+ const white=mat(0xf4f4eb),yellow=mat(0xf2c94c);
+ scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(edgeL),180,.045,5,false),white));
+ scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(edgeR),180,.045,5,false),white));
+ for(let x=-116;x<118;x+=10){
+  const z=baseZ+4.6*Math.sin(x*.022+baseZ*.013)+1.35*Math.sin(x*.052);
+  const dz=.1012*Math.cos(x*.022+baseZ*.013)+.0702*Math.cos(x*.052);
+  const dash=box(3.1,.018,.12,white,x,.055,z);dash.rotation.y=-Math.atan(dz);
+ }
+ const centerPoints=[];for(let x=-120;x<=120;x+=2)centerPoints.push(new THREE.Vector3(x,.055,baseZ+4.6*Math.sin(x*.022+baseZ*.013)+1.35*Math.sin(x*.052)));
+ scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(centerPoints),180,.035,5,false),yellow));
+}
 road(0,0,240,13);road(0,0,13,240);
-for(const p of [-60,60]){road(0,p,240,11);road(p,0,11,240)}
+for(const p of [-60,60])curvedRoadX(p,11);
 // Street lamps removed for a cleaner, more open Shanghai street silhouette.
 function addChineseWayfindingSign(x,z,rotation,label,subLabel){
  const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rotation;scene.add(g);
