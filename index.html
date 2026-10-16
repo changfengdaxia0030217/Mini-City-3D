@@ -153,11 +153,27 @@ const mat=(color,roughness=1)=>new THREE.MeshStandardMaterial({color,roughness})
 const grassMat=mat(0x7fc16c), roadMat=mat(0x424d5a), sidewalkMat=mat(0xd7d5c9), lineMat=mat(0xf4e7a0);
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(460,460),grassMat);ground.rotation.x=-Math.PI/2;ground.position.y=-.12;ground.receiveShadow=true;scene.add(ground);
 
-function box(w,h,d,material,x,y,z, parent=scene){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
+// Reuse identical box geometry across repeated city props to reduce GPU/CPU allocation.
+const boxGeometryCache=new Map();
+function sharedBoxGeometry(w,h,d){
+ const key=w+"|"+h+"|"+d;
+ let g=boxGeometryCache.get(key);
+ if(!g){g=new THREE.BoxGeometry(w,h,d);boxGeometryCache.set(key,g);}
+ return g;
+}
+function box(w,h,d,material,x,y,z,parent=scene){
+ const m=new THREE.Mesh(sharedBoxGeometry(w,h,d),material);
+ m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;
+}
+function boxLite(w,h,d,material,x,y,z,parent=scene){
+ const m=new THREE.Mesh(sharedBoxGeometry(w,h,d),material);
+ m.position.set(x,y,z);m.castShadow=false;m.receiveShadow=false;parent.add(m);return m;
+}
+const roadLaneWhite=mat(0xf4f4eb),roadLaneYellow=mat(0xf2c94c);
 function road(x,z,w,d){
  box(w,.08,d,roadMat,x,0,z);
  const horizontal=w>d,span=horizontal?w:d,width=horizontal?d:w;
- const white=mat(0xf4f4eb),yellow=mat(0xf2c94c);
+ const white=roadLaneWhite,yellow=roadLaneYellow;
  const laneOffsets=width>=12?[-2.15,2.15]:width>=10?[-1.7,1.7]:[];
  for(const off of laneOffsets){
   if(horizontal){for(let p=-span/2+2;p<span/2-1;p+=7)box(3.2,.016,.12,white,x+p,.052,z+off)}
@@ -549,18 +565,18 @@ const bundStoneMats=[mat(0xe6d7bd,.82),mat(0xd8c6a8,.86),mat(0xf0e3ca,.8),mat(0x
 const bundWindowMat=mat(0x4b7183,.48),bundTrimMat=mat(0xf5e7cc,.78),bundRoofMat=mat(0x59636a,.82),bundBronzeMat=mat(0x7b8c8d,.55);
 function bundBuilding(x,z,w,d,h,variant){
  const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=Math.PI;scene.add(g);const stone=bundStoneMats[variant%4];
- box(w,h,d,stone,0,h/2,0,g);box(w+.8,.55,d+.65,stone,0,.28,0,g);
- for(const fy of [h*.27,h*.51,h*.75])box(w+.42,.2,d+.34,bundTrimMat,0,fy,0,g);
- box(w+1.25,.5,d+.9,bundTrimMat,0,h+.12,0,g);box(w+.7,.25,d+.55,bundRoofMat,0,h+.48,0,g);
+ box(w,h,d,stone,0,h/2,0,g);boxLite(w+.8,.55,d+.65,stone,0,.28,0,g);
+ for(const fy of [h*.27,h*.51,h*.75])boxLite(w+.42,.2,d+.34,bundTrimMat,0,fy,0,g);
+ boxLite(w+1.25,.5,d+.9,bundTrimMat,0,h+.12,0,g);boxLite(w+.7,.25,d+.55,bundRoofMat,0,h+.48,0,g);
  const cols=Math.max(3,Math.floor(w/3.7)),rows=Math.max(3,Math.floor((h-3)/3.15)),winW=Math.min(1.12,w/(cols+1)*.48);
  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
   const wx=-w/2+(c+1)*w/(cols+1),wy=2.1+r*(h-4)/rows;
-  box(winW,1.35,.065,bundWindowMat,wx,wy,d/2+.045,g);
-  box(winW+.22,.13,.12,bundTrimMat,wx,wy+.76,d/2+.09,g);box(winW+.25,.16,.14,bundTrimMat,wx,wy-.78,d/2+.09,g);
-  box(.09,1.52,.1,bundTrimMat,wx-winW*.57,wy,d/2+.1,g);box(.09,1.52,.1,bundTrimMat,wx+winW*.57,wy,d/2+.1,g);
+  boxLite(winW,1.35,.065,bundWindowMat,wx,wy,d/2+.045,g);
+  boxLite(winW+.22,.13,.12,bundTrimMat,wx,wy+.76,d/2+.09,g);boxLite(winW+.25,.16,.14,bundTrimMat,wx,wy-.78,d/2+.09,g);
+  boxLite(.09,1.52,.1,bundTrimMat,wx-winW*.57,wy,d/2+.1,g);boxLite(.09,1.52,.1,bundTrimMat,wx+winW*.57,wy,d/2+.1,g);
  }
- for(let p=-1;p<=1;p+=2)box(.32,h*.83,.25,bundTrimMat,p*(w/2-.65),h*.48,d/2+.12,g);
- box(Math.min(2.6,w*.17),2.4,.16,bundRoofMat,0,1.45,d/2+.11,g);box(Math.min(2.25,w*.145),2.05,.12,bundBronzeMat,0,1.38,d/2+.22,g);
+ for(let p=-1;p<=1;p+=2)boxLite(.32,h*.83,.25,bundTrimMat,p*(w/2-.65),h*.48,d/2+.12,g);
+ boxLite(Math.min(2.6,w*.17),2.4,.16,bundRoofMat,0,1.45,d/2+.11,g);boxLite(Math.min(2.25,w*.145),2.05,.12,bundBronzeMat,0,1.38,d/2+.22,g);
  const ped=new THREE.Mesh(new THREE.ConeGeometry(w*.16,2.8,4),bundTrimMat);ped.position.set(0,h+.98,d/2-.05);ped.rotation.y=Math.PI/4;ped.scale.z=.38;g.add(ped);
  if(variant%3!==1){
   const rad=variant%3===0?2.05:1.55,dh=variant%3===0?1.25:1.65;
@@ -568,26 +584,26 @@ function bundBuilding(x,z,w,d,h,variant){
   const dome=new THREE.Mesh(new THREE.SphereGeometry(rad,12,8,0,Math.PI*2,0,Math.PI/2),stone);dome.position.set(0,h+.48+dh,0);g.add(dome);
   const cap=new THREE.Mesh(new THREE.ConeGeometry(.28,.9,8),bundBronzeMat);cap.position.set(0,h+.48+dh+rad*.9,0);g.add(cap);
  }else{
-  box(w*.76,1.05,d*.76,bundRoofMat,0,h+.98,0,g);
+  boxLite(w*.76,1.05,d*.76,bundRoofMat,0,h+.98,0,g);
   for(const tx of [-1,1]){const t=new THREE.Mesh(new THREE.CylinderGeometry(.68,.9,1.8,8),bundTrimMat);t.position.set(tx*w*.34,h+1.7,0);g.add(t);const c=new THREE.Mesh(new THREE.ConeGeometry(.9,1.35,8),bundRoofMat);c.position.set(tx*w*.34,h+3.25,0);g.add(c);}
  }
  // The second Bund building carries a recognizable Customs House-inspired clock tower.
  if(variant===2){
   const clockStone=mat(0xd9c7a8,.8),clockFace=mat(0xf4e9d0,.55),clockInk=mat(0x37434a,.65);
-  box(5.2,7.2,5.2,clockStone,0,h+4.1,0,g);
-  box(5.8,.35,5.8,bundTrimMat,0,h+7.8,0,g);
+  boxLite(5.2,7.2,5.2,clockStone,0,h+4.1,0,g);
+  boxLite(5.8,.35,5.8,bundTrimMat,0,h+7.8,0,g);
   const clockRoof=new THREE.Mesh(new THREE.ConeGeometry(3.7,3.8,4),bundRoofMat);clockRoof.position.set(0,h+9.8,0);clockRoof.rotation.y=Math.PI/4;g.add(clockRoof);
   const dial=new THREE.Mesh(new THREE.CylinderGeometry(1.22,1.22,.16,24),clockFace);dial.rotation.x=Math.PI/2;dial.position.set(0,h+4.7,d/2+2.72);g.add(dial);
-  const handA=box(.09, .76,.09,clockInk,0,h+4.82,d/2+2.84,g);handA.rotation.z=-.45;
-  const handB=box(.62,.09,.09,clockInk,.18,h+4.58,d/2+2.84,g);handB.rotation.z=.25;
-  for(let tick=0;tick<12;tick++){const a=tick*Math.PI/6;const mark=box(.09,.22,.07,clockInk,Math.sin(a)*.94,h+4.7+Math.cos(a)*.94,d/2+2.84,g);mark.rotation.z=-a;}
+  const handA=boxLite(.09, .76,.09,clockInk,0,h+4.82,d/2+2.84,g);handA.rotation.z=-.45;
+  const handB=boxLite(.62,.09,.09,clockInk,.18,h+4.58,d/2+2.84,g);handB.rotation.z=.25;
+  for(let tick=0;tick<12;tick++){const a=tick*Math.PI/6;const mark=boxLite(.09,.22,.07,clockInk,Math.sin(a)*.94,h+4.7+Math.cos(a)*.94,d/2+2.84,g);mark.rotation.z=-a;}
  }
  // Warm facade lanterns improve the Bund's historic street silhouette at street level.
  const bundLampGlow=new THREE.MeshStandardMaterial({color:0xffd58a,emissive:0xffa52b,emissiveIntensity:1.35,roughness:.38});
  const bundLampMetal=mat(0x48515a,.58);
  for(const lx of [-w*.31,0,w*.31]){
-  box(.42,.12,.18,bundLampMetal,lx,3.45,d/2+.22,g);
-  box(.3,.18,.1,bundLampGlow,lx,3.31,d/2+.31,g);
+  boxLite(.42,.12,.18,bundLampMetal,lx,3.45,d/2+.22,g);
+  boxLite(.3,.18,.1,bundLampGlow,lx,3.31,d/2+.31,g);
  }
  // Give the Customs House-inspired clock tower a bilingual landmark plaque.
  if(variant===2){
@@ -603,9 +619,9 @@ function bundBuilding(x,z,w,d,h,variant){
  }
  // Roof balustrades and chunky arcade columns create a continuous cartoon historic streetscape.
  const count=Math.max(4,Math.floor(w/4.2));
- for(let a=0;a<=count;a++){const ax=-w/2+a*w/count;box(.22,2.65,.3,bundTrimMat,ax,1.55,d/2+.2,g);box(.42,.18,.38,bundTrimMat,ax,2.88,d/2+.2,g);box(.42,.2,.38,bundTrimMat,ax,.25,d/2+.2,g);}
- for(let b=0;b<=Math.max(5,Math.floor(w/2.8));b++)box(.13,.72,.14,bundTrimMat,-w/2+b*w/Math.max(5,Math.floor(w/2.8)),h+.82,d/2+.18,g);
- box(w+.18,.16,.28,bundTrimMat,0,h+1.2,d/2+.18,g);
+ for(let a=0;a<=count;a++){const ax=-w/2+a*w/count;boxLite(.22,2.65,.3,bundTrimMat,ax,1.55,d/2+.2,g);boxLite(.42,.18,.38,bundTrimMat,ax,2.88,d/2+.2,g);boxLite(.42,.2,.38,bundTrimMat,ax,.25,d/2+.2,g);}
+ for(let b=0;b<=Math.max(5,Math.floor(w/2.8));b++)boxLite(.13,.72,.14,bundTrimMat,-w/2+b*w/Math.max(5,Math.floor(w/2.8)),h+.82,d/2+.18,g);
+ boxLite(w+.18,.16,.28,bundTrimMat,0,h+1.2,d/2+.18,g);
  occupied.push({x,z,hw:w/2+1.2,hd:d/2+1.2});
 }
 function shikumenBlock(x,z,w,d,h,variant){
