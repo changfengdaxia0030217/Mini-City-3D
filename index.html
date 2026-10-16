@@ -133,8 +133,8 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9dd8ee);
 scene.fog = new THREE.Fog(0x9dd8ee, 90, 235);
 const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, .1, 500);
-const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.8));
+const renderer = new THREE.WebGLRenderer({antialias:false, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.35));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -146,7 +146,7 @@ document.body.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xd9f3ff, 0x62774e, 2.0));
 const sun = new THREE.DirectionalLight(0xfff0d0, 2.3);
 sun.position.set(-45,75,35); sun.castShadow=true;
-sun.shadow.mapSize.set(1024,1024); sun.shadow.camera.left=-100; sun.shadow.camera.right=100; sun.shadow.camera.top=100; sun.shadow.camera.bottom=-100;
+sun.shadow.mapSize.set(512,512); sun.shadow.camera.left=-100; sun.shadow.camera.right=100; sun.shadow.camera.top=100; sun.shadow.camera.bottom=-100;
 scene.add(sun);
 
 const mat=(color,roughness=1)=>new THREE.MeshStandardMaterial({color,roughness});
@@ -265,13 +265,13 @@ for(let tx=-126;tx<=126;tx+=28){
 // Far-bank glass towers create a continuous Pudong silhouette beyond the water.
 const farTowerColors=[0x78aabd,0x91b7c8,0x6c8fa8,0xb8cbd2,0x8aa4b6];
 const farTrimMat=mat(0xcbd9dc,.5),farGlassMat=mat(0x79b9d8,.28),farMetalMat=mat(0x9baeb8,.35);
-for(let fi=0;fi<21;fi++){
- const fx=-150+fi*15,fh=18+((fi*17)%5)*8,fw=7+(fi%3)*1.7,fd=7+(fi%4)*1.2;
+for(let fi=0;fi<9;fi++){
+ const fx=-150+fi*37.5,fh=20+((fi*3)%4)*7,fw=7+(fi%3)*1.7,fd=7+(fi%3)*1.2;
  const fg=new THREE.Group();fg.position.set(fx,0,-220-(fi%2)*8);scene.add(fg);
  const fm=mat(farTowerColors[fi%farTowerColors.length],.42);
  const towerBody=box(fw,fh,fd,fm,0,fh/2,0,fg);
  box(fw+.25,.22,fd+.25,farTrimMat,0,fh+.1,0,fg);
- for(let wy=3;wy<fh-1;wy+=3.2)box(fw*.88,.055,fd+.035,mat(0xb8d7e1,.45),0,wy,fd/2+.025,fg);
+ for(let wy=4;wy<fh-1;wy+=6.4)box(fw*.88,.055,fd+.035,farTrimMat,0,wy,fd/2+.025,fg);
  if(fi%4===1){const tip=new THREE.Mesh(new THREE.ConeGeometry(.45,5,6),farMetalMat);tip.position.y=fh+2.4;fg.add(tip);}
 }
 // A slim Shanghai Tower-inspired tapering landmark rises above the far-bank skyline.
@@ -612,11 +612,11 @@ function shikumenBlock(x,z,w,d,h,variant){
  const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
  const brick=mat([0xb96e54,0xc58a6b,0xd1b08b,0x9f6b5d][variant%4]),trim=mat(0xe7d7bd),dark=mat(0x344d5b,.5);
  box(w,h,d,brick,0,h/2,0,g);box(w+.28,.24,d+.25,trim,0,h+.08,0,g);box(w+.18,.18,d+.2,trim,0,.2,0,g);
- const cols=Math.max(2,Math.floor(w/2.8)),rows=Math.max(2,Math.floor(h/2.8));
+ const cols=Math.max(2,Math.floor(w/3.5)),rows=Math.max(2,Math.floor(h/4.2));
  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
   const wx=-w/2+(c+.5)*w/cols,wy=1.3+r*(h-1.5)/rows,ww=Math.min(.72,w/cols*.5);
   box(ww,.88,.06,dark,wx,wy,d/2+.04,g);box(ww+.18,.12,.12,trim,wx,wy+.5,d/2+.08,g);
-  box(.09,.98,.1,trim,wx-ww*.62,wy,d/2+.09,g);box(.09,.98,.1,trim,wx+ww*.62,wy,d/2+.09,g);
+  
  }
  for(let a=-1;a<=1;a+=2)box(.14,h*.82,.12,trim,a*(w/2-.22),h*.48,d/2+.08,g);
  if(h>10){box(w*.8,.5,d*.82,roofMat,0,h+.38,0,g);box(w*.35,.7,d*.35,trim,0,h+.82,0,g);}
@@ -651,7 +651,7 @@ for(let gx=-1;gx<=1;gx++)for(let gz=-1;gz<=1;gz++){
  if(gx>0&&gz<0)continue;
  const cx=gx*40,cz=gz*40;
  if(Math.abs(cz+80)<22||Math.abs(cz-80)<22)continue;
- for(let j=0;j<3;j++){
+ for(let j=0;j<2;j++){
   const x=cx+(j-1)*8+(gx%2?1:-1),z=cz+(j%2?7:-7);
   if(Math.abs(z+80)<17||Math.abs(z-80)<17)continue;
   shikumenBlock(x,z,6.5+(j%2)*1.2,6.2,8+(j%3)*2,(Math.abs(gx*3+gz+j))%4);
@@ -660,13 +660,10 @@ for(let gx=-1;gx<=1;gx++)for(let gz=-1;gz<=1;gz++){
 // Modern skyline district to the south-east: clearly blue glass towers rather than old stone blocks.
 for(const t of [
  // Pudong-like cluster: each tower has its own footprint and silhouette instead of overlapping copies.
- {x:38,z:-42,w:8,d:8,h:29,v:0},
  {x:55,z:-51,w:8,d:8,h:42,v:2},
  {x:73,z:-41,w:9,d:9,h:33,v:1},
- // A smaller, lower skyline across the avenue preserves depth without competing with the signature landmarks.
- {x:-43,z:-43,w:7,d:8,h:21,v:3},
- {x:-61,z:-51,w:8,d:8,h:28,v:1},
- {x:-79,z:-42,w:7,d:7,h:19,v:0}
+ // One modest secondary tower leaves the signature landmark silhouettes unobstructed.
+ {x:-61,z:-51,w:8,d:8,h:28,v:1}
 ])glassTower(t.x,t.z,t.w,t.d,t.h,t.v);
 
 // Stylized Shanghai skyline landmarks occupy reserved central plots.
