@@ -327,11 +327,11 @@ for(const bx of [-11,11]){box(.38,5.8,.38,bundLampMetal,bx,2.9,-102.5);box(.75,.
 const huangpuBridgeXs=[-92,92];
 for(const bridgeX of huangpuBridgeXs){
  // Continuous approach roads meet the bridge at both banks; road markings remain visible over the water.
- road(bridgeX,-160,9,120);
- box(9,.14,58,mat(0x68747b,.9),bridgeX,.105,-145);
- box(9,.035,58,roadMat,bridgeX,.195,-145);
- for(let laneZ=-171;laneZ<=-119;laneZ+=7)box(.12,.018,3.2,mat(0xf4f4eb),bridgeX,.22,laneZ);
- box(.1,.018,58,mat(0xf2c94c),bridgeX,.22,-145);
+ road(bridgeX,-152.5,9,95);
+ box(9,.1,58,mat(0x68747b,.9),bridgeX,0,-145);
+ box(9,.02,58,roadMat,bridgeX,.05,-145);
+ for(let laneZ=-171;laneZ<=-119;laneZ+=7)box(.12,.018,3.2,mat(0xf4f4eb),bridgeX,.07,laneZ);
+ box(.1,.018,58,mat(0xf2c94c),bridgeX,.07,-145);
  for(const side of [-1,1]){
   box(.22,.95,58,bundLampMetal,bridgeX+side*4.35,.68,-145);
   box(.16,.16,58,mat(0xc4cbd0,.6),bridgeX+side*4.35,1.2,-145);
@@ -339,8 +339,8 @@ for(const bridgeX of huangpuBridgeXs){
  }
  // Visible bridgehead ramps and stone abutments on both banks.
  for(const bz of [-178,-112]){
-  box(13,.32,5,quayStone,bridgeX,.13,bz);
-  box(9,.12,5,roadMat,bridgeX,.31,bz);
+  box(13,.12,5,quayStone,bridgeX,0,bz);
+  box(9,.02,5,roadMat,bridgeX,.07,bz);
  }
 }
 // Low-poly rolling hills form a green ridge around the city outskirts.
@@ -2047,7 +2047,7 @@ function update(dt, now){
   else if(propHit){propHit.fallen=true;propHit.group.rotation.z=(car.position.x-propHit.x)>=0?Math.PI/2:-Math.PI/2;propHit.group.rotation.x=(car.position.z-propHit.z)>=0?-Math.PI/2:Math.PI/2;applyCarDamage(propHit.kind==='tree'?.22:.16,now,propHit.kind==='tree'?'撞倒树木':'撞倒路灯');car.position.x=oldX;car.position.z=oldZ;speed*=-.28;lateralSpeed*=-.25;}
   else if(collides(car.position.x,car.position.z)){car.position.x=oldX;car.position.z=oldZ;speed*=-.25;lateralSpeed*=-.25;applyCarDamage(.08,now,'撞上建筑物');}
   else lastSafeCarPosition.set(car.position.x,0,car.position.z);
- car.position.x=THREE.MathUtils.clamp(car.position.x,-119,119);car.position.z=THREE.MathUtils.clamp(car.position.z,-225,119);
+ car.position.x=THREE.MathUtils.clamp(car.position.x,-119,119);car.position.z=THREE.MathUtils.clamp(car.position.z,-205,119);
  updateTraffic(dt,now);
  updatePolice(dt,now);
  // Player/traffic contact: stop the player's car at impact, damp the AI car, and notify once per cooldown.
