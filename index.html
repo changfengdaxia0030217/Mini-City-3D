@@ -601,19 +601,19 @@ occupied.push({x:shanghaiX,z:shanghaiZ,hw:4.8,hd:4.8});
 // Additional Pudong landmarks: Jin Mao's stepped pagoda silhouette and the World Financial Center's aperture crown.
 // They are deliberately separated from the Pearl Tower so each outline remains readable from the Bund riverbank.
 const jinMaoX=-48,jinMaoZ=-184,jinMaoH=31;
-const jinMao=new THREE.Group();jinMao.position.set(jinMaoX,0,jinMaoZ);scene.add(jinMao);
+const jinMaoDetail=new THREE.Group();jinMaoDetail.position.set(jinMaoX,0,jinMaoZ);scene.add(jinMaoDetail);
 const jinMaoGlass=mat(0x8eb9c9,.32),jinMaoStone=mat(0xc9d4d4,.55),jinMaoShadow=mat(0x476878,.48);
-box(8,2.2,8,jinMaoStone,0,1.1,0,jinMao);
+box(8,2.2,8,jinMaoStone,0,1.1,0,jinMaoDetail);
 for(let level=0;level<8;level++){
  const w=7.8-level*.48,h=3.25,zY=2.25+level*3.15;
- box(w,h,w,jinMaoGlass,0,zY+h/2,0,jinMao);
- box(w+.55,.28,w+.55,jinMaoStone,0,zY+h,0,jinMao);
+ box(w,h,w,jinMaoGlass,0,zY+h/2,0,jinMaoDetail);
+ box(w+.55,.28,w+.55,jinMaoStone,0,zY+h,0,jinMaoDetail);
  for(let side=-1;side<=1;side+=2){
-  box(.13,h*.86,.1,jinMaoStone,side*(w/2-.45),zY+h/2,w/2+.07,jinMao);
-  box(w*.84,.12,.1,jinMaoShadow,0,zY+h*.32,w/2+.09,jinMao);
+  box(.13,h*.86,.1,jinMaoStone,side*(w/2-.45),zY+h/2,w/2+.07,jinMaoDetail);
+  box(w*.84,.12,.1,jinMaoShadow,0,zY+h*.32,w/2+.09,jinMaoDetail);
  }
 }
-const jinMaoCrown=new THREE.Mesh(new THREE.ConeGeometry(2.1,4.5,8),jinMaoStone);jinMaoCrown.position.y=jinMaoH+2.2;jinMao.add(jinMaoCrown);
+const jinMaoCrown=new THREE.Mesh(new THREE.ConeGeometry(2.1,4.5,8),jinMaoStone);jinMaoCrown.position.y=jinMaoH+2.2;jinMaoDetail.add(jinMaoCrown);
 occupied.push({x:jinMaoX,z:jinMaoZ,hw:5.4,hd:5.4});
 
 // Shanghai World Financial Center: tapered sides and a large rectangular opening at the summit.
