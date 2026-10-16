@@ -108,10 +108,26 @@ body.hide-map #minimap-wrap,body.hide-missions #missions,body.hide-help #help{di
  window.setTimeout(function(){if(!document.body.dataset.gameReady){report('游戏在 12 秒内没有完成启动。请检查网络是否能加载 Three.js CDN，或查看上方错误信息。');}},12000);
 })();
 </script>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
 <script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+async function loadThreeModule(){
+  const sources=[
+    'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js',
+    'https://unpkg.com/three@0.160.0/build/three.module.js',
+    'https://esm.sh/three@0.160.0'
+  ];
+  let lastError;
+  for(const url of sources){
+    document.body.dataset.bootStage='正在加载 Three.js：'+url;
+    try{return await import(url);}
+    catch(error){lastError=error;console.warn('[Mini City 3D] Three.js CDN failed:',url,error);}
+  }
+  const message='Three.js 加载失败，已尝试 jsDelivr、unpkg、esm.sh。请检查网络或 CDN 访问。\n'+(lastError&&lastError.message?lastError.message:String(lastError));
+  const panel=document.getElementById('boot-diagnostic'),detail=document.getElementById('boot-diagnostic-message');
+  if(panel&&detail){panel.style.display='block';detail.textContent=message;}
+  throw lastError||new Error(message);
+}
+document.body.dataset.bootStage='正在初始化 3D 引擎';
+const THREE=await loadThreeModule();
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9dd8ee);
@@ -1083,7 +1099,7 @@ function makeLeg(x){
 const leftLeg=makeLeg(-.19),rightLeg=makeLeg(.19);
 
 let riggedAvatar=null,avatarMixer=null,avatarActions={},activeAvatarAction=null;
-const avatarLoader=new GLTFLoader();
+// The current avatar is procedural; no external model loader is required.
 // Keep the procedural blocky avatar active so its silhouette and combat pose stay consistent.
 // The fallback rig is animated below; do not replace it with a realistic external soldier model.
 function setRiggedMotion(kind){if(!avatarMixer)return;const names=Object.keys(avatarActions),find=terms=>names.find(n=>terms.some(t=>n.includes(t)));const key=kind==='run'?(find(['run'])||find(['walk'])):kind==='walk'?(find(['walk'])||find(['run'])):(find(['idle'])||find(['walk'])||find(['run']));const next=key?avatarActions[key]:null;if(!next||next===activeAvatarAction)return;next.reset().fadeIn(.18).play();if(activeAvatarAction)activeAvatarAction.fadeOut(.18);activeAvatarAction=next;}
