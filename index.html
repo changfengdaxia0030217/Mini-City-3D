@@ -175,7 +175,21 @@ addChineseWayfindingSign(9.8,9.8,Math.PI/4,'中山东一路','外滩 · 南京�
 addChineseWayfindingSign(-9.8,-9.8,-Math.PI/4,'人民广场','南京路步行街');
 // Huangpu River waterfront district: repositioned directly ahead of spawn so the Bund, river and Pudong skyline are visible during the first drive.
 const riverMat=new THREE.MeshStandardMaterial({color:0x397f9e,roughness:.28,metalness:.12});
-const huangpuRiver=new THREE.Mesh(new THREE.PlaneGeometry(420,56),riverMat);huangpuRiver.rotation.x=-Math.PI/2;huangpuRiver.position.set(0,-.055,-145);huangpuRiver.receiveShadow=true;scene.add(huangpuRiver);
+// A broad, gently winding Huangpu channel: a curved ribbon mesh instead of a rectangular water plane.
+const huangpuCenterZ=x=>-145+7.5*Math.sin(x*.018)+2.4*Math.sin(x*.043);
+const huangpuRiverPositions=[],huangpuRiverIndices=[];
+for(let x=-210;x<=210;x+=3){
+ const z=huangpuCenterZ(x);
+ huangpuRiverPositions.push(x,-.055,z-28,x,-.055,z+28);
+}
+for(let i=0;i<huangpuRiverPositions.length/6-1;i++){
+ const a=i*2,b=a+1,c=a+2,d=a+3;
+ huangpuRiverIndices.push(a,c,b,b,c,d);
+}
+const huangpuRiverGeometry=new THREE.BufferGeometry();
+huangpuRiverGeometry.setAttribute('position',new THREE.Float32BufferAttribute(huangpuRiverPositions,3));
+huangpuRiverGeometry.setIndex(huangpuRiverIndices);huangpuRiverGeometry.computeVertexNormals();
+const huangpuRiver=new THREE.Mesh(huangpuRiverGeometry,riverMat);huangpuRiver.receiveShadow=true;scene.add(huangpuRiver);
 const quayStone=mat(0xc7c1b4),railMetal=mat(0x303b45,.65),riverFoam=mat(0x9ac9d7,.4);
 box(420,.28,3.8,quayStone,0,.04,-112.5);
 box(420,.18,1.15,quayStone,0,.16,-109.8);
@@ -230,8 +244,7 @@ for(let wy=4;wy<41;wy+=3.2)box(8.04,.07,7.06,farTrimMat,0,wy,0,wfc);
 const farShanghai=new THREE.Group();farShanghai.position.set(62,0,-216);scene.add(farShanghai);
 const farCore=new THREE.Mesh(new THREE.CylinderGeometry(2.1,4.2,62,8,1),farGlassMat);farCore.position.y=31;farCore.rotation.y=Math.PI/8;farCore.castShadow=true;farShanghai.add(farCore);
 const farSpire=new THREE.Mesh(new THREE.ConeGeometry(.55,12,8),farMetalMat);farSpire.position.y=68;farShanghai.add(farSpire);
-// Outer ring roads add more routes around the expanded city.
-for(const p of [-100,100]){road(0,p,280,8);road(p,0,8,280)}
+// Removed the oversized outer-ring roads: keep the playable street network focused around the Shanghai districts.
 // Raised pedestrian sidewalks on both sides of every road. Gaps keep junctions open for traffic.
 function addSidewalkRun(axis,fixed,extent,offset,depth,crossings){
  const cuts=crossings.filter(v=>Math.abs(v)<extent+1).map(v=>({a:v-4.2,b:v+4.2})).sort((a,b)=>a.a-b.a);
@@ -249,8 +262,7 @@ for(const z of [0])for(const side of [-1,1])addSidewalkRun('x',z,120,side*8.15,2
 for(const x of [0])for(const side of [-1,1])addSidewalkRun('z',x,120,side*8.15,2.1,roadCrossings.filter(z=>Math.abs(z)<120));
 for(const z of [-60,60])for(const side of [-1,1])addSidewalkRun('x',z,120,side*7.15,1.9,roadCrossings.filter(x=>Math.abs(x)<120));
 for(const x of [-60,60])for(const side of [-1,1])addSidewalkRun('z',x,120,side*7.15,1.9,roadCrossings.filter(z=>Math.abs(z)<120));
-for(const z of [-100,100])for(const side of [-1,1])addSidewalkRun('x',z,140,side*5.25,1.7,roadCrossings.filter(x=>Math.abs(x)<140));
-for(const x of [-100,100])for(const side of [-1,1])addSidewalkRun('z',x,140,side*5.25,1.7,roadCrossings.filter(z=>Math.abs(z)<140));
+// Sidewalks are limited to the inner street network; outer-ring sidewalks were removed with those roads.
  // Zebra crossings at major intersections.
  const crosswalkMat=mat(0xf5f5ee);
  for(const ix of [-100,-60,0,60,100])for(const iz of [-100,-60,0,60,100]){
@@ -523,7 +535,7 @@ function glassTower(x,z,w,d,h,variant){
 const bundXs=[-104,-78,-52,-26,0,26,52,78,104];
 for(let i=0;i<bundXs.length;i++)if(Math.abs(bundXs[i])>26)bundBuilding(bundXs[i],-80,[20,22,19][i%3],[12,13,12][i%3],[22,27,24,31,23,29,25,32,22][i],i);
 // Inner residential blocks: recognizable Shanghai shikumen / lilong brick-and-stone low-rise buildings.
-for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
+for(let gx=-1;gx<=1;gx++)for(let gz=-1;gz<=1;gz++){
  if(gx===0||gz===0)continue;
  // Reserve the landmark plaza and the south-east glass-tower district; do not bury them under low-rise blocks.
  if(gx===1&&gz===1)continue;
