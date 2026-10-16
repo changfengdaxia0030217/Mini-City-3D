@@ -634,21 +634,21 @@ occupied.push({x:jinMaoX,z:jinMaoZ,hw:5.4,hd:5.4});
 
 // Shanghai World Financial Center: tapered sides and a large rectangular opening at the summit.
 const wfcX=82,wfcZ=-184,wfcH=35,wfcW=9;
-const wfc=new THREE.Group();wfc.position.set(wfcX,0,wfcZ);scene.add(wfc);
+const wfcDetail=new THREE.Group();wfcDetail.position.set(wfcX,0,wfcZ);scene.add(wfcDetail);
 const wfcGlass=mat(0x6e9eb8,.28),wfcEdge=mat(0xc7d8df,.4),wfcDark=mat(0x344d62,.45);
-const wfcBody=box(wfcW,wfcH,wfcW,wfcGlass,0,wfcH/2,0,wfc);
-for(let level=0;level<10;level++)box(wfcW+.12,.12,wfcW+.12,wfcEdge,0,2+level*3.15,0,wfc);
+const wfcBody=box(wfcW,wfcH,wfcW,wfcGlass,0,wfcH/2,0,wfcDetail);
+for(let level=0;level<10;level++)box(wfcW+.12,.12,wfcW+.12,wfcEdge,0,2+level*3.15,0,wfcDetail);
 for(const side of [-1,1]){
  const taper=new THREE.Mesh(new THREE.CylinderGeometry(3.05,5.1,wfcH,4,1,true),wfcGlass);
- taper.position.y=wfcH/2;taper.rotation.y=Math.PI/4;wfc.add(taper);
- box(.24,wfcH+.4,.24,wfcEdge,side*4.35,wfcH/2,4.35,wfc);
+ taper.position.y=wfcH/2;taper.rotation.y=Math.PI/4;wfcDetail.add(taper);
+ box(.24,wfcH+.4,.24,wfcEdge,side*4.35,wfcH/2,4.35,wfcDetail);
 }
 // The open rectangular crown is the defining silhouette, not a pointed generic skyscraper.
-box(8.8,1.0,1.0,wfcEdge,0,wfcH-.1,0,wfc);
-box(1.0,5.0,1.0,wfcEdge,-3.8,wfcH+2.2,0,wfc);
-box(1.0,5.0,1.0,wfcEdge,3.8,wfcH+2.2,0,wfc);
-box(8.0,.9,1.0,wfcEdge,0,wfcH+4.6,0,wfc);
-box(7.1,3.8,.18,wfcDark,0,wfcH+2.3,4.55,wfc);
+box(8.8,1.0,1.0,wfcEdge,0,wfcH-.1,0,wfcDetail);
+box(1.0,5.0,1.0,wfcEdge,-3.8,wfcH+2.2,0,wfcDetail);
+box(1.0,5.0,1.0,wfcEdge,3.8,wfcH+2.2,0,wfcDetail);
+box(8.0,.9,1.0,wfcEdge,0,wfcH+4.6,0,wfcDetail);
+box(7.1,3.8,.18,wfcDark,0,wfcH+2.3,4.55,wfcDetail);
 occupied.push({x:wfcX,z:wfcZ,hw:5.6,hd:5.6});
 
 // Park trees are grouped to support knock-down collisions.
