@@ -173,25 +173,25 @@ function addChineseWayfindingSign(x,z,rotation,label,subLabel){
 }
 addChineseWayfindingSign(9.8,9.8,Math.PI/4,'中山东一路','外滩 · 南京东路');
 addChineseWayfindingSign(-9.8,-9.8,-Math.PI/4,'人民广场','南京路步行街');
-// Huangpu River waterfront district: broad river, Bund promenade, railing and a distant Pudong skyline.
+// Huangpu River waterfront district: repositioned directly ahead of spawn so the Bund, river and Pudong skyline are visible during the first drive.
 const riverMat=new THREE.MeshStandardMaterial({color:0x397f9e,roughness:.28,metalness:.12});
-const huangpuRiver=new THREE.Mesh(new THREE.PlaneGeometry(420,72),riverMat);huangpuRiver.rotation.x=-Math.PI/2;huangpuRiver.position.set(0,-.055,181);huangpuRiver.receiveShadow=true;scene.add(huangpuRiver);
+const huangpuRiver=new THREE.Mesh(new THREE.PlaneGeometry(420,56),riverMat);huangpuRiver.rotation.x=-Math.PI/2;huangpuRiver.position.set(0,-.055,-145);huangpuRiver.receiveShadow=true;scene.add(huangpuRiver);
 const quayStone=mat(0xc7c1b4),railMetal=mat(0x303b45,.65),riverFoam=mat(0x9ac9d7,.4);
-box(420,.28,3.8,quayStone,0,.04,141);
-box(420,.18,1.15,quayStone,0,.16,137.8);
-box(420,.10,.12,railMetal,0,1.08,143.1);
-box(420,.10,.12,railMetal,0,.38,143.1);
+box(420,.28,3.8,quayStone,0,.04,-112.5);
+box(420,.18,1.15,quayStone,0,.16,-109.8);
+box(420,.10,.12,railMetal,0,1.08,-117);
+box(420,.10,.12,railMetal,0,.38,-117);
 for(let rx=-208;rx<=208;rx+=3.5){
- const post=box(.09,.9,.09,railMetal,rx,.7,143.1);
- if(Math.abs(rx%14)<.2)box(.16,.16,.16,riverFoam,rx,1.22,143.1);
+ const post=box(.09,.9,.09,railMetal,rx,.7,-117);
+ if(Math.abs(rx%14)<.2)box(.16,.16,.16,riverFoam,rx,1.22,-117);
 }
-road(0,125,280,13);
+road(0,-110,280,5);
 for(const side of [-1,1]){
- box(280,.14,2.3,sidewalkMat,0,.015,side===1?116.8:133.2);
+ box(280,.14,2.3,sidewalkMat,0,.015,side===1?-106.8:-113.2);
 }
 const promenadeTreeMat=mat(0x397d43),trunkMat=mat(0x77513a);
 for(let tx=-130;tx<=130;tx+=13){
- for(const tz of [114,136]){
+ for(const tz of [-107,-114]){
   const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,2.3,7),trunkMat);trunk.position.set(tx,1.15,tz);trunk.castShadow=true;scene.add(trunk);
   const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.35,1),promenadeTreeMat);crown.position.set(tx,2.9,tz);crown.castShadow=true;scene.add(crown);
  }
@@ -201,7 +201,7 @@ const farTowerColors=[0x78aabd,0x91b7c8,0x6c8fa8,0xb8cbd2,0x8aa4b6];
 const farTrimMat=mat(0xcbd9dc,.5),farGlassMat=mat(0x79b9d8,.28),farMetalMat=mat(0x9baeb8,.35);
 for(let fi=0;fi<21;fi++){
  const fx=-150+fi*15,fh=18+((fi*17)%5)*8,fw=7+(fi%3)*1.7,fd=7+(fi%4)*1.2;
- const fg=new THREE.Group();fg.position.set(fx,0,222+(fi%2)*8);scene.add(fg);
+ const fg=new THREE.Group();fg.position.set(fx,0,-220-(fi%2)*8);scene.add(fg);
  const fm=mat(farTowerColors[fi%farTowerColors.length],.42);
  const towerBody=box(fw,fh,fd,fm,0,fh/2,0,fg);
  box(fw+.25,.22,fd+.25,farTrimMat,0,fh+.1,0,fg);
@@ -212,7 +212,7 @@ for(let fi=0;fi<21;fi++){
 // Distinct Pudong landmarks: Jin Mao's tiered crown and the World Financial Center frame Shanghai Tower.
 const pudongGold=mat(0xc5b18a,.38),pudongGlass=mat(0x6fa8c4,.28),pudongEdge=mat(0xc9d7dc,.4);
 // Jin Mao-inspired stepped tower.
-const jinMao=new THREE.Group();jinMao.position.set(18,0,221);scene.add(jinMao);
+const jinMao=new THREE.Group();jinMao.position.set(18,0,-218);scene.add(jinMao);
 for(let level=0;level<8;level++){
  const w=5.8-level*.48,d=5.8-level*.48,h=5.6;
  box(w,h,d,level%2?pudongGlass:pudongGold,0,level*h+h/2,0,jinMao);
@@ -220,7 +220,7 @@ for(let level=0;level<8;level++){
 }
 const jinMaoSpire=new THREE.Mesh(new THREE.ConeGeometry(.42,7,8),farMetalMat);jinMaoSpire.position.y=8*5.6+3.4;jinMao.add(jinMaoSpire);
 // World Financial Center-inspired tower with its unmistakable framed crown.
-const wfc=new THREE.Group();wfc.position.set(-31,0,222);scene.add(wfc);
+const wfc=new THREE.Group();wfc.position.set(-31,0,-220);scene.add(wfc);
 box(8,43,7,pudongGlass,0,21.5,0,wfc);
 for(const side of [-1,1])box(.22,12,.24,farTrimMat,side*3.85,49,0,wfc);
 box(8.1,.28,7.1,farTrimMat,0,43,0,wfc);
@@ -228,7 +228,7 @@ box(5.2,.35,7.15,pudongGlass,0,48.8,0,wfc);
 box(8.15,.22,7.15,farTrimMat,0,55,0,wfc);
 for(let wy=4;wy<41;wy+=3.2)box(8.04,.07,7.06,farTrimMat,0,wy,0,wfc);
 // Shanghai Tower remains the tallest, twisted glass landmark.
-const farShanghai=new THREE.Group();farShanghai.position.set(62,0,218);scene.add(farShanghai);
+const farShanghai=new THREE.Group();farShanghai.position.set(62,0,-216);scene.add(farShanghai);
 const farCore=new THREE.Mesh(new THREE.CylinderGeometry(2.1,4.2,62,8,1),farGlassMat);farCore.position.y=31;farCore.rotation.y=Math.PI/8;farCore.castShadow=true;farShanghai.add(farCore);
 const farSpire=new THREE.Mesh(new THREE.ConeGeometry(.55,12,8),farMetalMat);farSpire.position.y=68;farShanghai.add(farSpire);
 // Outer ring roads add more routes around the expanded city.
@@ -428,7 +428,7 @@ function glassTower(x,z,w,d,h,variant){
 // A new, deliberately composed district plan replaces the former random building scatter.
 // North edge: a continuous Bund-style historic row, placed BETWEEN streets rather than on top of the road.
 const bundXs=[-104,-78,-52,-26,0,26,52,78,104];
-for(let i=0;i<bundXs.length;i++)bundBuilding(bundXs[i],80,[20,22,19][i%3],[12,13,12][i%3],[22,27,24,31,23,29,25,32,22][i],i);
+for(let i=0;i<bundXs.length;i++)bundBuilding(bundXs[i],-80,[20,22,19][i%3],[12,13,12][i%3],[22,27,24,31,23,29,25,32,22][i],i);
 // Inner residential blocks: recognizable Shanghai shikumen / lilong brick-and-stone low-rise buildings.
 for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
  if(gx===0||gz===0)continue;
@@ -436,23 +436,23 @@ for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
  if(gx===1&&gz===1)continue;
  if(gx>0&&gz<0)continue;
  const cx=gx*40,cz=gz*40;
- if(Math.abs(cz-80)<22)continue;
+ if(Math.abs(cz+80)<22||Math.abs(cz-80)<22)continue;
  for(let j=0;j<3;j++){
   const x=cx+(j-1)*8+(gx%2?1:-1),z=cz+(j%2?7:-7);
-  if(Math.abs(z-80)<17)continue;
+  if(Math.abs(z+80)<17||Math.abs(z-80)<17)continue;
   shikumenBlock(x,z,6.5+(j%2)*1.2,6.2,8+(j%3)*2,(Math.abs(gx*3+gz+j))%4);
  }
 }
 // Modern skyline district to the south-east: clearly blue glass towers rather than old stone blocks.
 for(const t of [
  {x:40,z:-42,w:8,d:8,h:29,v:0},{x:54,z:-50,w:7,d:8,h:39,v:2},{x:70,z:-42,w:9,d:9,h:33,v:1},
- {x:42,z:-72,w:7,d:7,h:24,v:3},{x:58,z:-76,w:9,d:8,h:45,v:0},{x:77,z:-70,w:7,d:8,h:31,v:2},
+ {x:42,z:-43,w:7,d:7,h:24,v:3},{x:58,z:-53,w:9,d:8,h:45,v:0},{x:77,z:-43,w:7,d:8,h:31,v:2},
  {x:-42,z:-42,w:7,d:8,h:21,v:3},{x:-58,z:-50,w:8,d:8,h:28,v:1},{x:-76,z:-42,w:7,d:7,h:19,v:0}
 ])glassTower(t.x,t.z,t.w,t.d,t.h,t.v);
 
 // Stylized Shanghai skyline landmarks occupy reserved central plots.
 const landmarkPink=mat(0xd65d91,.3),landmarkMetal=mat(0x9baeb8,.35),landmarkGlass=mat(0x79b9d8,.28);
-const pearlX=30,pearlZ=30;
+const pearlX=30,pearlZ=-183;
 const pearlStem=new THREE.Mesh(new THREE.CylinderGeometry(.42,.72,19,10),landmarkMetal);pearlStem.position.set(pearlX,9.5,pearlZ);pearlStem.castShadow=true;scene.add(pearlStem);
 for(const b of [{y:5.4,r:1.85},{y:11.7,r:1.35},{y:17.2,r:2.15}]){
  const orb=new THREE.Mesh(new THREE.SphereGeometry(b.r,12,10),landmarkPink);orb.position.set(pearlX,b.y,pearlZ);orb.castShadow=true;scene.add(orb);
@@ -460,7 +460,7 @@ for(const b of [{y:5.4,r:1.85},{y:11.7,r:1.35},{y:17.2,r:2.15}]){
 }
 const pearlTip=new THREE.Mesh(new THREE.ConeGeometry(.38,4.5,8),landmarkMetal);pearlTip.position.set(pearlX,21.8,pearlZ);scene.add(pearlTip);
 occupied.push({x:pearlX,z:pearlZ,hw:2.6,hd:2.6});
-const shanghaiX=42,shanghaiZ=30,shanghaiH=39;
+const shanghaiX=42,shanghaiZ=-184,shanghaiH=39;
 const tower=new THREE.Group();tower.position.set(shanghaiX,0,shanghaiZ);scene.add(tower);
 const towerBase=new THREE.Mesh(new THREE.CylinderGeometry(3.3,4.4,shanghaiH,8,1),landmarkGlass);towerBase.position.y=shanghaiH/2;towerBase.rotation.y=Math.PI/8;towerBase.castShadow=true;tower.add(towerBase);
 for(let level=0;level<7;level++){
