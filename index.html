@@ -582,6 +582,25 @@ function bundBuilding(x,z,w,d,h,variant){
   const handB=box(.62,.09,.09,clockInk,.18,h+4.58,d/2+2.84,g);handB.rotation.z=.25;
   for(let tick=0;tick<12;tick++){const a=tick*Math.PI/6;const mark=box(.09,.22,.07,clockInk,Math.sin(a)*.94,h+4.7+Math.cos(a)*.94,d/2+2.84,g);mark.rotation.z=-a;}
  }
+ // Warm facade lanterns improve the Bund's historic street silhouette at street level.
+ const bundLampGlow=new THREE.MeshStandardMaterial({color:0xffd58a,emissive:0xffa52b,emissiveIntensity:1.35,roughness:.38});
+ const bundLampMetal=mat(0x48515a,.58);
+ for(const lx of [-w*.31,0,w*.31]){
+  box(.42,.12,.18,bundLampMetal,lx,3.45,d/2+.22,g);
+  box(.3,.18,.1,bundLampGlow,lx,3.31,d/2+.31,g);
+ }
+ // Give the Customs House-inspired clock tower a bilingual landmark plaque.
+ if(variant===2){
+  const plaqueCanvas=document.createElement('canvas');plaqueCanvas.width=512;plaqueCanvas.height=112;
+  const plaqueCtx=plaqueCanvas.getContext('2d');plaqueCtx.fillStyle='#173e52';plaqueCtx.fillRect(0,0,512,112);
+  plaqueCtx.strokeStyle='#e9c878';plaqueCtx.lineWidth=6;plaqueCtx.strokeRect(5,5,502,102);
+  plaqueCtx.fillStyle='#fff0c9';plaqueCtx.textAlign='center';plaqueCtx.textBaseline='middle';
+  plaqueCtx.font='bold 39px sans-serif';plaqueCtx.fillText('上海海关大楼',256,37);
+  plaqueCtx.font='24px sans-serif';plaqueCtx.fillText('SHANGHAI CUSTOMS HOUSE',256,79);
+  const plaqueTex=new THREE.CanvasTexture(plaqueCanvas);plaqueTex.colorSpace=THREE.SRGBColorSpace;
+  const plaque=new THREE.Mesh(new THREE.PlaneGeometry(6.2,1.35),new THREE.MeshBasicMaterial({map:plaqueTex,side:THREE.DoubleSide}));
+  plaque.position.set(0,2.55,d/2+.34);g.add(plaque);
+ }
  // Roof balustrades and chunky arcade columns create a continuous cartoon historic streetscape.
  const count=Math.max(4,Math.floor(w/4.2));
  for(let a=0;a<=count;a++){const ax=-w/2+a*w/count;box(.22,2.65,.3,bundTrimMat,ax,1.55,d/2+.2,g);box(.42,.18,.38,bundTrimMat,ax,2.88,d/2+.2,g);box(.42,.2,.38,bundTrimMat,ax,.25,d/2+.2,g);}
