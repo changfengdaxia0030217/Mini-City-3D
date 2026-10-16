@@ -410,6 +410,19 @@ for(const bridgeX of huangpuBridgeXs){
   ]);
   const arch=new THREE.Mesh(new THREE.TubeGeometry(archCurve,48,.34,8,false),archMat);
   arch.castShadow=true;scene.add(arch);
+  // Warm marker lights trace the high point of each arch, making the crossing readable from either bank.
+  for(let lightZ=-166;lightZ<=-124;lightZ+=6){
+   const lightT=(lightZ+174)/58,lightY=.55+8.05*Math.sin(Math.PI*lightT);
+   const archMarker=new THREE.Mesh(new THREE.SphereGeometry(.19,8,6),mat(0xffd68a,.35));
+   archMarker.position.set(archX,lightY+.18,lightZ);scene.add(archMarker);
+   const markerGlow=new THREE.PointLight(0xffc875,.32,4);markerGlow.position.copy(archMarker.position);scene.add(markerGlow);
+  }
+  // Crown caps and substantial end pylons give the arch bridge a clearer silhouette.
+  for(const endZ of [-174,-116]){
+   box(.62,1.35,.72,archMat,archX,.78,endZ);
+   const archCap=new THREE.Mesh(new THREE.SphereGeometry(.38,8,6),hangerMat);
+   archCap.position.set(archX,1.55,endZ);scene.add(archCap);
+  }
   for(let hz=-168;hz<=-122;hz+=4){
    const t=(hz+174)/58;
    const hy=.55+8.05*Math.sin(Math.PI*t);
@@ -444,6 +457,29 @@ box(2.7,.12,1.3,shipWhite,0,5.02,-2.4,cruiseShip);
 for(const side of [-1,1]){
  box(.12,.5,10,shipWhite,side*2.05,1.75,1.1,cruiseShip);
  for(let rz=-3.5;rz<=5.5;rz+=1.5)box(.08,.45,.08,shipRed,side*2.08,1.95,rz,cruiseShip);
+}
+// A compact floating pier connects the Bund promenade to the moored sightseeing cruise.
+const pierWood=mat(0x8b7254,.88),pierEdge=mat(0x4a565a,.82),pierLamp=mat(0xffd28a,.32);
+box(12,.28,3.4,pierWood,25,.05,-119.8);
+box(12.5,.22,.22,pierEdge,25,.08,-121.45);
+box(12.5,.22,.22,pierEdge,25,.08,-118.15);
+for(let plankX=19.5;plankX<=30.5;plankX+=1.1){
+ box(.075,.035,3.05,mat(0xc8aa7b,.9),plankX,.205,-119.8);
+}
+for(const pileX of [19.4,22.2,25,27.8,30.6]){
+ for(const pileZ of [-121.1,-118.5]){
+  const mooringPile=new THREE.Mesh(new THREE.CylinderGeometry(.17,.22,1.25,8),pierEdge);
+  mooringPile.position.set(pileX,-.35,pileZ);scene.add(mooringPile);
+  const pileCap=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.12,8),shipDeck);
+  pileCap.position.set(pileX,.32,pileZ);scene.add(pileCap);
+ }
+}
+for(const lampX of [20,30]){
+ const dockPost=new THREE.Mesh(new THREE.CylinderGeometry(.12,.16,2.6,8),bundLampMetal);
+ dockPost.position.set(lampX,1.35,-119.8);scene.add(dockPost);
+ const dockLantern=new THREE.Mesh(new THREE.SphereGeometry(.28,8,6),pierLamp);
+ dockLantern.position.set(lampX,2.75,-119.8);scene.add(dockLantern);
+ const dockGlow=new THREE.PointLight(0xffc875,.45,7);dockGlow.position.copy(dockLantern.position);scene.add(dockGlow);
 }
 // A second smaller sightseeing boat sits farther along the Bund waterfront for a lived-in river scene.
 const cruiseShipFar=cruiseShip.clone(true);cruiseShipFar.position.set(-38,.12,-137);cruiseShipFar.rotation.y=Math.PI/2;cruiseShipFar.scale.setScalar(.78);scene.add(cruiseShipFar);
