@@ -640,9 +640,14 @@ for(let gx=-1;gx<=1;gx++)for(let gz=-1;gz<=1;gz++){
 }
 // Modern skyline district to the south-east: clearly blue glass towers rather than old stone blocks.
 for(const t of [
- {x:40,z:-42,w:8,d:8,h:29,v:0},{x:54,z:-50,w:7,d:8,h:39,v:2},{x:70,z:-42,w:9,d:9,h:33,v:1},
- {x:42,z:-43,w:7,d:7,h:24,v:3},{x:58,z:-53,w:9,d:8,h:45,v:0},{x:77,z:-43,w:7,d:8,h:31,v:2},
- {x:-42,z:-42,w:7,d:8,h:21,v:3},{x:-58,z:-50,w:8,d:8,h:28,v:1},{x:-76,z:-42,w:7,d:7,h:19,v:0}
+ // Pudong-like cluster: each tower has its own footprint and silhouette instead of overlapping copies.
+ {x:38,z:-42,w:8,d:8,h:29,v:0},
+ {x:55,z:-51,w:8,d:8,h:42,v:2},
+ {x:73,z:-41,w:9,d:9,h:33,v:1},
+ // A smaller, lower skyline across the avenue preserves depth without competing with the signature landmarks.
+ {x:-43,z:-43,w:7,d:8,h:21,v:3},
+ {x:-61,z:-51,w:8,d:8,h:28,v:1},
+ {x:-79,z:-42,w:7,d:7,h:19,v:0}
 ])glassTower(t.x,t.z,t.w,t.d,t.h,t.v);
 
 // Stylized Shanghai skyline landmarks occupy reserved central plots.
