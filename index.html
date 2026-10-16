@@ -299,6 +299,39 @@ function updateRiverFlow(dt){
   ripple.position.z=riverCenterZ(ripple.position.x)+Math.sin(ripple.position.x*.12)*1.3;
  }
 }
+
+// Shanghai waterfront landmark dressing: a generous promenade, warm lamps, benches and a legible Bund entrance.
+const bundPlazaMat=mat(0xd5c7ad,.9),bundLampMetal=mat(0x303943,.65),bundLampGlow=new THREE.MeshStandardMaterial({color:0xffe1a0,emissive:0xffbd55,emissiveIntensity:.7});
+box(250,.16,8,bundPlazaMat,0,.035,-108.8);
+box(250,.09,1.1,quayStone,0,.13,-113.3);
+for(let lx=-120;lx<=120;lx+=15){
+ const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.18,3.4,8),bundLampMetal);post.position.set(lx,1.7,-106.3);post.castShadow=true;scene.add(post);
+ const arm=box(.75,.12,.12,bundLampMetal,lx+.28,3.22,-106.3);
+ const bulb=new THREE.Mesh(new THREE.SphereGeometry(.24,8,6),bundLampGlow);bulb.position.set(lx+.55,3.05,-106.3);scene.add(bulb);
+ for(const bx of [-1,1]){
+  const bench= new THREE.Group();bench.position.set(lx+bx*3,.2,-103.7);scene.add(bench);
+  box(1.8,.14,.62,mat(0x805b3e),0,.48,0,bench);
+  box(1.8,.62,.12,mat(0x805b3e),0,.78,-.23,bench);
+  for(const leg of [-.68,.68)box(.12,.48,.12,bundLampMetal,leg,.22,0,bench);
+ }
+}
+// Monumental, readable entrance sign facing the road.
+const bundSignCanvas=document.createElement('canvas');bundSignCanvas.width=1024;bundSignCanvas.height=256;
+const bundSignCtx=bundSignCanvas.getContext('2d');bundSignCtx.fillStyle='#203c43';bundSignCtx.fillRect(0,0,1024,256);bundSignCtx.strokeStyle='#d9bd83';bundSignCtx.lineWidth=12;bundSignCtx.strokeRect(12,12,1000,232);
+bundSignCtx.textAlign='center';bundSignCtx.fillStyle='#f4e4c3';bundSignCtx.font='bold 112px sans-serif';bundSignCtx.fillText('外 滩  THE BUND',512,157);
+const bundSignTex=new THREE.CanvasTexture(bundSignCanvas);bundSignTex.colorSpace=THREE.SRGBColorSpace;
+const bundSign=new THREE.Mesh(new THREE.PlaneGeometry(22,5.5),new THREE.MeshBasicMaterial({map:bundSignTex,side:THREE.DoubleSide}));
+bundSign.position.set(0,6.4,-102.5);scene.add(bundSign);
+for(const bx of [-11,11]){box(.38,5.8,.38,bundLampMetal,bx,2.9,-102.5);box(.75,.35,.75,bundPlazaMat,bx,.18,-102.5);}
+// Side spans cross the widened Huangpu channel; leave the central landmark view open.
+for(const bridgeX of [-92,92]){
+ box(9,.5,58,mat(0x68747b,.9),bridgeX,.22,-145);
+ for(const side of [-1,1]){
+  box(.18,.9,58,bundLampMetal,bridgeX+side*4.35,.85,-145);
+  for(let bz=-171;bz<=-119;bz+=4)box(.16,.55,.16,bundLampMetal,bridgeX+side*4.35,1.1,bz);
+ }
+ for(let bz=-170;bz<=-120;bz+=5)box(8.7,.09,.18,bundPlazaMat,bridgeX,.5,bz);
+}
 // Low-poly rolling hills form a green ridge around the city outskirts.
 const hillMaterials=[mat(0x659b58),mat(0x79aa62),mat(0x527f4c)];
 for(let i=0;i<18;i++){
@@ -439,7 +472,7 @@ function glassTower(x,z,w,d,h,variant){
 // A new, deliberately composed district plan replaces the former random building scatter.
 // North edge: a continuous Bund-style historic row, placed BETWEEN streets rather than on top of the road.
 const bundXs=[-104,-78,-52,-26,0,26,52,78,104];
-for(let i=0;i<bundXs.length;i++)if(bundXs[i]!==0)bundBuilding(bundXs[i],-80,[20,22,19][i%3],[12,13,12][i%3],[22,27,24,31,23,29,25,32,22][i],i);
+for(let i=0;i<bundXs.length;i++)if(Math.abs(bundXs[i])>26)bundBuilding(bundXs[i],-80,[20,22,19][i%3],[12,13,12][i%3],[22,27,24,31,23,29,25,32,22][i],i);
 // Inner residential blocks: recognizable Shanghai shikumen / lilong brick-and-stone low-rise buildings.
 for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
  if(gx===0||gz===0)continue;
