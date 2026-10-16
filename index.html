@@ -446,7 +446,7 @@ const shopSignMaterials=shopSignLabels.map((label,i)=>{
 const bundStoneMats=[mat(0xe6d7bd,.82),mat(0xd8c6a8,.86),mat(0xf0e3ca,.8),mat(0xcbb99d,.88)];
 const bundWindowMat=mat(0x4b7183,.48),bundTrimMat=mat(0xf5e7cc,.78),bundRoofMat=mat(0x59636a,.82),bundBronzeMat=mat(0x7b8c8d,.55);
 function bundBuilding(x,z,w,d,h,variant){
- const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);const stone=bundStoneMats[variant%4];
+ const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=Math.PI;scene.add(g);const stone=bundStoneMats[variant%4];
  box(w,h,d,stone,0,h/2,0,g);box(w+.8,.55,d+.65,stone,0,.28,0,g);
  for(const fy of [h*.27,h*.51,h*.75])box(w+.42,.2,d+.34,bundTrimMat,0,fy,0,g);
  box(w+1.25,.5,d+.9,bundTrimMat,0,h+.12,0,g);box(w+.7,.25,d+.55,bundRoofMat,0,h+.48,0,g);
@@ -561,7 +561,46 @@ for(let level=0;level<7;level++){
  const band=new THREE.Mesh(new THREE.TorusGeometry(rad,.075,5,8),facadeTrim);band.position.y=y;band.rotation.x=Math.PI/2;tower.add(band);
 }
 const spire=new THREE.Mesh(new THREE.ConeGeometry(.62,7,8),landmarkMetal);spire.position.y=shanghaiH+3.4;tower.add(spire);
+
 occupied.push({x:shanghaiX,z:shanghaiZ,hw:4.8,hd:4.8});
+
+// Additional Pudong landmarks: Jin Mao's stepped pagoda silhouette and the World Financial Center's aperture crown.
+// They are deliberately separated from the Pearl Tower so each outline remains readable from the Bund riverbank.
+const jinMaoX=-48,jinMaoZ=-184,jinMaoH=31;
+const jinMao=new THREE.Group();jinMao.position.set(jinMaoX,0,jinMaoZ);scene.add(jinMao);
+const jinMaoGlass=mat(0x8eb9c9,.32),jinMaoStone=mat(0xc9d4d4,.55),jinMaoShadow=mat(0x476878,.48);
+box(8,2.2,8,jinMaoStone,0,1.1,0,jinMao);
+for(let level=0;level<8;level++){
+ const w=7.8-level*.48,h=3.25,zY=2.25+level*3.15;
+ box(w,h,w,jinMaoGlass,0,zY+h/2,0,jinMao);
+ box(w+.55,.28,w+.55,jinMaoStone,0,zY+h,0,jinMao);
+ for(let side=-1;side<=1;side+=2){
+  box(.13,h*.86,.1,jinMaoStone,side*(w/2-.45),zY+h/2,w/2+.07,jinMao);
+  box(w*.84,.12,.1,jinMaoShadow,0,zY+h*.32,w/2+.09,jinMao);
+ }
+}
+const jinMaoCrown=new THREE.Mesh(new THREE.ConeGeometry(2.1,4.5,8),jinMaoStone);jinMaoCrown.position.y=jinMaoH+2.2;jinMao.add(jinMaoCrown);
+occupied.push({x:jinMaoX,z:jinMaoZ,hw:5.4,hd:5.4});
+
+// Shanghai World Financial Center: tapered sides and a large rectangular opening at the summit.
+const wfcX=82,wfcZ=-184,wfcH=35,wfcW=9;
+const wfc=new THREE.Group();wfc.position.set(wfcX,0,wfcZ);scene.add(wfc);
+const wfcGlass=mat(0x6e9eb8,.28),wfcEdge=mat(0xc7d8df,.4),wfcDark=mat(0x344d62,.45);
+const wfcBody=box(wfcW,wfcH,wfcW,wfcGlass,0,wfcH/2,0,wfc);
+for(let level=0;level<10;level++)box(wfcW+.12,.12,wfcW+.12,wfcEdge,0,2+level*3.15,0,wfc);
+for(const side of [-1,1]){
+ const taper=new THREE.Mesh(new THREE.CylinderGeometry(3.05,5.1,wfcH,4,1,true),wfcGlass);
+ taper.position.y=wfcH/2;taper.rotation.y=Math.PI/4;wfc.add(taper);
+ box(.24,wfcH+.4,.24,wfcEdge,side*4.35,wfcH/2,4.35,wfc);
+}
+// The open rectangular crown is the defining silhouette, not a pointed generic skyscraper.
+box(8.8,1.0,1.0,wfcEdge,0,wfcH-.1,0,wfc);
+box(1.0,5.0,1.0,wfcEdge,-3.8,wfcH+2.2,0,wfc);
+box(1.0,5.0,1.0,wfcEdge,3.8,wfcH+2.2,0,wfc);
+box(8.0,.9,1.0,wfcEdge,0,wfcH+4.6,0,wfc);
+box(7.1,3.8,.18,wfcDark,0,wfcH+2.3,4.55,wfc);
+occupied.push({x:wfcX,z:wfcZ,hw:5.6,hd:5.6});
+
 // Park trees are grouped to support knock-down collisions.
 const destructibleProps=[];
 const park=box(25,.08,25,mat(0x91d47a),-91,.02,-91);
