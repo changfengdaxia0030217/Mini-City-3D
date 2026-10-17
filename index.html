@@ -1775,7 +1775,7 @@ function createTrafficSignals(){
    const bulb=new THREE.Mesh(trafficSignalBulbGeometry,material);
    bulb.position.set(poleX,3.73-b*.28,poleZ+.205);scene.add(bulb);bulbs.push(bulb);
   }
-  const sig={x,z,offset:n*1.37,axis:'x',color:'green',bulbs};n++;
+  const sig={x,z,offset:n*1.37,axis:null,color:null,bulbs};n++;
   trafficSignals.push(sig);signalByJunction.set(x+','+z,sig);
  }
 }
@@ -1783,14 +1783,18 @@ function updateTrafficSignals(now){
  const cycle=(now/1000)%14;
  for(const sig of trafficSignals){
   const phase=(cycle+sig.offset)%14;
-  if(phase<6){sig.axis='x';sig.color='green'}
-  else if(phase<7){sig.axis='x';sig.color='yellow'}
-  else if(phase<13){sig.axis='z';sig.color='green'}
-  else {sig.axis='z';sig.color='yellow'}
-  const active=sig.color==='green'?2:sig.color==='yellow'?1:0;
+  let axis,color;
+  if(phase<6){axis='x';color='green'}
+  else if(phase<7){axis='x';color='yellow'}
+  else if(phase<13){axis='z';color='green'}
+  else {axis='z';color='yellow'}
+  // Signal lamps only need material updates when their phase actually changes.
+  if(sig.axis===axis&&sig.color===color)continue;
+  sig.axis=axis;sig.color=color;
+  const active=color==='green'?2:color==='yellow'?1:0;
   sig.bulbs.forEach((b,i)=>{
    const on=i===active;
-   b.material.emissiveIntensity=on?(sig.color==='yellow'?.9:1.5):.08;
+   b.material.emissiveIntensity=on?(color==='yellow'?.9:1.5):.08;
    b.material.color.setHex(on?(i===0?0xff3849:i===1?0xffd34d:0x48ff9a):0x343b42);
   });
  }
