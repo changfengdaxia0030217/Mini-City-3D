@@ -1331,7 +1331,7 @@ function endLook(e){if(lookPointer===e.pointerId)lookPointer=null;}
 lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('pointermove',moveLook);lookZone.addEventListener('pointerup',endLook);lookZone.addEventListener('pointercancel',endLook);lookZone.addEventListener('lostpointercapture',endLook);
  // PC controls: center-reticle raycast shooting; mouse movement freely controls the camera.
  let cameraPitch=-.22;
- let cameraDistance=5.0;
+ let cameraDistance=3.8;
  let precisionAimMode=false;
  const cameraCollisionRaycaster=new THREE.Raycaster();
  const cameraAimTarget=new THREE.Vector3(),cameraPivot=new THREE.Vector3(),cameraDesiredPosition=new THREE.Vector3(),cameraCollisionPosition=new THREE.Vector3(),cameraDirection=new THREE.Vector3(),cameraRight=new THREE.Vector3();
