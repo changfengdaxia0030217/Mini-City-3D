@@ -1336,7 +1336,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  const cameraCollisionRaycaster=new THREE.Raycaster();
  const cameraAimTarget=new THREE.Vector3(),cameraPivot=new THREE.Vector3(),cameraDesiredPosition=new THREE.Vector3(),cameraCollisionPosition=new THREE.Vector3(),cameraDirection=new THREE.Vector3(),cameraRight=new THREE.Vector3();
  let cameraCollisionCheckTimer=0,lastAimReticleCheck=0,lastMissToast=0;
- const weaponRaycaster=new THREE.Raycaster(),lineOfSightRaycaster=new THREE.Raycaster(),weaponScreenCenter=new THREE.Vector2(0,-.20);
+ const weaponRaycaster=new THREE.Raycaster(),lineOfSightRaycaster=new THREE.Raycaster(),weaponScreenCenter=new THREE.Vector2(0,.40);
  const shotOrigin=new THREE.Vector3(),shotDirection=new THREE.Vector3();
  const aimAssistWorld=new THREE.Vector3(),aimAssistScreen=new THREE.Vector3();
  // Keep target detection consistent at medium/far ranges without changing camera controls.
@@ -1403,7 +1403,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
    bounds.getCenter(aimAssistWorld);
    aimAssistScreen.copy(aimAssistWorld).project(camera);
    if(aimAssistScreen.z< -1||aimAssistScreen.z>1||Math.abs(aimAssistScreen.x)>1||Math.abs(aimAssistScreen.y)>1)continue;
-   const screenDistance=Math.hypot(aimAssistScreen.x,aimAssistScreen.y);
+   const screenDistance=Math.hypot(aimAssistScreen.x-weaponScreenCenter.x,aimAssistScreen.y-weaponScreenCenter.y);
    // Increase aim assistance for close targets, where third-person perspective and the muzzle offset
    // make pixel-perfect aiming awkward. Keep distant assistance tight to avoid snapping to the wrong NPC.
    const playerDistance=onFoot?Math.hypot(p.group.position.x-playerAvatar.position.x,p.group.position.z-playerAvatar.position.z):Infinity;
@@ -2256,7 +2256,11 @@ function updateOnFoot(dt,now){
   cameraPivot.z+Math.cos(cameraYaw)*horizontal*aimReach+cameraRight.z*(precisionAimMode?-.92:-.72)
  );
  camera.lookAt(cameraAimTarget);
- pistolVisual.rotation.x=THREE.MathUtils.clamp(cameraPitch+weaponRecoil,-1.0,.45);
+ // Match the visible rifle to the same camera yaw/pitch used by the reticle. At 30% screen height,
+ // the reticle sits above screen center, so compensate the rifle pitch by that vertical FOV angle.
+ pistolVisual.rotation.y=THREE.MathUtils.euclideanModulo(cameraYaw-playerAvatar.rotation.y+Math.PI,Math.PI*2)-Math.PI;
+ const reticlePitchOffset=Math.atan(weaponScreenCenter.y*Math.tan(THREE.MathUtils.degToRad(camera.fov*.5)));
+ pistolVisual.rotation.x=THREE.MathUtils.clamp(cameraPitch+reticlePitchOffset+weaponRecoil,-1.0,.45);
  camera.updateMatrixWorld(true);
  updateAimReticle();
  speedEl.innerHTML='0<span>KM/H</span>';
