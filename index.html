@@ -1238,6 +1238,59 @@ let riggedAvatar=null,avatarMixer=null,avatarActions={},activeAvatarAction=null;
 // The fallback rig is animated below; do not replace it with a realistic external soldier model.
 function setRiggedMotion(kind){if(!avatarMixer)return;const names=Object.keys(avatarActions),find=terms=>names.find(n=>terms.some(t=>n.includes(t)));const key=kind==='run'?(find(['run'])||find(['walk'])):kind==='walk'?(find(['walk'])||find(['run'])):(find(['idle'])||find(['walk'])||find(['run']));const next=key?avatarActions[key]:null;if(!next||next===activeAvatarAction)return;next.reset().fadeIn(.18).play();if(activeAvatarAction)activeAvatarAction.fadeOut(.18);activeAvatarAction=next;}
 let punchAnim=0;
+const PERFORMANCE_SETTINGS = {
+  worldHalfSize: 136,
+  walkSpeed: 4.4,
+  runSpeed: 8.2,
+  aimReticleRefreshMs: 120,
+  cameraCollisionInterval: 0.05,
+  maxAimDistance: 120,
+};
+const PLAYER_SETTINGS = {
+  jumpImpulse: 7.2,
+  defaultCameraPitch: -0.22,
+  cameraDistance: 3.8,
+};
+const COMBAT_SETTINGS = {
+  punchCooldown: 0.42,
+  fireCooldown: 0.22,
+  aimAssistRadiusNear: 0.16,
+  aimAssistRadiusMid: 0.11,
+  aimAssistRadiusFar: 0.075,
+  flashDurationMs: 130,
+};
+const CAMERA_SETTINGS = {
+  defaultDistance: PLAYER_SETTINGS.cameraDistance,
+  precisionAimDistance: PLAYER_SETTINGS.cameraDistance * 0.78,
+  precisionAimOffsetX: -0.92,
+  defaultOffsetX: -0.72,
+  pitchLowerLimit: -1.15,
+  pitchUpperLimit: 0.35,
+};
+const inputState = {
+  keys: new Set(),
+  joystickPointer: null,
+  footMoveX: 0,
+  footMoveY: 0,
+  lookPointer: null,
+  lastLookX: 0,
+  lastLookY: 0,
+};
+const cameraState = {
+  yaw: playerAvatar ? playerAvatar.rotation.y : 0,
+  pitch: PLAYER_SETTINGS.defaultCameraPitch,
+  distance: CAMERA_SETTINGS.defaultDistance,
+  precisionAimMode: false,
+  collisionCheckTimer: 0,
+  lastAimReticleCheck: 0,
+};
+function syncCameraStateFromInput(){
+  cameraState.yaw = THREE.MathUtils.euclideanModulo(cameraState.yaw + Math.PI, Math.PI * 2) - Math.PI;
+  cameraState.pitch = THREE.MathUtils.clamp(cameraState.pitch, CAMERA_SETTINGS.pitchLowerLimit, CAMERA_SETTINGS.pitchUpperLimit);
+}
+const combatState = {
+  hitConfirmTimer: 0,
+};
 let onFoot=false, punchCooldown=0, weaponRecoil=0, playerWalkSpeed=0, jumpVelocity=0, footstepPhase=0, turnBlend=0;
 let playerHealth=100,playerCash=0,respawnPending=false;
 const cashDrops=[];
@@ -1254,10 +1307,10 @@ runButton.addEventListener("pointerup",stopRun);runButton.addEventListener("poin
 function setMode(walking){
  if(walking&&Math.abs(speed)>1.4&&!forcedExit){showMissionToast('请先停车，再下车');return}
  if(!walking&&carDamage>=1.8){showMissionToast('车辆已报废，请按 R 救援修复后再上车');return}
- onFoot=walking;document.body.classList.toggle('on-foot',walking);speed=0;lateralSpeed=0;steering=0;footMoveX=0;footMoveY=0;lookPointer=null;cameraYaw=playerAvatar.rotation.y;
+ onFoot=walking;document.body.classList.toggle('on-foot',walking);speed=0;lateralSpeed=0;steering=0;inputState.footMoveX=0;inputState.footMoveY=0;inputState.lookPointer=null;cameraState.yaw=playerAvatar.rotation.y;
  if(walking){
   playerAvatar.position.set(car.position.x+Math.cos(car.rotation.y)*2.1,0,car.position.z+Math.sin(car.rotation.y)*2.1);
-  playerAvatar.rotation.y=car.rotation.y;playerAvatar.visible=true;car.visible=true;
+  playerAvatar.rotation.y=car.rotation.y;cameraState.yaw=playerAvatar.rotation.y;cameraState.pitch=PLAYER_SETTINGS.defaultCameraPitch;playerAvatar.visible=true;car.visible=true;
   modeButton.textContent='🚗 上车（E）';mobileModeButton.textContent='上车';
  }else{
   const d=Math.hypot(playerAvatar.position.x-car.position.x,playerAvatar.position.z-car.position.z);
@@ -1309,8 +1362,7 @@ modeButton.addEventListener('click',()=>setMode(!onFoot));
 mobileModeButton.addEventListener('click',()=>setMode(!onFoot));
 punchButton.addEventListener('click',punchNearby);
 
-
-const keys=new Set();
+const keys=inputState.keys;
 addEventListener('keydown',e=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();keys.add(e.code);if(e.code==='Space'&&!e.repeat&&onFoot&&playerAvatar.position.y<=0.001)jumpVelocity=7.2;if(e.code==='KeyR'&&(!onFoot||forcedExit)){resetCar();if(onFoot){playerAvatar.position.set(car.position.x+Math.cos(car.rotation.y)*2.1,0,car.position.z+Math.sin(car.rotation.y)*2.1);showMissionToast('🛠️ 救援已修复车辆，靠近车辆按 E 上车');}}if(e.code==='KeyE'&&!e.repeat){if(onFoot)setMode(false);else if(Math.abs(speed)<1.4)setMode(true)}if(e.code==='KeyF'&&!e.repeat)punchNearby()});
 addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>keys.clear());
@@ -1322,25 +1374,27 @@ document.querySelectorAll('[data-key]').forEach(btn=>{
 });
 // Analog touch joystick: push forward/back to accelerate/reverse and left/right to steer or walk.
 const joystick=document.getElementById('joystick'),joystickKnob=document.getElementById('joystick-knob');
-let joystickPointer=null,footMoveX=0,footMoveY=0;
-let cameraYaw=playerAvatar.rotation.y,lookPointer=null,lastLookX=0,lastLookY=0;const lookZone=document.getElementById('look-zone');
-function beginLook(e){if(!onFoot||lookPointer!==null)return;e.preventDefault();lookPointer=e.pointerId;lastLookX=e.clientX;lastLookY=e.clientY;lookZone.setPointerCapture(e.pointerId);}
+const lookZone=document.getElementById('look-zone');
+function beginLook(e){if(!onFoot||inputState.lookPointer!==null)return;e.preventDefault();inputState.lookPointer=e.pointerId;inputState.lastLookX=e.clientX;inputState.lastLookY=e.clientY;lookZone.setPointerCapture(e.pointerId);}
 function clampCameraYawToFront(yaw){const facing=playerAvatar.rotation.y;const delta=Math.atan2(Math.sin(yaw-facing),Math.cos(yaw-facing));const limit=70*Math.PI/180;return facing+THREE.MathUtils.clamp(delta,-limit,limit);}
- function moveLook(e){if(lookPointer!==e.pointerId||!onFoot)return;e.preventDefault();const dx=e.clientX-lastLookX,dy=e.clientY-lastLookY;lastLookX=e.clientX;lastLookY=e.clientY;cameraYaw=clampCameraYawToFront(cameraYaw-dx*.0048);cameraPitch=THREE.MathUtils.clamp(cameraPitch-dy*.0035,-1.15,.35);}
-function endLook(e){if(lookPointer===e.pointerId)lookPointer=null;}
+function moveLook(e){if(inputState.lookPointer!==e.pointerId||!onFoot)return;e.preventDefault();const dx=e.clientX-inputState.lastLookX,dy=e.clientY-inputState.lastLookY;inputState.lastLookX=e.clientX;inputState.lastLookY=e.clientY;cameraState.yaw=clampCameraYawToFront(cameraState.yaw-dx*.0048);cameraState.pitch=THREE.MathUtils.clamp(cameraState.pitch-dy*.0035,CAMERA_SETTINGS.pitchLowerLimit,CAMERA_SETTINGS.pitchUpperLimit);syncCameraStateFromInput();}
+function endLook(e){if(inputState.lookPointer===e.pointerId)inputState.lookPointer=null;}
 lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('pointermove',moveLook);lookZone.addEventListener('pointerup',endLook);lookZone.addEventListener('pointercancel',endLook);lookZone.addEventListener('lostpointercapture',endLook);
  // PC controls: center-reticle raycast shooting; mouse movement freely controls the camera.
- let cameraPitch=-.22;
- let cameraDistance=3.8;
+ let cameraDistance=CAMERA_SETTINGS.defaultDistance;
  let precisionAimMode=false;
  const cameraCollisionRaycaster=new THREE.Raycaster();
  const cameraAimTarget=new THREE.Vector3(),cameraPivot=new THREE.Vector3(),cameraDesiredPosition=new THREE.Vector3(),cameraCollisionPosition=new THREE.Vector3(),cameraDirection=new THREE.Vector3(),cameraRight=new THREE.Vector3();
  let cameraCollisionCheckTimer=0,lastAimReticleCheck=0,lastMissToast=0;
+ cameraState.yaw = playerAvatar.rotation.y;
+ cameraState.pitch = PLAYER_SETTINGS.defaultCameraPitch;
+ cameraState.distance = cameraDistance;
+ cameraState.precisionAimMode = precisionAimMode;
  const weaponRaycaster=new THREE.Raycaster(),lineOfSightRaycaster=new THREE.Raycaster(),weaponScreenCenter=new THREE.Vector2(0,.40);
  const shotOrigin=new THREE.Vector3(),shotDirection=new THREE.Vector3();
  const aimAssistWorld=new THREE.Vector3(),aimAssistScreen=new THREE.Vector3();
  // Keep target detection consistent at medium/far ranges without changing camera controls.
- const MAX_AIM_DISTANCE=120;
+ const MAX_AIM_DISTANCE=PERFORMANCE_SETTINGS.maxAimDistance;
  function hasClearShotToPoint(point,targetPed=null){
   camera.updateMatrixWorld(true);
   camera.getWorldPosition(shotOrigin);
@@ -1407,7 +1461,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
    // Increase aim assistance for close targets, where third-person perspective and the muzzle offset
    // make pixel-perfect aiming awkward. Keep distant assistance tight to avoid snapping to the wrong NPC.
    const playerDistance=onFoot?Math.hypot(p.group.position.x-playerAvatar.position.x,p.group.position.z-playerAvatar.position.z):Infinity;
-   const assistRadius=playerDistance<8?.16:playerDistance<20?.11:.075;
+   const assistRadius=playerDistance<8?COMBAT_SETTINGS.aimAssistRadiusNear:playerDistance<20?COMBAT_SETTINGS.aimAssistRadiusMid:COMBAT_SETTINGS.aimAssistRadiusFar;
    if(screenDistance>assistRadius)continue;
    const distance=camera.position.distanceTo(aimAssistWorld);
    if(distance>MAX_AIM_DISTANCE)continue;
@@ -1430,7 +1484,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
   // Raycasting every render frame is wasteful in the dense city scene; refresh the
   // visual target hint at 8–10 Hz while shots still perform a fresh check on click.
   const now=performance.now();
-  if(now-lastAimReticleCheck<120)return;
+  if(now-lastAimReticleCheck<PERFORMANCE_SETTINGS.aimReticleRefreshMs)return;
   lastAimReticleCheck=now;
   const aim=findAimedPedestrian();
   document.body.classList.toggle('aiming-target',!!aim);
@@ -1449,7 +1503,7 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  }
  function fireWeapon(){
   if(!onFoot||punchCooldown>0)return;
-  punchCooldown=.22;
+  punchCooldown=COMBAT_SETTINGS.fireCooldown;
   weaponRecoil=Math.min(.2,weaponRecoil+.085);
   document.body.classList.add('weapon-firing');setTimeout(()=>document.body.classList.remove('weapon-firing'),105);
   if(muzzleFlash){muzzleFlash.visible=true;setTimeout(()=>{muzzleFlash.visible=false;},55);}
@@ -1499,10 +1553,11 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  });
  addEventListener('mousemove',e=>{
   if(!onFoot||document.pointerLockElement!==renderer.domElement)return;
-  cameraYaw=clampCameraYawToFront(cameraYaw-e.movementX*.0048);
-  cameraPitch=THREE.MathUtils.clamp(cameraPitch-e.movementY*.0035,-1.15,.35);
+  cameraState.yaw=clampCameraYawToFront(cameraState.yaw-e.movementX*.0048);
+  cameraState.pitch=THREE.MathUtils.clamp(cameraState.pitch-e.movementY*.0035,CAMERA_SETTINGS.pitchLowerLimit,CAMERA_SETTINGS.pitchUpperLimit);
+  syncCameraStateFromInput();
  });
- addEventListener('blur',()=>{lookPointer=null;keys.clear();});
+ addEventListener('blur',()=>{inputState.lookPointer=null;keys.clear();});
  document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement){precisionAimMode=false;document.body.classList.remove('precision-aiming');}});
  // Listen in capture phase on window so overlays/UI layers cannot swallow the wheel event.
  // Only zoom while on foot; clamp to keep the camera at a usable distance.
@@ -1514,11 +1569,11 @@ lookZone.addEventListener('pointerdown',beginLook);lookZone.addEventListener('po
  },{passive:false,capture:true});
  renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 
-function releaseJoystick(){joystickPointer=null;footMoveX=0;footMoveY=0;keys.delete('ArrowUp');keys.delete('ArrowDown');keys.delete('ArrowLeft');keys.delete('ArrowRight');joystickKnob.style.transform='translate(0px,0px)';}
-function moveJoystick(e){if(joystickPointer!==e.pointerId)return;const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.34,d=Math.hypot(dx,dy),scale=d>max?max/d:1,x=dx*scale,y=dy*scale;joystickKnob.style.transform=`translate(${x}px,${y}px)`;const nx=dx/max,ny=dy/max;if(onFoot){const mag=Math.min(1,Math.hypot(nx,ny)),dead=.16,power=mag<=dead?0:Math.pow((mag-dead)/(1-dead),1.35);footMoveX=mag?nx/mag*power:0;footMoveY=mag?ny/mag*power:0;for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);return;}footMoveX=0;footMoveY=0;const wasLeft=keys.has('ArrowLeft'),wasRight=keys.has('ArrowRight'),wasUp=keys.has('ArrowUp'),wasDown=keys.has('ArrowDown');for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);const dead=.42,release=.30;if(nx<-(wasLeft?release:dead))keys.add('ArrowLeft');if(nx>(wasRight?release:dead))keys.add('ArrowRight');if(ny<-(wasUp?release:dead))keys.add('ArrowUp');if(ny>(wasDown?release:dead))keys.add('ArrowDown');}
-joystick.addEventListener('pointerdown',e=>{e.preventDefault();joystickPointer=e.pointerId;joystick.setPointerCapture(e.pointerId);moveJoystick(e)});
+function releaseJoystick(){inputState.joystickPointer=null;inputState.footMoveX=0;inputState.footMoveY=0;keys.delete('ArrowUp');keys.delete('ArrowDown');keys.delete('ArrowLeft');keys.delete('ArrowRight');joystickKnob.style.transform='translate(0px,0px)';}
+function moveJoystick(e){if(inputState.joystickPointer!==e.pointerId)return;const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.34,d=Math.hypot(dx,dy),scale=d>max?max/d:1,x=dx*scale,y=dy*scale;joystickKnob.style.transform=`translate(${x}px,${y}px)`;const nx=dx/max,ny=dy/max;if(onFoot){const mag=Math.min(1,Math.hypot(nx,ny)),dead=.16,power=mag<=dead?0:Math.pow((mag-dead)/(1-dead),1.35);inputState.footMoveX=mag?nx/mag*power:0;inputState.footMoveY=mag?ny/mag*power:0;for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);return;}inputState.footMoveX=0;inputState.footMoveY=0;const wasLeft=keys.has('ArrowLeft'),wasRight=keys.has('ArrowRight'),wasUp=keys.has('ArrowUp'),wasDown=keys.has('ArrowDown');for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys.delete(k);const dead=.42,release=.30;if(nx<-(wasLeft?release:dead))keys.add('ArrowLeft');if(nx>(wasRight?release:dead))keys.add('ArrowRight');if(ny<-(wasUp?release:dead))keys.add('ArrowUp');if(ny>(wasDown?release:dead))keys.add('ArrowDown');}
+joystick.addEventListener('pointerdown',e=>{e.preventDefault();inputState.joystickPointer=e.pointerId;joystick.setPointerCapture(e.pointerId);moveJoystick(e)});
 joystick.addEventListener('pointermove',e=>{e.preventDefault();moveJoystick(e)});
-joystick.addEventListener('pointerup',e=>{if(joystickPointer===e.pointerId)releaseJoystick()});
+joystick.addEventListener('pointerup',e=>{if(inputState.joystickPointer===e.pointerId)releaseJoystick()});
 joystick.addEventListener('pointercancel',releaseJoystick);joystick.addEventListener('lostpointercapture',releaseJoystick);
 document.querySelectorAll('[data-panel]').forEach(btn=>btn.addEventListener('click',()=>{const name=btn.dataset.panel,hidden=document.body.classList.toggle('hide-'+name);btn.classList.toggle('active',!hidden);btn.setAttribute('aria-pressed',String(!hidden))}));
 function resetCar(){car.position.set(0,0,-8);car.rotation.y=0;car.rotation.z=0;speed=0;steering=0;lateralSpeed=0;carDamage=0;carOnFire=false;forcedExit=false;car.visible=true;carSmoke.forEach(p=>p.visible=false);carFlames.forEach(p=>p.visible=false);lastSafeCarPosition.set(0,0,8);riverFallTimer=0}
@@ -2130,24 +2185,21 @@ function updateOnFoot(dt,now){
  const forward=keys.has('KeyW')||keys.has('ArrowUp'),back=keys.has('KeyS')||keys.has('ArrowDown');
  const left=keys.has('KeyA')||keys.has('ArrowLeft'),right=keys.has('KeyD')||keys.has('ArrowRight');
  const keyFwd=(forward?1:0)-(back?1:0),keySide=(right?1:0)-(left?1:0);
- const stickActive=Math.abs(footMoveX)>.001||Math.abs(footMoveY)>.001;
- const fwd=stickActive?-footMoveY:keyFwd,side=stickActive?-footMoveX:-keySide;
+ const stickActive=Math.abs(inputState.footMoveX)>.001||Math.abs(inputState.footMoveY)>.001;
+ const fwd=stickActive?-inputState.footMoveY:keyFwd,side=stickActive?-inputState.footMoveX:-keySide;
  const moving=Math.abs(fwd)>.02||Math.abs(side)>.02;
  document.body.classList.toggle('weapon-moving',moving);
- const fx=Math.sin(cameraYaw),fz=Math.cos(cameraYaw),rx=Math.cos(cameraYaw),rz=-Math.sin(cameraYaw);
+ const fx=Math.sin(cameraState.yaw),fz=Math.cos(cameraState.yaw),rx=Math.cos(cameraState.yaw),rz=-Math.sin(cameraState.yaw);
  let moveX=fx*fwd+rx*side,moveZ=fz*fwd+rz*side;const moveLen=Math.hypot(moveX,moveZ);if(moveLen>1){moveX/=moveLen;moveZ/=moveLen;}
  if(moving||precisionAimMode){
-  // Normal movement faces the travel direction. In precision-aim mode, rotate
-  // the whole blocky character toward the camera ray even while standing still,
-  // so the rifle, shoulders and reticle no longer visibly disagree.
-  const desiredYaw=precisionAimMode?cameraYaw:Math.atan2(moveX,moveZ);
+  const desiredYaw=precisionAimMode?cameraState.yaw:Math.atan2(moveX,moveZ);
   let delta=((desiredYaw-playerAvatar.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;
   playerAvatar.rotation.y+=delta*(1-Math.exp(-(precisionAimMode?10.5:6.0)*dt));
  }
  turnBlend=0;
  const footOldX=playerAvatar.position.x,footOldZ=playerAvatar.position.z;
  const running=(keys.has('ShiftLeft')||keys.has('ShiftRight'))&&moving;
- const moveSpeed=running?8.2:4.4;
+ const moveSpeed=running?PERFORMANCE_SETTINGS.runSpeed:PERFORMANCE_SETTINGS.walkSpeed;
  if(moving){
   playerAvatar.position.x+=moveX*moveSpeed*dt;
   playerAvatar.position.z+=moveZ*moveSpeed*dt;
@@ -2157,8 +2209,8 @@ function updateOnFoot(dt,now){
  jumpVelocity-=18*dt;
  playerAvatar.position.y+=jumpVelocity*dt;
  if(playerAvatar.position.y<=0){playerAvatar.position.y=0;jumpVelocity=0;}
- playerAvatar.position.x=THREE.MathUtils.clamp(playerAvatar.position.x,-136,136);
- playerAvatar.position.z=THREE.MathUtils.clamp(playerAvatar.position.z,-136,136);
+ playerAvatar.position.x=THREE.MathUtils.clamp(playerAvatar.position.x,-PERFORMANCE_SETTINGS.worldHalfSize,PERFORMANCE_SETTINGS.worldHalfSize);
+ playerAvatar.position.z=THREE.MathUtils.clamp(playerAvatar.position.z,-PERFORMANCE_SETTINGS.worldHalfSize,PERFORMANCE_SETTINGS.worldHalfSize);
  // Resolve collisions on each axis separately so the avatar can slide along walls.
  if(footBlocked(playerAvatar.position.x,playerAvatar.position.z)){
   const nx=playerAvatar.position.x,nz=playerAvatar.position.z;
@@ -2202,7 +2254,7 @@ function updateOnFoot(dt,now){
  // Raise both shoulders slightly in precision aim and let the upper arms follow
  // camera pitch, so the rifle looks shouldered instead of floating in front.
  const aimPose=precisionAimMode?1:0;
- const armPitch=THREE.MathUtils.clamp(cameraPitch,-.6,.35)*.22;
+ const armPitch=THREE.MathUtils.clamp(cameraState.pitch,-.6,.35)*.22;
  leftArm.rotation.x=airborne?.72:1.02+aimPose*.10+armPitch-armStride;
  // Bring the support forearm farther across the chest toward the rifle handguard.
  leftArm.rotation.z=.68-aimPose*.035+(airborne?-.08:Math.sin(cycle+Math.PI)*.025*playerWalkSpeed)+idleSway*.004;
@@ -2214,20 +2266,22 @@ function updateOnFoot(dt,now){
  camera.fov=precisionAimMode?43:62;camera.updateProjectionMatrix();
  // Mouse movement directly orbits the camera; right mouse toggles precision aim instead of dragging.
  cameraPivot.set(playerAvatar.position.x,playerAvatar.position.y+1.35,playerAvatar.position.z);
- const horizontal=Math.cos(cameraPitch),vertical=Math.sin(cameraPitch);
- cameraRight.set(Math.cos(cameraYaw),0,-Math.sin(cameraYaw));
+ const horizontal=Math.cos(cameraState.pitch),vertical=Math.sin(cameraState.pitch);
+ cameraRight.set(Math.cos(cameraState.yaw),0,-Math.sin(cameraState.yaw));
  // Keep the orbit camera on the same yaw/pitch ray used by the reticle.
-// The extra height offset made the view tilt too far down at default zoom.
+ // The extra height offset made the view tilt too far down at default zoom.
+ const cameraZoomDistance = precisionAimMode ? CAMERA_SETTINGS.precisionAimDistance : cameraDistance;
+ const cameraOffsetX = precisionAimMode ? CAMERA_SETTINGS.precisionAimOffsetX : CAMERA_SETTINGS.defaultOffsetX;
  cameraDesiredPosition.set(
-  cameraPivot.x-Math.sin(cameraYaw)*horizontal*(cameraDistance*(precisionAimMode?.78:1))+cameraRight.x*(precisionAimMode?-.92:-.72),
-  cameraPivot.y-vertical*(cameraDistance*(precisionAimMode?.78:1)),
-  cameraPivot.z-Math.cos(cameraYaw)*horizontal*(cameraDistance*(precisionAimMode?.78:1))+cameraRight.z*(precisionAimMode?-.92:-.72)
+  cameraPivot.x-Math.sin(cameraState.yaw)*horizontal*(cameraZoomDistance)+cameraRight.x*cameraOffsetX,
+  cameraPivot.y-vertical*(cameraZoomDistance),
+  cameraPivot.z-Math.cos(cameraState.yaw)*horizontal*(cameraZoomDistance)+cameraRight.z*cameraOffsetX
  );
  // Pull the camera in when buildings or props block the desired orbit position.
  // Recheck at 20 Hz instead of traversing every city mesh on every render frame.
  cameraCollisionCheckTimer-=dt;
  if(cameraCollisionCheckTimer<=0){
-  cameraCollisionCheckTimer=.05;
+  cameraCollisionCheckTimer=PERFORMANCE_SETTINGS.cameraCollisionInterval;
   cameraDirection.copy(cameraDesiredPosition).sub(cameraPivot);
   const desiredLength=cameraDirection.length();
   cameraDirection.normalize();
@@ -2250,17 +2304,18 @@ function updateOnFoot(dt,now){
  // Keep camera pitch, screen-center reticle, and shot ray on one consistent
  // direction; a fixed target height made vertical mouse movement disagree with aim.
  const aimReach=8.5;
+ const aimTargetOffsetX = precisionAimMode ? CAMERA_SETTINGS.precisionAimOffsetX : CAMERA_SETTINGS.defaultOffsetX;
  cameraAimTarget.set(
-  cameraPivot.x+Math.sin(cameraYaw)*horizontal*aimReach+cameraRight.x*(precisionAimMode?-.92:-.72),
+  cameraPivot.x+Math.sin(cameraState.yaw)*horizontal*aimReach+cameraRight.x*aimTargetOffsetX,
   cameraPivot.y+vertical*aimReach,
-  cameraPivot.z+Math.cos(cameraYaw)*horizontal*aimReach+cameraRight.z*(precisionAimMode?-.92:-.72)
+  cameraPivot.z+Math.cos(cameraState.yaw)*horizontal*aimReach+cameraRight.z*aimTargetOffsetX
  );
  camera.lookAt(cameraAimTarget);
  // Match the visible rifle to the same camera yaw/pitch used by the reticle. At 30% screen height,
  // the reticle sits above screen center, so compensate the rifle pitch by that vertical FOV angle.
- pistolVisual.rotation.y=THREE.MathUtils.euclideanModulo(cameraYaw-playerAvatar.rotation.y+Math.PI,Math.PI*2)-Math.PI;
+ pistolVisual.rotation.y=THREE.MathUtils.euclideanModulo(cameraState.yaw-playerAvatar.rotation.y+Math.PI,Math.PI*2)-Math.PI;
  const reticlePitchOffset=Math.atan(weaponScreenCenter.y*Math.tan(THREE.MathUtils.degToRad(camera.fov*.5)));
- pistolVisual.rotation.x=THREE.MathUtils.clamp(cameraPitch+reticlePitchOffset+weaponRecoil,-1.0,.45);
+ pistolVisual.rotation.x=THREE.MathUtils.clamp(cameraState.pitch+reticlePitchOffset+weaponRecoil,-1.0,.45);
  camera.updateMatrixWorld(true);
  updateAimReticle();
  speedEl.innerHTML='0<span>KM/H</span>';
