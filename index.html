@@ -1706,29 +1706,36 @@ const trafficRoutes=[
  [{x:-60,z:0},{x:-60,z:60},{x:0,z:60},{x:0,z:0}]
 ];
 const trafficPaints=[0x39a6ff,0xef5b58,0xf1f1e8,0x52bd83,0xb18be8,0xffc24b,0x4d657c];
+// Traffic cars share repeated wheel, hub and lamp resources; only body paint stays unique.
+const trafficDarkMat=mat(0x29323b,.65),trafficTireMat=mat(0x252a30,.9),trafficRimMat=mat(0xc4cdd4,.45);
+const trafficHeadMat=new THREE.MeshStandardMaterial({color:0xfff3c0,emissive:0x6b5720,emissiveIntensity:.45});
+const trafficTailMat=new THREE.MeshStandardMaterial({color:0xff3344,emissive:0x8c0712,emissiveIntensity:.65});
+const trafficWheelGeometry=new THREE.CylinderGeometry(.29,.29,.18,10);
+const trafficHubGeometry=new THREE.CylinderGeometry(.15,.15,.19,8);
+const trafficSignalBulbGeometry=new THREE.SphereGeometry(.19,8,6);
 function buildTrafficCar(color,index){
  const g=new THREE.Group();
  const paint=new THREE.MeshStandardMaterial({color,roughness:.48,metalness:.08});
  const windowMaterial=new THREE.MeshStandardMaterial({color:0x9dd8e8,roughness:.32,metalness:.08});
- const dark=mat(0x29323b,.65), tire=mat(0x252a30,.9), rim=mat(0xc4cdd4,.45);
+ const dark=trafficDarkMat,tire=trafficTireMat,rim=trafficRimMat;
  box(1.55,.52,3.05,paint,0,.63,0,g);
  box(1.25,.52,1.52,windowMaterial,0,1.08,-.18,g);
  box(1.35,.10,.58,paint,0,.96,-1.05,g);
  box(1.35,.10,.42,paint,0,.95,1.13,g);
  box(1.58,.13,.14,dark,0,.42,-1.58,g);box(1.58,.13,.14,dark,0,.42,1.58,g);
- const head=new THREE.MeshStandardMaterial({color:0xfff3c0,emissive:0x6b5720,emissiveIntensity:.45});
- const tail=new THREE.MeshStandardMaterial({color:0xff3344,emissive:0x8c0712,emissiveIntensity:.65});
+ const head=trafficHeadMat,tail=trafficTailMat;
  for(const side of [-1,1]){
   box(.25,.11,.035,head,side*.48,.76,-1.555,g);
   box(.28,.10,.035,tail,side*.48,.76,1.555,g);
   for(const z of [-1.02,1.02]){
-   const w=new THREE.Mesh(new THREE.CylinderGeometry(.29,.29,.18,12),tire);
+   const w=new THREE.Mesh(trafficWheelGeometry,tire);
    w.rotation.z=Math.PI/2;w.position.set(side*.78,.32,z);g.add(w);
-   const hub=new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,.19,10),rim);
+   const hub=new THREE.Mesh(trafficHubGeometry,rim);
    hub.rotation.z=Math.PI/2;hub.position.set(side*.78,.32,z);g.add(hub);
   }
  }
- g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+ // Ambient traffic is numerous; keep it lit but exclude it from costly shadow-map passes.
+ g.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false}});
  g.userData.trafficId=index;scene.add(g);return g;
 }
 function buildCityTraffic(){
@@ -1765,7 +1772,7 @@ function createTrafficSignals(){
   const bulbs=[];
   for(let b=0;b<3;b++){
    const material=[signalRedMat,signalYellowMat,signalGreenMat][b].clone();
-   const bulb=new THREE.Mesh(new THREE.SphereGeometry(.19,10,8),material);
+   const bulb=new THREE.Mesh(trafficSignalBulbGeometry,material);
    bulb.position.set(poleX,3.73-b*.28,poleZ+.205);scene.add(bulb);bulbs.push(bulb);
   }
   const sig={x,z,offset:n*1.37,axis:'x',color:'green',bulbs};n++;
