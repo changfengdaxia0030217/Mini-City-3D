@@ -273,10 +273,10 @@ for(const side of [-1,1]){
  box(280,.14,2.3,sidewalkMat,0,.015,side===1?-106.8:-113.2);
 }
 const promenadeTreeMat=mat(0x397d43),trunkMat=mat(0x77513a);
-for(let tx=-126;tx<=126;tx+=28){
+for(let tx=-126;tx<=126;tx+=42){
  const tz=huangpuCenterZ(tx)+38;
- const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,2.3,7),trunkMat);trunk.position.set(tx,1.15,tz);trunk.castShadow=true;scene.add(trunk);
- const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.05,1),promenadeTreeMat);crown.position.set(tx,2.75,tz);crown.castShadow=true;scene.add(crown);
+ const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,2.3,6),trunkMat);trunk.position.set(tx,1.15,tz);trunk.castShadow=false;trunk.receiveShadow=false;scene.add(trunk);
+ const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.05,0),promenadeTreeMat);crown.position.set(tx,2.75,tz);crown.castShadow=false;crown.receiveShadow=false;scene.add(crown);
 }
 // Far-bank glass towers create a continuous Pudong silhouette beyond the water.
 const farTowerColors=[0x78aabd,0x91b7c8,0x6c8fa8,0xb8cbd2,0x8aa4b6];
@@ -400,6 +400,7 @@ const bundSign=new THREE.Mesh(new THREE.PlaneGeometry(22,5.5),new THREE.MeshBasi
 bundSign.position.set(0,6.4,-102.5);scene.add(bundSign);
 for(const bx of [-11,11]){box(.38,5.8,.38,bundLampMetal,bx,2.9,-102.5);box(.75,.35,.75,bundPlazaMat,bx,.18,-102.5);}
 // Two drivable north-south bridges connect the Bund-side road network to Pudong.
+const archMarkerMat=mat(0xffd68a,.35);
 const huangpuBridgeXs=[-92,92];
 for(const bridgeX of huangpuBridgeXs){
  // Continuous approach roads meet the bridge at both banks; road markings remain visible over the water.
@@ -427,11 +428,11 @@ for(const bridgeX of huangpuBridgeXs){
   const arch=new THREE.Mesh(new THREE.TubeGeometry(archCurve,48,.34,8,false),archMat);
   arch.castShadow=true;scene.add(arch);
   // Warm marker lights trace the high point of each arch, making the crossing readable from either bank.
-  for(let lightZ=-166;lightZ<=-124;lightZ+=6){
+  for(let lightZ=-166;lightZ<=-124;lightZ+=14){
    const lightT=(lightZ+174)/58,lightY=.55+8.05*Math.sin(Math.PI*lightT);
-   const archMarker=new THREE.Mesh(new THREE.SphereGeometry(.19,8,6),mat(0xffd68a,.35));
-   archMarker.position.set(archX,lightY+.18,lightZ);scene.add(archMarker);
-   const markerGlow=new THREE.PointLight(0xffc875,.32,4);markerGlow.position.copy(archMarker.position);scene.add(markerGlow);
+   const archMarker=new THREE.Mesh(new THREE.SphereGeometry(.16,6,4),archMarkerMat);
+   archMarker.position.set(archX,lightY+.18,lightZ);archMarker.castShadow=false;archMarker.receiveShadow=false;scene.add(archMarker);
+   if(lightZ===-152){const markerGlow=new THREE.PointLight(0xffc875,.22,3);markerGlow.position.copy(archMarker.position);scene.add(markerGlow);}
   }
   // Crown caps and substantial end pylons give the arch bridge a clearer silhouette.
   for(const endZ of [-174,-116]){
