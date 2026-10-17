@@ -134,7 +134,7 @@ scene.background = new THREE.Color(0x9dd8ee);
 scene.fog = new THREE.Fog(0x9dd8ee, 90, 235);
 const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, .1, 500);
 const renderer = new THREE.WebGLRenderer({antialias:false, powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.35));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -2377,7 +2377,7 @@ function animate(now){requestAnimationFrame(animate);const dt=Math.min((now-last
 car.visible=true;
 camera.position.set(0,5,1);camera.lookAt(0,1,-8);
 requestAnimationFrame(animate);
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.8))});
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25))});
 </script>
 <script type="module" src="./minimap.js"></script>
 </body>
