@@ -285,9 +285,9 @@ for(let fi=0;fi<9;fi++){
  const fx=-150+fi*37.5,fh=20+((fi*3)%4)*7,fw=7+(fi%3)*1.7,fd=7+(fi%3)*1.2;
  const fg=new THREE.Group();fg.position.set(fx,0,-220-(fi%2)*8);scene.add(fg);
  const fm=mat(farTowerColors[fi%farTowerColors.length],.42);
- const towerBody=box(fw,fh,fd,fm,0,fh/2,0,fg);
- box(fw+.25,.22,fd+.25,farTrimMat,0,fh+.1,0,fg);
- for(let wy=4;wy<fh-1;wy+=6.4)box(fw*.88,.055,fd+.035,farTrimMat,0,wy,fd/2+.025,fg);
+ const towerBody=boxLite(fw,fh,fd,fm,0,fh/2,0,fg);
+ boxLite(fw+.25,.22,fd+.25,farTrimMat,0,fh+.1,0,fg);
+ for(let wy=5;wy<fh-1;wy+=10)boxLite(fw*.88,.055,fd+.035,farTrimMat,0,wy,fd/2+.025,fg);
  if(fi%4===1){const tip=new THREE.Mesh(new THREE.ConeGeometry(.45,5,6),farMetalMat);tip.position.y=fh+2.4;fg.add(tip);}
 }
 // A slim Shanghai Tower-inspired tapering landmark rises above the far-bank skyline.
@@ -627,19 +627,19 @@ function bundBuilding(x,z,w,d,h,variant){
 function shikumenBlock(x,z,w,d,h,variant){
  const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
  const brick=mat([0xb96e54,0xc58a6b,0xd1b08b,0x9f6b5d][variant%4]),trim=mat(0xe7d7bd),dark=mat(0x344d5b,.5);
- box(w,h,d,brick,0,h/2,0,g);box(w+.28,.24,d+.25,trim,0,h+.08,0,g);box(w+.18,.18,d+.2,trim,0,.2,0,g);
+ box(w,h,d,brick,0,h/2,0,g);boxLite(w+.28,.24,d+.25,trim,0,h+.08,0,g);boxLite(w+.18,.18,d+.2,trim,0,.2,0,g);
  const cols=Math.max(2,Math.floor(w/3.5)),rows=Math.max(2,Math.floor(h/4.2));
  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
   const wx=-w/2+(c+.5)*w/cols,wy=1.3+r*(h-1.5)/rows,ww=Math.min(.72,w/cols*.5);
-  box(ww,.88,.06,dark,wx,wy,d/2+.04,g);box(ww+.18,.12,.12,trim,wx,wy+.5,d/2+.08,g);
+  boxLite(ww,.88,.06,dark,wx,wy,d/2+.04,g);boxLite(ww+.18,.12,.12,trim,wx,wy+.5,d/2+.08,g);
   
  }
- for(let a=-1;a<=1;a+=2)box(.14,h*.82,.12,trim,a*(w/2-.22),h*.48,d/2+.08,g);
- if(h>10){box(w*.8,.5,d*.82,roofMat,0,h+.38,0,g);box(w*.35,.7,d*.35,trim,0,h+.82,0,g);}
+ for(let a=-1;a<=1;a+=2)boxLite(.14,h*.82,.12,trim,a*(w/2-.22),h*.48,d/2+.08,g);
+ if(h>10){boxLite(w*.8,.5,d*.82,roofMat,0,h+.38,0,g);boxLite(w*.35,.7,d*.35,trim,0,h+.82,0,g);}
  if(w>7){
-  const sy=2.7,sw=w*.78;box(sw,.65,.14,storefrontRed,0,sy,d/2+.1,g);
+  const sy=2.7,sw=w*.78;boxLite(sw,.65,.14,storefrontRed,0,sy,d/2+.1,g);
   const face=new THREE.Mesh(new THREE.PlaneGeometry(sw*.94,.5),shopSignMaterials[(variant+3)%shopSignMaterials.length]);face.position.set(0,sy,d/2+.19);g.add(face);
-  box(sw,.08,.18,signGold,0,sy+.36,d/2+.12,g);
+  boxLite(sw,.08,.18,signGold,0,sy+.36,d/2+.12,g);
  }
  occupied.push({x,z,hw:w/2+.8,hd:d/2+.8});
 }
