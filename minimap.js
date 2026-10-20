@@ -2,7 +2,7 @@
 const canvas = document.getElementById('minimap');
 const ctx = canvas.getContext('2d');
 const SIZE = canvas.width;
-const WORLD = 280;
+const WORLD = 300;
 const scale = SIZE / WORLD;
 const mapX = x => SIZE / 2 + x * scale;
 const mapY = z => SIZE / 2 + z * scale;
@@ -19,9 +19,9 @@ function drawMap() {
 
   // Blocks and park
   ctx.fillStyle = '#9bd47d';
-  ctx.fillRect(mapX(-103), mapY(-103), 25 * scale, 25 * scale);
+  ctx.fillRect(mapX(-70), mapY(-70), 20 * scale, 20 * scale);
   ctx.fillStyle = '#d9bda0';
-  for (let gx = -2; gx <= 2; gx++) for (let gz = -2; gz <= 2; gz++) {
+  for (let gx = -1; gx <= 1; gx++) for (let gz = -1; gz <= 1; gz++) {
     if (gx === 0 || gz === 0) continue;
     const cx = gx * 40, cz = gz * 40;
     for (const dx of [-7, 7]) {
@@ -30,19 +30,18 @@ function drawMap() {
   }
 
   // Outer ring and main streets
-  for (const p of [-100, 100]) { drawRoad('x', p, 8, 140); drawRoad('z', p, 8, 140); }
-  for (const p of [-60, 60]) { drawRoad('x', p, 11, 120); drawRoad('z', p, 11, 120); }
-  drawRoad('x', 0, 13, 120); drawRoad('z', 0, 13, 120);
+  for (const p of [-40, 40]) { drawRoad('x', p, 11, 80); drawRoad('z', p, 11, 80); }
+  drawRoad('x', 0, 13, 80); drawRoad('z', 0, 13, 80);
 
-  // A winding blue river across the northern part of the city
+  // Huangpu River across the northern part of the city
   ctx.beginPath();
-  for (let x = -150; x <= 150; x += 2) {
-    const z = 16 + 1.8 * Math.sin(x * .028) + .65 * Math.sin(x * .071);
-    if (x === -150) ctx.moveTo(mapX(x), mapY(z));
+  for (let x = -100; x <= 100; x += 2) {
+    const z = -80 + 4.5 * Math.sin(x * .018) + 1.5 * Math.sin(x * .043);
+    if (x === -100) ctx.moveTo(mapX(x), mapY(z));
     else ctx.lineTo(mapX(x), mapY(z));
   }
-  for (let x = 150; x >= -150; x -= 2) {
-    const z = 16 + 1.8 * Math.sin(x * .028) + .65 * Math.sin(x * .071) - 8.2;
+  for (let x = 100; x >= -100; x -= 2) {
+    const z = -80 + 4.5 * Math.sin(x * .018) + 1.5 * Math.sin(x * .043) + 40;
     ctx.lineTo(mapX(x), mapY(z));
   }
   ctx.closePath();
@@ -52,12 +51,12 @@ function drawMap() {
   // Soft sidewalk strips beside the central and secondary roads
   ctx.strokeStyle = '#d7d5c9';
   ctx.lineWidth = Math.max(1, 1.9 * scale);
-  for (const p of [0, -60, 60]) {
+  for (const p of [0, -40, 40]) {
     for (const offset of [-1, 1]) {
-      ctx.beginPath(); ctx.moveTo(mapX(-120), mapY(p + offset * (p === 0 ? 8.15 : 7.15)));
-      ctx.lineTo(mapX(120), mapY(p + offset * (p === 0 ? 8.15 : 7.15))); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(mapX(p + offset * (p === 0 ? 8.15 : 7.15)), mapY(-120));
-      ctx.lineTo(mapX(p + offset * (p === 0 ? 8.15 : 7.15)), mapY(120)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mapX(-80), mapY(p + offset * (p === 0 ? 8.15 : 7.15)));
+      ctx.lineTo(mapX(80), mapY(p + offset * (p === 0 ? 8.15 : 7.15))); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mapX(p + offset * (p === 0 ? 8.15 : 7.15)), mapY(-80));
+      ctx.lineTo(mapX(p + offset * (p === 0 ? 8.15 : 7.15)), mapY(80)); ctx.stroke();
     }
   }
 
